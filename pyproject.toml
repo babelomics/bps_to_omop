@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bps_to_omop"
+version = "0.2.0"
+license = { text = "MIT License" }
+
+[tool.setuptools]
+packages = { find = { where = ["bps_to_omop"] } }
+
+[tool.pixi.project]
+channels = ["conda-forge", "default"]
+platforms = ["linux-64"]
+
+[tool.pixi.dependencies]
+python = ">=3.9"
+pip = "*"
+setuptools = "*"
+pre-commit = "*"
+black = "*"
+isort = "*"
+nbconvert = "*"
+nbformat = "*"
+python-dotenv = "*"
+pytest = "*"
+hypothesis = "*"
+numpy = "*"
+pandas = "*"
+pyarrow = "*"
+matplotlib = "*"
+seaborn = "*"
+scipy = "*"
+debugpy = "*"
+ipykernel = "*"
+ipython = "*"
+ipywidgets = "*"
+jupyter = "*"
+notebook = "*"
+pyyaml = "*"
+quarto = "*"
+dask = "*"
+
+[tool.pixi.pypi-dependencies]
+bps_to_omop = { path = ".", editable = true }

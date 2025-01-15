@@ -1,0 +1,37 @@
+repos:
+- repo: https://github.com/psf/black
+  rev: 24.10.0
+  hooks:
+    - id: black # Format using black before commiting
+
+- repo: https://github.com/pycqa/isort
+  rev: 5.13.2
+  hooks:
+    - id: isort
+      name: isort (python)
+      args: ["--profile", "black"]
+
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v5.0.0
+  hooks:
+    - id: check-yaml # To make yaml pretty
+    - id: check-added-large-files # Prevent commiting large files
+      args: ['--maxkb=500'] # This is default, modify at discretion
+    - id: detect-private-key # check no private keys are committed
+
+- repo: https://github.com/thoughtworks/talisman
+  rev: v1.32.0
+  hooks:
+    - id: talisman-commit
+      entry: cmd --githook pre-commit
+
+- repo: local
+  hooks:
+    - id: id-string-check
+      name: Check for forbidden id string
+      entry: pixi run python3 .pre-commit-hooks/custom_pattern_check.py
+      language: system
+      types: [file]
+      args: 
+        - '--forbidden-pattern=EN\d{8,10}'
+        - '--ignore-case'

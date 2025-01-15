@@ -1,0 +1,7 @@
+fileignoreconfig:
+- filename: pixi.lock
+  checksum: ""
+  ignore_detectors: 
+    - filename
+    - filecontent
+version: ""

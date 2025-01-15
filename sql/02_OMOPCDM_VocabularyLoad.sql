@@ -1,0 +1,17 @@
+\copy omop_sch.DRUG_STRENGTH FROM './vocabulary/DRUG_STRENGTH.csv' WITH DELIMITER E'\t' CSV HEADER QUOTE E'\b' ;
+
+\copy omop_sch.CONCEPT FROM './vocabulary/CONCEPT.csv' WITH DELIMITER E'\t' CSV HEADER QUOTE E'\b' ;
+
+\copy omop_sch.CONCEPT_RELATIONSHIP FROM './vocabulary/CONCEPT_RELATIONSHIP.csv' WITH DELIMITER E'\t' CSV HEADER QUOTE E'\b' ;
+
+\copy omop_sch.CONCEPT_ANCESTOR FROM './vocabulary/CONCEPT_ANCESTOR.csv' WITH DELIMITER E'\t' CSV HEADER QUOTE E'\b' ;
+
+\copy omop_sch.CONCEPT_SYNONYM FROM './vocabulary/CONCEPT_SYNONYM.csv' WITH DELIMITER E'\t' CSV HEADER QUOTE E'\b' ;
+
+\copy omop_sch.VOCABULARY FROM './vocabulary/VOCABULARY.csv' WITH DELIMITER E'\t' CSV HEADER QUOTE E'\b' ;
+
+\copy omop_sch.RELATIONSHIP FROM './vocabulary/RELATIONSHIP.csv' WITH DELIMITER E'\t' CSV HEADER QUOTE E'\b' ;
+
+\copy omop_sch.CONCEPT_CLASS FROM './vocabulary/CONCEPT_CLASS.csv' WITH DELIMITER E'\t' CSV HEADER QUOTE E'\b' ;
+
+\copy omop_sch.DOMAIN FROM './vocabulary/DOMAIN.csv' WITH DELIMITER E'\t' CSV HEADER QUOTE E'\b' ;
