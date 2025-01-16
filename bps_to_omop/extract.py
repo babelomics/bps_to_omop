@@ -108,7 +108,7 @@ def try_read(
     default_params: dict,
     funcs_to_check: list,
     nrows: int = 100,
-) -> list[pd.DataFrame | None, None | Exception]:
+) -> list:
     """try to read a csv file with the provided parameters
 
     Parameters
@@ -748,8 +748,7 @@ def apply_modifications(
             print(" > Resulting datatypes:")
             print(df.info())
         # Save to parquet
-        new_name = f"{destination_folder}{
-            os.path.basename(f).replace('txt', 'parquet')}"
+        new_name = f"{destination_folder}{os.path.basename(f).replace('txt', 'parquet')}"
         new_files[f] = new_name
         df.to_parquet(new_name)
 
