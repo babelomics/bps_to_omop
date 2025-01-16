@@ -91,9 +91,7 @@ def initialize_extraction(
             "Created": datetime.now().strftime("%Y/%m/%d %H:%M"),
             "Last_modified": datetime.now().strftime("%Y/%m/%d %H:%M"),
         },
-        "data": {
-            "files_list": file_list,
-        },
+        "files_list": file_list,
     }
 
     # Combinar la cabecera y los datos
@@ -633,7 +631,7 @@ def read_yaml_config(config_file_path: str) -> dict:
 
 
 def update_yaml_config(
-    config_file_path: str, target_section: str, new_entry_key: str, new_entry_data: dict
+    config_file_path: str,  new_entry_key: str, new_entry_data: dict, target_section: None | str = None,
 ) -> None:
     """
     Reads a YAML configuration file, updates or adds information in a specified section,
@@ -678,7 +676,10 @@ def update_yaml_config(
         config_data[target_section] = {}
 
     # Add or update the new entry in the specified section
-    config_data[target_section][new_entry_key] = new_entry_data
+    if target_section:
+        config_data[target_section][new_entry_key] = new_entry_data
+    else:
+        config_data[new_entry_key] = new_entry_data
 
     # Write updated configuration back to file
     with open(config_file_path, "w", encoding="utf-8") as config_file:
@@ -719,9 +720,9 @@ def apply_modifications(
     if verbose > 0:
         print("Reading configuration file...")
     yaml_dict = read_yaml_config(yaml_file)
-    files_list = yaml_dict["data"]["files_list"]
-    read_options = yaml_dict["data"]["read_options"]
-    date_formats = yaml_dict["data"]["date_formats"]
+    files_list = yaml_dict["files_list"]
+    read_options = yaml_dict["read_options"]
+    date_formats = yaml_dict["date_formats"]
 
     # Iterate over filse and apply the changes
     if verbose > 0:
@@ -765,7 +766,7 @@ def apply_modifications(
 
     if verbose > 0:
         print("Writing to configuration file...")
-    update_yaml_config(yaml_file, "data", "new_files", new_files)
+    update_yaml_config(yaml_file, "new_files", new_files)
 
     if verbose > 0:
         print("Done!")
