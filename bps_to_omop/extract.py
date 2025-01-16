@@ -631,7 +631,7 @@ def read_yaml_config(config_file_path: str) -> dict:
 
 
 def update_yaml_config(
-    config_file_path: str,  new_entry_key: str, new_entry_data: dict, target_section: None | str = None,
+    config_file_path: str,  new_entry_key: str, new_entry_data: dict,
 ) -> None:
     """
     Reads a YAML configuration file, updates or adds information in a specified section,
@@ -646,9 +646,6 @@ def update_yaml_config(
     ----------
     config_file_path : str
         Path to the YAML configuration file to be read and updated.
-    target_section : str
-        The name of the top-level section in the YAML file where the new information
-        should be added or updated. For example, 'data' or 'visit_occurrence'.
     new_entry_key : str
         The key or label for the new information being added or updated within the
         specified section.
@@ -662,8 +659,8 @@ def update_yaml_config(
 
     Examples
     --------
-    >>> update_yaml_config('config.yaml', 'data', 'new_entry', {'key': 'value'})
-    >>> update_yaml_config('config.yaml', 'visit_occurrence', 'visit_1', {'date': '2023-09-26', 'doctor': 'Dr. Smith'})
+    >>> update_yaml_config('config.yaml', 'new_entry', {'key': 'value'})
+    >>> update_yaml_config('config.yaml', 'visit_1', {'date': '2023-09-26', 'doctor': 'Dr. Smith'})
     """
     # Read existing configuration
     config_data = read_yaml_config(config_file_path)
@@ -671,18 +668,10 @@ def update_yaml_config(
     # Update last modified timestamp
     config_data["Metadata"]["Last_modified"] = datetime.now().strftime("%Y/%m/%d %H:%M")
 
-    # Ensure the target section exists
-    if target_section not in config_data:
-        config_data[target_section] = {}
-
-    # Add or update the new entry in the specified section
-    if target_section:
-        config_data[target_section][new_entry_key] = new_entry_data
-    else:
-        config_data[new_entry_key] = new_entry_data
+    config_data[new_entry_key] = new_entry_data
 
     # Write updated configuration back to file
-    with open(config_file_path, "w", encoding="utf-8") as config_file:
+    with open(config_file_path, "w+", encoding="utf-8") as config_file:
         yaml.dump(
             config_data,
             config_file,
