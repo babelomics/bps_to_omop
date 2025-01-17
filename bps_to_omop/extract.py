@@ -13,7 +13,7 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import yaml
 
-from src.datasets import data_dir
+from datasets import data_dir
 
 # TODO: rename initialize_extraction so it feels more like a lookup function, which it is. Maybe remove it altogether?
 
