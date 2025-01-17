@@ -666,7 +666,10 @@ def update_yaml_config(
     config_data = read_yaml_config(config_file_path)
 
     # Update last modified timestamp
-    config_data["Metadata"]["Last_modified"] = datetime.now().strftime("%Y/%m/%d %H:%M")
+    try:
+        config_data["Metadata"]["Last_modified"] = datetime.now().strftime("%Y/%m/%d %H:%M")
+    except KeyError:
+        pass
 
     config_data[new_entry_key] = new_entry_data
 
