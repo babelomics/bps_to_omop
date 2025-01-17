@@ -622,21 +622,11 @@ def update_yaml_config(
     >>> update_yaml_config('config.yaml', 'new_entry', {'key': 'value'})
     >>> update_yaml_config('config.yaml', 'visit_1', {'date': '2023-09-26', 'doctor': 'Dr. Smith'})
     """
-    # Read existing configuration
-    config_data = read_yaml_config(config_file_path)
-
-    # Update last modified timestamp
+    # Read existing configuration and append new one
     try:
-        config_data["Metadata"]["Last_modified"] = datetime.now().strftime(
-            "%Y/%m/%d %H:%M"
-        )
-    except (KeyError, TypeError):
-        pass
-
-    # Append to existing or create new config
-    try:
+        config_data = read_yaml_config(config_file_path)
         config_data[new_entry_key] = new_entry_data
-    except TypeError:
+    except (FileNotFoundError, TypeError):
         config_data = new_entry_data
 
     # Write updated configuration back to file
