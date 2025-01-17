@@ -639,9 +639,7 @@ def update_yaml_config(
         )
 
 
-def apply_modifications(
-    input_dir: Path, yaml_file: str, output_dir: Path, verbose: int = 0
-) -> None:
+def apply_modifications(yaml_file: str, verbose: int = 0) -> None:
     """
     Apply modifications described in yaml file and save the modified files.
 
