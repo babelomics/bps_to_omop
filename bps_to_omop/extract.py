@@ -643,25 +643,40 @@ def update_yaml_config(
 def apply_modifications(
     input_dir: Path, yaml_file: str, output_dir: Path, verbose: int = 0
 ) -> None:
-    """Apply modifications described in yaml file and
-    save the modified files in the destination folder
+    """
+    Apply modifications described in yaml file and save the modified files.
+
+    This function reads a YAML configuration file, applies the specified
+    modifications to the input files, and saves the modified files to
+    the designated output locations.
 
     Parameters
     ----------
-    input_dir : Path
-        Common directory for all files.
     yaml_file : str
-        yaml file built using the functions:
-        1 - get_reading_params()
-        2 - find_matching_keys_on_files()
-        3 - get_date_parser_options()
-    output_dir : Path
-        Folder where modified files will be saved
+        Path to the YAML configuration file.
+        Expected to contain the following keys:
+            - input_dir: Path to the directory containing the input files.
+            - input_files: List of input filenames.
+            - output_dir: Path to the directory where the modified files will be saved.
+            - output_files: List of output filenames for each input file.
+                          e.g., {'file1.csv': 'output1.parquet', 'file2.csv': 'output2.parquet'}.
+            - read_options: Dictionary of read options for each input file,
+                          e.g., {'file1.csv': {'sep': ';'}, 'file2.csv': {'header': None}}.
+            - date_formats: Dictionary of date formatting options for each file and column,
+                           e.g.,
+                           {'file1.csv': {'date_column': {'format': '%Y-%m-%d'}},
+                            'file2.csv': {'timestamp_col': {'format': '%Y-%m-%d %H:%M:%S'}}}
+
     verbose : int, optional
-        Information output, by default 0
-        - 0 No info
-        - 1 Show stage in modification
-        - 2 Also show parameters used in reading and formating files
+        Verbosity level.
+        - 0: No information output. (default)
+        - 1: Show the stage in modification.
+        - 2: Also show parameters used in reading and formatting files.
+
+    Examples
+    --------
+    >>> apply_modifications("modifications.yaml")
+    >>> apply_modifications("modifications.yaml", verbose=2)
 
     """
 
