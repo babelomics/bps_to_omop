@@ -395,7 +395,8 @@ def find_matching_keys_on_files(
 
 
 def get_date_parser_options(
-    file_list: list[str],
+    data_dir: list,
+    file_list: list,
     date_columns: dict,
     candidate_formats: dict,
     csv_readoptions_dict: dict,
@@ -414,8 +415,10 @@ def get_date_parser_options(
 
     Parameters
     ----------
-    file_list : list[str]
-        List of files (absoluto or relative path)
+    data_dir : PosixPath
+        Common directory for all files.
+    file_list : list
+        Path of files from data_dir to try to read.
     date_columns : dict
         Dict with date columns (values) for each file (keys)
     candidate_formats : dict
@@ -459,7 +462,7 @@ def get_date_parser_options(
 
         # Read first nrows as string with readoptions
         df = pd.read_csv(
-            f,
+            data_dir / f,
             nrows=nrows,
             dtype="str",
             usecols=date_columns[f],
