@@ -710,20 +710,21 @@ def update_yaml_config(
 
 
 def apply_modifications(
-    yaml_file: str, destination_folder: str, verbose: int = 0
+    input_dir: Path, yaml_file: str, output_dir: Path, verbose: int = 0
 ) -> None:
     """Apply modifications described in yaml file and
     save the modified files in the destination folder
 
     Parameters
     ----------
+    input_dir : Path
+        Common directory for all files.
     yaml_file : str
         yaml file built using the functions:
-        1 - initialize_extraction()
-        2 - get_reading_params()
-        3 - find_matching_keys_on_files()
-        4 - get_date_parser_options()
-    destination_folder : str
+        1 - get_reading_params()
+        2 - find_matching_keys_on_files()
+        3 - get_date_parser_options()
+    output_dir : Path
         Folder where modified files will be saved
     verbose : int, optional
         Information output, by default 0
@@ -737,22 +738,22 @@ def apply_modifications(
     if verbose > 0:
         print("Reading configuration file...")
     yaml_dict = read_yaml_config(yaml_file)
-    files_list = yaml_dict["files_list"]
+    input_files = yaml_dict["input_files"]
     read_options = yaml_dict["read_options"]
     date_formats = yaml_dict["date_formats"]
+    output_files = yaml_dict["output_files"]
 
     # Iterate over filse and apply the changes
     if verbose > 0:
         print("Applying transformations...")
     new_files = {}
-    for i, f in enumerate(files_list[:]):
-        f_base = os.path.basename(f)
+    for i, f in enumerate(input_files[:]):
         if verbose > 0:
-            print(f" ({i/len(files_list)*100:<4.2f} %) Reading {f_base}")
+            print(f" ({i/len(files_list)*100:<4.2f} %) Reading {f}")
         if verbose > 1:
             print(f" > Read Options: \n{read_options[f]}")
         # Read file
-        df = pd.read_csv(f, **read_options[f], dtype="str")
+        df = pd.read_csv(input_dir / f, **read_options[f], dtype="str")
         # Read dates and resave
         for col, options in date_formats[f].items():
             try:
@@ -776,10 +777,10 @@ def apply_modifications(
             print(" > Resulting datatypes:")
             print(df.info())
         # Save to parquet
-        new_name = (
-            f"{destination_folder}{os.path.basename(f).replace('txt', 'parquet')}"
-        )
-        new_files[f] = new_name
+        # TODO: Change newname to be a variable in params file
+        new_name = output_dir / output_files[f]
+        os.makedirs(new_name.parent, exist_ok=True)
+        output_files[f] = f"{f.replace('txt', 'parquet')}"
         df.to_parquet(new_name)
 
     if verbose > 0:
