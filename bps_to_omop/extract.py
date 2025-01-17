@@ -6,6 +6,7 @@ import os
 import re
 from datetime import datetime
 from itertools import product
+from pathlib import PosixPath
 
 import pandas as pd
 import pyarrow as pa
@@ -208,7 +209,8 @@ def generate_param_combinations(candidate_params: dict) -> list[dict]:
 
 
 def get_reading_params(
-    file_list: list[str],
+    data_dir: PosixPath,
+    file_list: list,
     default_params: dict,
     candidate_params: dict,
     funcs_to_check: list,
@@ -219,7 +221,9 @@ def get_reading_params(
 
     Parameters
     ----------
-    file_list : list[str]
+    data_dir : PosixPath
+        Directory 
+    file_list : list
         List of files to try to read.
     default_params : dict
         Parameters that should work on every file.
@@ -247,7 +251,7 @@ def get_reading_params(
         candidate_params_list = generate_param_combinations(candidate_params)
         # Initialize the lists for the file
         for params in candidate_params_list:
-            _, error = try_read(f, params, default_params, funcs_to_check)
+            _, error = try_read(data_dir / f, params, default_params, funcs_to_check)
             if error is None:
                 readoptions_dict[f] = params
                 readoptions_dict[f].update(default_params)
