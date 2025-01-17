@@ -589,7 +589,10 @@ def update_yaml_config(
         config_data = read_yaml_config(config_file_path)
         config_data[new_entry_key] = new_entry_data
     except (FileNotFoundError, TypeError):
-        config_data = new_entry_data
+        if isinstance(new_entry_data, dict):
+            config_data = new_entry_data
+        else:
+            config_data = {new_entry_key: new_entry_data}
 
     # Write updated configuration back to file
     with open(config_file_path, "w+", encoding="utf-8") as config_file:

@@ -4,4 +4,9 @@ fileignoreconfig:
   ignore_detectors: 
     - filename
     - filecontent
+- filename: docs/Guide_extract_apply_modifications.ipynb
+  checksum: eebb6b62fbc23eea85d98cfd907be55ac27241e25768193ef26ae13fdaea31b5
+- filename: bps_to_omop/extract.py
+  checksum: 498f75c214ae3fc7e89ec622650f6bcefc6ca9938e1f13cb8ac8625508a9d577
+
 version: ""
