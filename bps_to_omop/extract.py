@@ -17,6 +17,7 @@ from bps_to_omop.datasets import data_dir
 
 # TODO: rename initialize_extraction so it feels more like a lookup function, which it is. Maybe remove it altogether?
 
+
 def get_file_paths_on_cond(
     dir_path: str, end_str: str = None, start_str: str = None
 ) -> list[str]:
@@ -247,7 +248,7 @@ def get_reading_params(
     """
     # Transform to path
     data_dir_local = PosixPath(data_dir)
-    
+
     # Iteramos sobre los archivos
     readoptions_dict = {}
     for f in file_list[:]:
@@ -256,7 +257,9 @@ def get_reading_params(
         candidate_params_list = generate_param_combinations(candidate_params)
         # Initialize the lists for the file
         for params in candidate_params_list:
-            _, error = try_read(data_dir_local / f, params, default_params, funcs_to_check)
+            _, error = try_read(
+                data_dir_local / f, params, default_params, funcs_to_check
+            )
             if error is None:
                 readoptions_dict[f] = params
                 readoptions_dict[f].update(default_params)
@@ -640,7 +643,9 @@ def read_yaml_config(config_file_path: str) -> dict:
 
 
 def update_yaml_config(
-    config_file_path: str,  new_entry_key: str, new_entry_data: dict,
+    config_file_path: str,
+    new_entry_key: str,
+    new_entry_data: dict,
 ) -> None:
     """
     Reads a YAML configuration file, updates or adds information in a specified section,
@@ -676,7 +681,9 @@ def update_yaml_config(
 
     # Update last modified timestamp
     try:
-        config_data["Metadata"]["Last_modified"] = datetime.now().strftime("%Y/%m/%d %H:%M")
+        config_data["Metadata"]["Last_modified"] = datetime.now().strftime(
+            "%Y/%m/%d %H:%M"
+        )
     except (KeyError, TypeError):
         pass
 
@@ -764,7 +771,9 @@ def apply_modifications(
             print(" > Resulting datatypes:")
             print(df.info())
         # Save to parquet
-        new_name = f"{destination_folder}{os.path.basename(f).replace('txt', 'parquet')}"
+        new_name = (
+            f"{destination_folder}{os.path.basename(f).replace('txt', 'parquet')}"
+        )
         new_files[f] = new_name
         df.to_parquet(new_name)
 
