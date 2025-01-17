@@ -390,7 +390,7 @@ def find_matching_keys_on_files(
         column_names = d.columns.to_list()
         date_columns[f] = find_matching_keys(column_names, search_words)
         if verbose > 0:
-            print(" ", os.path.basename(f), " => ", date_columns[f])
+            print(" ", f, " => ", date_columns[f])
     return date_columns
 
 
@@ -457,7 +457,7 @@ def get_date_parser_options(
 
         # -- Verbose! --
         if verbose > 0:
-            print(" ", os.path.basename(f))
+            print(" ", f)
         # --------------
 
         # Read first nrows as string with readoptions
