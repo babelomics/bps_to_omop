@@ -214,43 +214,6 @@ def get_reading_params(
     return readoptions_dict
 
 
-def find_matching_keys_on_dict(
-    dictionary: dict[str : list[str]], search_words: list[str]
-) -> dict[set]:
-    """Given a dictionary with filenames as keys and a list
-    of column names as values, will look for strings contained in those
-    lists and return a dictionary with the column names that matched.
-
-    It looks for substrings, not whole words.
-
-    Parameters
-    ----------
-    dictionary : dict[str:list[str]]
-        dictionary where keys are filenames, values are a list
-        with the column names
-    search_words : list[str]
-        list of search words to use
-
-    Returns
-    -------
-    dict[set]
-        dictionary where keys are filenames, values are a list
-        with the column names that matched.
-    """
-    # Initialiaze returning dict
-    matching_keys = {}
-    # Compile regex patterns for each search word
-    # re.IGNORECASE me vale para ignorar las caps
-    patterns = [
-        re.compile(rf"{re.escape(word)}", re.IGNORECASE) for word in search_words
-    ]
-    # Iterate over dict of list of column names
-    for key, string_list in dictionary.items():
-        # Find strings in each list
-        matching_keys[key] = find_matching_keys(string_list, search_words, patterns)
-    return matching_keys
-
-
 def find_matching_keys(
     string_list: list[str], search_words: list[str], patterns=None
 ) -> list:
