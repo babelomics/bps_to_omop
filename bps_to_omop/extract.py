@@ -13,6 +13,7 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import yaml
 
+# TODO: rename initialize_extraction so it feels more like a lookup function, which it is
 
 def get_file_paths_on_cond(
     dir_path: str, end_str: str = None, start_str: str = None
