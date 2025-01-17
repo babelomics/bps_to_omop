@@ -639,7 +639,7 @@ def update_yaml_config(
         )
 
 
-def apply_modifications(yaml_file: str, verbose: int = 0) -> None:
+def apply_modifications(data_dir: Path, yaml_file: str, verbose: int = 0) -> None:
     """
     Apply modifications described in yaml file and save the modified files.
 
@@ -649,6 +649,9 @@ def apply_modifications(yaml_file: str, verbose: int = 0) -> None:
 
     Parameters
     ----------
+    data_dir : pathlib.Path
+        Common folder where input and output files are stored. Usually provided by
+        environmental variables.
     yaml_file : str
         Path to the YAML configuration file.
         Expected to contain the following keys:
@@ -680,10 +683,12 @@ def apply_modifications(yaml_file: str, verbose: int = 0) -> None:
     # Get the extraction configuration parameters
     if verbose > 0:
         print("Reading configuration file...")
+
     yaml_dict = read_yaml_config(yaml_file)
-    input_dir = yaml_dict["input_dir"]
+
+    input_dir = data_dir / yaml_dict["input_dir"]
+    output_dir = data_dir / yaml_dict["output_dir"]
     input_files = yaml_dict["input_files"]
-    output_dir = yaml_dict["output_dir"]
     output_files = yaml_dict["output_files"]
     read_options = yaml_dict["read_options"]
     date_formats = yaml_dict["date_formats"]
