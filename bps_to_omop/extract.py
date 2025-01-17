@@ -669,10 +669,15 @@ def apply_modifications(
     if verbose > 0:
         print("Reading configuration file...")
     yaml_dict = read_yaml_config(yaml_file)
+    input_dir = yaml_dict["input_dir"]
     input_files = yaml_dict["input_files"]
+    output_dir = yaml_dict["output_dir"]
+    output_files = yaml_dict["output_files"]
     read_options = yaml_dict["read_options"]
     date_formats = yaml_dict["date_formats"]
-    output_files = yaml_dict["output_files"]
+
+    # Make sure we can write!
+    os.makedirs(output_dir, exist_ok=True)
 
     # Iterate over filse and apply the changes
     if verbose > 0:
@@ -708,15 +713,10 @@ def apply_modifications(
             print(" > Resulting datatypes:")
             print(df.info())
         # Save to parquet
-        # TODO: Change newname to be a variable in params file
         new_name = output_dir / output_files[f]
         os.makedirs(new_name.parent, exist_ok=True)
         output_files[f] = f"{f.replace('txt', 'parquet')}"
         df.to_parquet(new_name)
-
-    if verbose > 0:
-        print("Writing to configuration file...")
-    update_yaml_config(yaml_file, "new_files", new_files)
 
     if verbose > 0:
         print("Done!")
