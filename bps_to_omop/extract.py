@@ -224,9 +224,9 @@ def get_reading_params(
     Parameters
     ----------
     data_dir : PosixPath
-        Directory 
+        Common directory for all files.
     file_list : list
-        List of files to try to read.
+        Path of files from data_dir to try to read.
     default_params : dict
         Parameters that should work on every file.
     candidate_params : dict
@@ -351,7 +351,8 @@ def find_matching_keys(
 
 
 def find_matching_keys_on_files(
-    files_list: list[str],
+    data_dir: Path,
+    files_list: list,
     readoptions_dict: dict,
     search_words: list[str] = ("fecha", "fec", "inicio", "fin", "f_"),
     verbose: int = 0,
@@ -361,8 +362,10 @@ def find_matching_keys_on_files(
 
     Parameters
     ----------
-    files_list : list[str]
-        List of paths to files
+    data_dir : PosixPath
+        Common directory for all files.
+    file_list : list
+        Path of files from data_dir to try to read.
     readoptions_dict : dict
         dictionary where the key is the file path and the value is a
         dict with the list of options to pass to pd.read_csv to
@@ -383,7 +386,7 @@ def find_matching_keys_on_files(
     """
     date_columns = {}
     for f in files_list:
-        d = pd.read_csv(f, nrows=2, **readoptions_dict[f])
+        d = pd.read_csv(data_dir / f, nrows=2, **readoptions_dict[f])
         column_names = d.columns.to_list()
         date_columns[f] = find_matching_keys(column_names, search_words)
         if verbose > 0:
