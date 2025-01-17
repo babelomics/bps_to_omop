@@ -293,7 +293,7 @@ def find_matching_keys(
 
 def find_matching_keys_on_files(
     data_dir: Path,
-    files_list: list,
+    input_files: list,
     readoptions_dict: dict,
     search_words: list[str] = ("fecha", "fec", "inicio", "fin", "f_"),
     verbose: int = 0,
@@ -326,7 +326,7 @@ def find_matching_keys_on_files(
         columns in each file that contained any of the search_words.
     """
     date_columns = {}
-    for f in files_list:
+    for f in input_files:
         d = pd.read_csv(data_dir / f, nrows=2, **readoptions_dict[f])
         column_names = d.columns.to_list()
         date_columns[f] = find_matching_keys(column_names, search_words)
