@@ -8,5 +8,7 @@ fileignoreconfig:
   checksum: eebb6b62fbc23eea85d98cfd907be55ac27241e25768193ef26ae13fdaea31b5
 - filename: bps_to_omop/extract.py
   checksum: 498f75c214ae3fc7e89ec622650f6bcefc6ca9938e1f13cb8ac8625508a9d577
+- filename: docs/Guide_extract_apply_modifications.ipynb
+  checksum: af602f087c93c7d80c81d10c5cec68c25d1fa177484fb2d7bb336dc229f11d46
 
 version: ""
