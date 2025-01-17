@@ -6,14 +6,12 @@ import os
 import re
 from datetime import datetime
 from itertools import product
-from pathlib import PosixPath
+from pathlib import Path
 
 import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
 import yaml
-
-from bps_to_omop.datasets import data_dir
 
 # TODO: rename initialize_extraction so it feels more like a lookup function, which it is
 
@@ -213,7 +211,7 @@ def generate_param_combinations(candidate_params: dict) -> list[dict]:
 
 
 def get_reading_params(
-    data_dir: PosixPath,
+    data_dir: Path,
     file_list: list,
     default_params: dict,
     candidate_params: dict,
@@ -248,7 +246,7 @@ def get_reading_params(
         dictionary of sucessful parameters as values.
     """
     # Transform to path
-    data_dir_local = PosixPath(data_dir)
+    data_dir_local = Path(data_dir)
 
     # Iteramos sobre los archivos
     readoptions_dict = {}
