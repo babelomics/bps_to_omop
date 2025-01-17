@@ -4,7 +4,6 @@
 
 import os
 import re
-from datetime import datetime
 from itertools import product
 from pathlib import Path
 
@@ -697,7 +696,6 @@ def apply_modifications(
     # Iterate over filse and apply the changes
     if verbose > 0:
         print("Applying transformations...")
-    new_files = {}
     for i, f in enumerate(input_files[:]):
         if verbose > 0:
             print(f" ({i/len(input_files)*100:<4.2f} %) Reading {f}")
