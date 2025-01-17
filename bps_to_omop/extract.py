@@ -208,7 +208,7 @@ def get_reading_params(
                 + f"\nParams tried{candidate_params_list}"
             )
         elif verbose > 0:
-            print(f" {os.path.basename(f)} => {readoptions_dict[f]}")
+            print(f" {f} => {readoptions_dict[f]}")
 
     # Return
     return readoptions_dict
