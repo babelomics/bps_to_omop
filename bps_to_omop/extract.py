@@ -13,8 +13,6 @@ import pyarrow as pa
 import pyarrow.compute as pc
 import yaml
 
-# TODO: rename initialize_extraction so it feels more like a lookup function, which it is
-
 
 def get_file_paths_on_cond(
     dir_path: str, end_str: str = None, start_str: str = None
@@ -46,63 +44,6 @@ def get_file_paths_on_cond(
     # Normalize
     file_list = [os.path.normpath(f) for f in file_list]
     return file_list
-
-
-def initialize_extraction(
-    data_dirs: list[str],
-    config_file_path: str,
-    start_str: str = None,
-    end_str: str = None,
-) -> tuple[list[str], dict]:
-    """Initialize the extraction of the files in data_dirs that
-    verified the conditons start_str and end_str. Creates a yaml
-    configuration file in save_dir.
-
-    Parameters
-    ----------
-    data_dirs : list[str]
-        List of folders where data files can be found
-    config_file_path : str
-        Path to the YAML configuration file to be read and updated.
-    start_str : str, optional
-        string that has to appear at the begining of the basename
-        of the files in each data_dir to be used, by default None
-    end_str : str, optional
-        string that has to appear at the end of the basename
-        of the files in each data_dir to be used, by default None
-
-    Returns
-    -------
-    list[str]
-        List of files found
-    dict
-        Dictionary with the information contained in the yaml file
-    """
-
-    # Cribamos para archivos txt
-    file_list = []
-    # Make sure data_dirs is a list
-    data_dirs = [data_dirs] if not isinstance(data_dirs, list) else data_dirs
-    for data_dir in data_dirs:
-        file_list += get_file_paths_on_cond(
-            data_dir, start_str=start_str, end_str=end_str
-        )
-
-    # Creamos el diccionario general que guardará el yaml
-    yaml_data = {
-        "Metadata": {
-            "Created": datetime.now().strftime("%Y/%m/%d %H:%M"),
-            "Last_modified": datetime.now().strftime("%Y/%m/%d %H:%M"),
-        },
-        "files_list": file_list,
-    }
-
-    # Combinar la cabecera y los datos
-    with open(f"{config_file_path}", "w+", encoding="utf-8") as file:
-        yaml.dump(yaml_data, file, sort_keys=False)
-
-    # Return list of files
-    return file_list, yaml_data
 
 
 def try_read(
@@ -749,7 +690,7 @@ def apply_modifications(
     new_files = {}
     for i, f in enumerate(input_files[:]):
         if verbose > 0:
-            print(f" ({i/len(files_list)*100:<4.2f} %) Reading {f}")
+            print(f" ({i/len(input_files)*100:<4.2f} %) Reading {f}")
         if verbose > 1:
             print(f" > Read Options: \n{read_options[f]}")
         # Read file
