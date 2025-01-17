@@ -245,6 +245,9 @@ def get_reading_params(
         Dictionary with filenames/paths as keys and
         dictionary of sucessful parameters as values.
     """
+    # Transform to path
+    data_dir_local = PosixPath(data_dir)
+    
     # Iteramos sobre los archivos
     readoptions_dict = {}
     for f in file_list[:]:
@@ -253,7 +256,7 @@ def get_reading_params(
         candidate_params_list = generate_param_combinations(candidate_params)
         # Initialize the lists for the file
         for params in candidate_params_list:
-            _, error = try_read(data_dir / f, params, default_params, funcs_to_check)
+            _, error = try_read(data_dir_local / f, params, default_params, funcs_to_check)
             if error is None:
                 readoptions_dict[f] = params
                 readoptions_dict[f].update(default_params)
