@@ -15,7 +15,7 @@ import yaml
 
 from src.datasets import data_dir
 
-# TODO: rename initialize_extraction so it feels more like a lookup function, which it is
+# TODO: rename initialize_extraction so it feels more like a lookup function, which it is. Maybe remove it altogether?
 
 def get_file_paths_on_cond(
     dir_path: str, end_str: str = None, start_str: str = None
@@ -212,7 +212,6 @@ def generate_param_combinations(candidate_params: dict) -> list[dict]:
 
 
 def get_reading_params(
-    data_dir: PosixPath,
     file_list: list,
     default_params: dict,
     candidate_params: dict,
@@ -222,10 +221,10 @@ def get_reading_params(
     """Get the successful reading parameters from
     a candidates_params dict.
 
+    data_dir must be defined in environment variable. See datasets.py
+
     Parameters
     ----------
-    data_dir : PosixPath
-        Directory 
     file_list : list
         List of files to try to read.
     default_params : dict
