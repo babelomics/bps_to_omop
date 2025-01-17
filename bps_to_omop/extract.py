@@ -672,10 +672,14 @@ def update_yaml_config(
     # Update last modified timestamp
     try:
         config_data["Metadata"]["Last_modified"] = datetime.now().strftime("%Y/%m/%d %H:%M")
-    except KeyError:
+    except (KeyError, TypeError):
         pass
 
-    config_data[new_entry_key] = new_entry_data
+    # Append to existing or create new config
+    try:
+        config_data[new_entry_key] = new_entry_data
+    except TypeError:
+        config_data = new_entry_data
 
     # Write updated configuration back to file
     with open(config_file_path, "w+", encoding="utf-8") as config_file:
