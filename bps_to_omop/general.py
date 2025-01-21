@@ -131,7 +131,7 @@ def find_overlap_index(df: pd.DataFrame) -> pd.Series:
 def remove_overlap(
     df: pd.DataFrame,
     ncols: int = 4,
-    ascending_order: bool | list = False,
+    ascending_order: list = [True, True, False, True],
     verbose: int = 0,
     _counter: int = 0,
     _counter_lim: int = 1000,
@@ -156,7 +156,7 @@ def remove_overlap(
         will be used to sort.
         By default expects 4 columns: 'person_id', 'start_date', 'end_date'
         and some '*_concept_id', like 'visit_concept_id'.
-    ascending_order :  bool | list, optional, default False
+    ascending_order : list, optional, default [True, True, False, True]
         List of bools indicating if each row should have ascending or descending
         order.
         Important! By default all are true except third column, which is expected
@@ -193,9 +193,10 @@ def remove_overlap(
     # == Preparation =================================================
     # Retrieve the columns
     sorting_columns = [df.columns[i] for i in range(ncols)]
-    if not ascending_order:
-        ascending_order = [True, True, False]
-        ascending_order += [True for i in range(3, ncols)]
+    if ncols != len(ascending_order):
+        raise TypeError(
+            "'ncols' must coincide with the number of items in 'ascending_order'"
+        )
     # Sort the dataframe if first iteration
     if _counter == 0:
         if verbose > 0:
@@ -566,8 +567,7 @@ def fill_omop_table(
     for field in missing_fields:
         if verbose > 0:
             print(
-                f"  Adding: {field.name}, Type: {
-                    field.type}, Nullable: {field.nullable}"
+                f"  Adding: {field.name}, Type: {field.type}, Nullable: {field.nullable}"
             )
 
         if field.type not in [pa.int64(), pa.string()]:

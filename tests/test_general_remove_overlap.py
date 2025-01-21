@@ -251,7 +251,9 @@ def test_provider_id_singleday():
         end_date=lambda x: pd.to_datetime(x["end_date"]),
     )
 
-    result = remove_overlap(df_in, 5).reset_index(drop=True)
+    result = remove_overlap(
+        df_in, 5, ascending_order=[True, True, False, True, True]
+    ).reset_index(drop=True)
     pd.testing.assert_frame_equal(result, df_out)
 
 
@@ -284,5 +286,7 @@ def test_provider_id_singleday_and_multiday():
         end_date=lambda x: pd.to_datetime(x["end_date"]),
     )
 
-    result = remove_overlap(df_in, 5).reset_index(drop=True)
+    result = remove_overlap(
+        df_in, 5, ascending_order=[True, True, False, True, True]
+    ).reset_index(drop=True)
     pd.testing.assert_frame_equal(result, df_out)
