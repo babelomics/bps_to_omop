@@ -64,6 +64,50 @@ def test_bad_input_lenght():
         ).reset_index(drop=True)
 
 
+def test_warning_non_default_sorting():
+    """Test that a warning is raise when non defaults are used"""
+    df_in = pd.DataFrame(
+        {
+            "person_id": [1, 1, 2],
+            "start_date": ["2024-01-01", "2024-01-05", "2024-03-01"],
+            "end_date": ["2024-01-31", "2024-01-05", "2024-03-31"],
+            "visit_type": ["A", "B", "C"],
+        }
+    ).assign(
+        start_date=lambda x: pd.to_datetime(x["start_date"]),
+        end_date=lambda x: pd.to_datetime(x["end_date"]),
+    )
+
+    with pytest.warns(UserWarning):
+        _ = remove_overlap(
+            df_in,
+            sorting_columns=["person_id", "visit_type", "start_date", "end_date"],
+            ascending_order=[True, True, False, True],
+        ).reset_index(drop=True)
+
+
+def test_warning_non_default_ascending():
+    """Test that a warning is raise when non defaults are used"""
+    df_in = pd.DataFrame(
+        {
+            "person_id": [1, 1, 2],
+            "start_date": ["2024-01-01", "2024-01-05", "2024-03-01"],
+            "end_date": ["2024-01-31", "2024-01-05", "2024-03-31"],
+            "visit_type": ["A", "B", "C"],
+        }
+    ).assign(
+        start_date=lambda x: pd.to_datetime(x["start_date"]),
+        end_date=lambda x: pd.to_datetime(x["end_date"]),
+    )
+
+    with pytest.warns(UserWarning):
+        _ = remove_overlap(
+            df_in,
+            sorting_columns=["person_id", "start_date", "end_date", "visit_type"],
+            ascending_order=[True, True, True, True],
+        ).reset_index(drop=True)
+
+
 def test_exact_dates_single_day():
     """Test handling of overlapping single-day visits"""
     df_in = pd.DataFrame(
