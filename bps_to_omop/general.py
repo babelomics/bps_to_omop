@@ -191,7 +191,7 @@ def remove_overlap(
     # == Preparation =================================================
     # Sanity checks
     if len(sorting_columns) != len(ascending_order):
-        raise TypeError(
+        raise ValueError(
             "'sorting_columns' and 'ascending_order' lengths must be equal."
         )
 
