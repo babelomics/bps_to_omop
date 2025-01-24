@@ -9,6 +9,7 @@
 #
 
 import os
+from pathlib import Path
 from typing import Any, Dict
 
 import numpy as np
@@ -204,18 +205,20 @@ def remove_end_date(filename: str) -> pa.Table:
     return table.add_column(2, "end_date", table["start_date"])
 
 
-def gather_tables(config_file_path: str, verbose: int = 0) -> pa.Table:
+def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
     """Gather and process tables for creating the VISIT_OCCURRENCE table
     based on configuration.
 
-    This function reads a YAML configuration file, processes specified input files,
-    applies transformations, and assigns visit concept IDs to create a consolidated
-    VISIT_OCCURRENCE table.
+    This function receives a dictionary from a YAML configuration file,
+    processes specified input files, applies transformations, and assigns
+    visit concept IDs to create a consolidated VISIT_OCCURRENCE table.
 
     Parameters
     ----------
-    config_file_path : str
-        Path to the YAML configuration file.
+    data_dir : Path
+        Common directory for all files.
+    params : dict
+        dict containig the parameters.
     verbose : int, optional
         Information output, by default 0
         - 0 No info
@@ -245,29 +248,53 @@ def gather_tables(config_file_path: str, verbose: int = 0) -> pa.Table:
     if verbose > 0:
         print("Gathering tables...")
     # Load configuration
-    config = ext.read_yaml_config(config_file_path)
-    input_files = config["visit_occurrence"]["files_to_use"]
-    transformations = config["visit_occurrence"]["transformations"]
-    concept_id_functions = config["visit_occurrence"]["visit_concept_dict"]
-    provider_cols = config["visit_occurrence"]["provider_cols"]
-    provider_table_path = config["visit_occurrence"]["provider_table_path"]
+    mandatory_labels = [
+        "input_dir",
+        "output_dir",
+        "input_files",
+        "visit_concept_dict",
+        "n_days",
+    ]
+    possible_labels = {
+        "transformations": True,
+        "provider_cols": True,
+        "provider_table_path": True,
+    }
+
+    for lbl in mandatory_labels:
+        try:
+            _ = params[lbl]
+        except KeyError as e:
+            raise KeyError(f"Key {lbl} not found in params") from e
+
+    for lbl in possible_labels:
+        try:
+            _ = params[lbl]
+        except KeyError:
+            possible_labels[lbl] = False
+
+    input_dir = params["input_dir"]
+    input_files = params["input_files"]
+    transformations = params["transformations"]
+    concept_id_functions = params["visit_concept_dict"]
+    provider_cols = params["provider_cols"]
+    provider_table_path = params["provider_table_path"]
 
     processed_tables = []
 
     # Process each input file
     for input_file in input_files:
         if verbose > 0:
-            print(f"- Processing file: {os.path.basename(input_file)}")
+            print(f"- Processing file: {input_file}")
 
         # Read and transform the input table
-        raw_table = ad_hoc_read(input_file, transformations)
+        raw_table = ad_hoc_read(data_dir / input_dir / input_file, transformations)
 
         # Assign visit concept ID
-        file_name = os.path.basename(input_file)
-        concept_id = get_visit_concept_id(raw_table, concept_id_functions[file_name])
+        concept_id = get_visit_concept_id(raw_table, concept_id_functions[input_file])
 
         if concept_id is None:
-            raise KeyError(f"No visit concept ID assigned to file: {file_name}")
+            raise KeyError(f"No visit concept ID assigned to file: {input_file}")
 
         # Hasta aquí llega cada archivo completo. Como están ompizados
         # las columnas 'person_id', 'start_date', 'end_date', 'type_concept'
@@ -291,7 +318,7 @@ def gather_tables(config_file_path: str, verbose: int = 0) -> pa.Table:
         # Generate the mapping
         try:
             # Retrieve provider values
-            provider_id = raw_table.to_pandas()[provider_cols[file_name]]
+            provider_id = raw_table.to_pandas()[provider_cols[input_file]]
             # normalize content
             provider_id = provider_id.apply(gen.normalize_text)
             # Apply mapping
@@ -328,13 +355,11 @@ def gather_tables(config_file_path: str, verbose: int = 0) -> pa.Table:
     return processed_tables
 
 
-def clean_tables(
-    gathered_table: pa.Table, config_path: str, verbose: int = 0
-) -> pa.Table:
+def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa.Table:
     """
     Clean and process a table of medical visit records.
 
-    This function loads a configuration file, validates visit concept IDs,
+    This receives a dict with paramaters, validates visit concept IDs,
     converts them to a categorical type based on a specified order, and
     removes overlapping records.
 
@@ -342,8 +367,8 @@ def clean_tables(
     ----------
     gathered_table : pa.Table
         A PyArrow Table containing the raw visit records.
-    config_path : str
-        Path to the YAML configuration file.
+    params : dict
+        dictionary with the parameters from the YAML configuration file.
     verbose : int, optional
         Information output, by default 0
         - 0 No info
@@ -357,11 +382,6 @@ def clean_tables(
     pa.Table
         A PyArrow Table with cleaned and processed records.
 
-    Raises
-    ------
-    KeyError
-        If a visit_concept_id in the data is not present in the configuration.
-
     Notes
     -----
     The function expects the configuration file to contain a 'visit_occurrence'
@@ -370,8 +390,7 @@ def clean_tables(
     if verbose > 0:
         print("Cleaning records...")
     # Load configuration
-    config: Dict[str, Any] = ext.read_yaml_config(config_path)
-    visit_concept_order = config["visit_occurrence"]["visit_concept_order"]
+    visit_concept_order = params["visit_concept_order"]
 
     # Convert to dataframe
     df_raw = gathered_table.to_pandas()

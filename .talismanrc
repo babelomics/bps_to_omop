@@ -10,5 +10,7 @@ fileignoreconfig:
   checksum: 498f75c214ae3fc7e89ec622650f6bcefc6ca9938e1f13cb8ac8625508a9d577
 - filename: docs/Guide_extract_apply_modifications.ipynb
   checksum: af602f087c93c7d80c81d10c5cec68c25d1fa177484fb2d7bb336dc229f11d46
+- filename: bps_to_omop/visit_occurrence.py
+  checksum: fa86f06e38ac0d9079e9743ddc2373758af8dc31102b41ba3e18878563f3ae60
 
 version: ""
