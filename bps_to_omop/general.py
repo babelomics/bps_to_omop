@@ -857,7 +857,7 @@ def map_source_value(
     - The original DataFrame is not modified; a copy is returned
     """
     # Get unique vocabularies
-    vocabs: np.ndarray = df["vocabulary_id"].unique()
+    vocabs = df["vocabulary_id"].unique()
     if len(vocabs) == 0:
         raise ValueError("No vocab found.")
 
