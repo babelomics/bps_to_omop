@@ -14,7 +14,7 @@ import yaml
 
 
 def get_file_paths_on_cond(
-    dir_path: str, end_str: str = None, start_str: str = None
+    dir_path: Path, end_str: str = None, start_str: str = None
 ) -> list[str]:
     """Returns a list of files present on a giving directory.
 
@@ -22,7 +22,7 @@ def get_file_paths_on_cond(
 
     Parameters
     ----------
-    dir_path : str
+    dir_path : Path
         path where to look for files
     end_str : str, optional
         String that must appear at the end of filename, by default None
@@ -37,9 +37,9 @@ def get_file_paths_on_cond(
     """
     file_list = os.listdir(dir_path)
     if end_str:
-        file_list = [f"{dir_path}/{f}" for f in file_list if f.endswith(end_str)]
+        file_list = [dir_path / f for f in file_list if f.endswith(end_str)]
     if start_str:
-        file_list = [f"{dir_path}/{f}" for f in file_list if f.startswith(start_str)]
+        file_list = [dir_path / f for f in file_list if f.startswith(start_str)]
     # Normalize
     file_list = [os.path.normpath(f) for f in file_list]
     return file_list
@@ -163,7 +163,7 @@ def get_reading_params(
 
     Parameters
     ----------
-    data_dir : PosixPath
+    data_dir : Path
         Common directory for all files.
     file_list : list
         Path of files from data_dir to try to read.
@@ -265,7 +265,7 @@ def find_matching_keys_on_files(
 
     Parameters
     ----------
-    data_dir : PosixPath
+    data_dir : Path
         Common directory for all files.
     file_list : list
         Path of files from data_dir to try to read.
@@ -318,7 +318,7 @@ def get_date_parser_options(
 
     Parameters
     ----------
-    data_dir : PosixPath
+    data_dir : Path
         Common directory for all files.
     file_list : list
         Path of files from data_dir to try to read.
@@ -615,7 +615,7 @@ def apply_modifications(data_dir: Path, yaml_file: str, verbose: int = 0) -> Non
 
     Parameters
     ----------
-    data_dir : pathlib.Path
+    data_dir : Path
         Common folder where input and output files are stored. Usually provided by
         environmental variables.
     yaml_file : str
