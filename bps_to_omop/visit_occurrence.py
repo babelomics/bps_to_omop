@@ -381,10 +381,8 @@ def clean_tables(
     unique_concept_ids = df_raw["visit_concept_id"].unique()
     missing_concepts = set(unique_concept_ids) - set(visit_concept_order)
     if missing_concepts:
-        raise KeyError(
-            f"visit_concept(s) {', '.join(
-            map(str, missing_concepts))} are not in visit_concept_order"
-        )
+        errs = ", ".join(map(str, missing_concepts))
+        raise KeyError(f"visit_concept(s) {errs} are not in visit_concept_order")
 
     # Convert to categorical
     df_raw["visit_concept_id"] = pd.Categorical(
