@@ -111,6 +111,7 @@ def transform_gender(
     tuple[pa.array, pa.array, pa.array]
         _description_
     """
+    # TODO: Simplify this. Sometimes you only have one field. Just do the mapping.
     # -- Sacamos el array que transformaremos
     # Por convenio, el primer campo, por defecto CODSEXO,
     # representa el código del género, que definirá el
