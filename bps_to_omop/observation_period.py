@@ -112,7 +112,7 @@ def prepare_table_raw_to_rare(
     return table_rare
 
 
-def ad_hoc_read(filename: str) -> pa.Table | None:
+def ad_hoc_read(filename: str) -> pa.Table:
     """Wrapper for ad_hoc functions to deal with specific files
     if needed.
 
