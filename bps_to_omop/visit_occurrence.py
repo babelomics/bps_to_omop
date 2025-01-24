@@ -252,35 +252,23 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
     if verbose > 0:
         print("Gathering tables...")
     # Load configuration
-    mandatory_labels = [
-        "input_dir",
-        "output_dir",
-        "input_files",
-        "visit_concept_dict",
-    ]
-    possible_labels = {
-        "transformations": True,
-        "provider_cols": True,
-        "provider_table_path": True,
-    }
+    input_dir = params["input_dir"]
+    input_files = params["input_files"]
+    concept_id_functions = params["visit_concept_dict"]
 
-    for lbl in mandatory_labels:
-        try:
-            _ = params[lbl]
-        except KeyError as e:
-            raise KeyError(f"Key {lbl} not found in params") from e
+    # Prepare possible parameters
+    possible_labels = [
+        "transformations",
+        "provider_cols",
+        "provider_table_path",
+    ]
 
     for lbl in possible_labels:
         try:
             _ = params[lbl]
         except KeyError:
-            possible_labels[lbl] = False
+            params[lbl] = None
             print(f" {lbl} not found. Moving on...")
-
-    input_dir = params["input_dir"]
-    input_files = params["input_files"]
-    transformations = params["transformations"]
-    concept_id_functions = params["visit_concept_dict"]
 
     processed_tables = []
 
@@ -291,7 +279,9 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
             print(f"- File: {input_file}")
 
         # Read and transform the input table
-        raw_table = ad_hoc_read(data_dir / input_dir, input_file, transformations)
+        raw_table = ad_hoc_read(
+            data_dir / input_dir, input_file, params["transformations"]
+        )
 
         # Assign visit concept ID
         concept_id = get_visit_concept_id(raw_table, concept_id_functions[input_file])
@@ -315,7 +305,7 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
         )
 
         # -- PROVIDER -------------------------------------------------
-        if possible_labels["provider_table_path"]:
+        if params["provider_table_path"]:
             # Read params
             provider_cols = params["provider_cols"]
             provider_table_path = params["provider_table_path"]
