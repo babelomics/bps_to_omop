@@ -272,13 +272,12 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
             _ = params[lbl]
         except KeyError:
             possible_labels[lbl] = False
+            print(f" Ignoring {lbl}...")
 
     input_dir = params["input_dir"]
     input_files = params["input_files"]
     transformations = params["transformations"]
     concept_id_functions = params["visit_concept_dict"]
-    provider_cols = params["provider_cols"]
-    provider_table_path = params["provider_table_path"]
 
     processed_tables = []
 
@@ -296,30 +295,43 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
         if concept_id is None:
             raise KeyError(f"No visit concept ID assigned to file: {input_file}")
 
+        final_columns = [
+            "person_id",
+            "start_date",
+            "end_date",
+            "provider_id",
+            "type_concept",
+        ]
+
         # -- PROVIDER -------------------------------------------------
-        # Read PROVIDER table
-        provider_table = parquet.read_table(provider_table_path).to_pandas()
-        provider_map = dict(
-            zip(provider_table["provider_name"], provider_table["provider_id"])
-        )
-        # Generate the mapping
-        try:
-            # Retrieve provider values
-            provider_id = raw_table.to_pandas()[provider_cols[input_file]]
-            # normalize content
-            provider_id = provider_id.apply(gen.normalize_text)
-            # Apply mapping
-            provider_id = provider_id.map(provider_map)
-        except KeyError:
-            # Create an array of nuls
-            provider_id = gen.create_null_int_array(len(raw_table))
-        # Append a new column with the provider_id
-        raw_table = raw_table.append_column("provider_id", [provider_id])
+        if possible_labels["provider_table_path"]:
+            # Read params
+            provider_cols = params["provider_cols"]
+            provider_table_path = params["provider_table_path"]
+            # Read PROVIDER table
+            provider_table = parquet.read_table(provider_table_path).to_pandas()
+            provider_map = dict(
+                zip(provider_table["provider_name"], provider_table["provider_id"])
+            )
+            # Generate the mapping
+            try:
+                # Retrieve provider values
+                provider_id = raw_table.to_pandas()[provider_cols[input_file]]
+                # normalize content
+                provider_id = provider_id.apply(gen.normalize_text)
+                # Apply mapping
+                provider_id = provider_id.map(provider_map)
+            except KeyError:
+                # Create an array of nuls
+                provider_id = gen.create_null_int_array(len(raw_table))
+            # Append a new column with the provider_id
+            raw_table = raw_table.append_column("provider_id", [provider_id])
+            final_columns.append("provider_id")
 
         # Select relevant columns and add visit_concept_id
-        processed_table = raw_table.select(
-            ["person_id", "start_date", "end_date", "provider_id", "type_concept"]
-        ).add_column(4, "visit_concept_id", [concept_id])
+        processed_table = raw_table.select(final_columns).add_column(
+            4, "visit_concept_id", [concept_id]
+        )
 
         processed_tables.append(processed_table)
 
