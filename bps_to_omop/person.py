@@ -23,8 +23,8 @@ def transform_person_id(
     """Transform field_name from input_table to fit into
     person_id et al fields in an OMOP-CDM instance.
 
-    person_id tiene que ser un integer, así que hemos
-    quitado las dos letras y convertido a int32.
+    person_id tiene must be integer, we removed letters and
+    changed to int32.
 
     Parameters
     ----------
@@ -39,14 +39,13 @@ def transform_person_id(
         tuple with two pyarrow arrays for the OMOP fields:
         ('person_id','person_source_value')
     """
-    # Sacamos el array que transformaremos
-    inp_field = input_table[input_fieldname]
-    # Guardamos ya el _source_value
-    person_source_value_tmp = inp_field
-    # Quitamos las primeras letras y cambiamos a int32
-    person_id_tmp = pc.utf8_slice_codeunits(inp_field, 2)  # pylint: disable=E1101
+    person_source_value_tmp = input_table[input_fieldname]
+    # Remove first letters and switch to int32
+    person_id_tmp = pc.utf8_slice_codeunits(
+        person_source_value_tmp, 2
+    )  # pylint: disable=E1101
     person_id_tmp = person_id_tmp.cast(pa.int64())
-    # Acabar con person_id
+
     return (person_id_tmp, person_source_value_tmp)
 
 
