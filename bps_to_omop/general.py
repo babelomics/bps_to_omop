@@ -130,8 +130,8 @@ def find_overlap_index(df: pd.DataFrame) -> pd.Series:
 
 def remove_overlap(
     df: pd.DataFrame,
-    ncols: int = 4,
-    ascending_order: list = [True, True, False, True],
+    sorting_columns: tuple,
+    ascending_order: tuple,
     verbose: int = 0,
     _counter: int = 0,
     _counter_lim: int = 1000,
@@ -151,16 +151,14 @@ def remove_overlap(
         Selection of columns is done by selecting ncols in order.
         This allows its use for different tables with columns
         that have the same purpose but different names.
-    ncols : int, optional, default 4
-        number of columns to use for sorting. The first nrows columns
-        will be used to sort.
-        By default expects 4 columns: 'person_id', 'start_date', 'end_date'
+    sorting_columns : tuple
+        Columns to use for sorting.
+        Usually, expects 4 columns: 'person_id', 'start_date', 'end_date'
         and some '*_concept_id', like 'visit_concept_id'.
-    ascending_order : list, optional, default [True, True, False, True]
+    ascending_order : tuple
         List of bools indicating if each row should have ascending or descending
         order.
-        Important! By default all are true except third column, which is expected
-        to be end_date. See Notes.
+        Important! Usually all are true except end_date column. See Notes.
     verbose : int, optional, default 0
         Information output
         - 0 No info
@@ -191,12 +189,20 @@ def remove_overlap(
     columns provided will leave any missing values out in case of overlapping records.
     """
     # == Preparation =================================================
-    # Retrieve the columns
-    sorting_columns = [df.columns[i] for i in range(ncols)]
-    if ncols != len(ascending_order):
+    # Sanity checks
+    if len(sorting_columns) != len(ascending_order):
         raise TypeError(
-            "'ncols' must coincide with the number of items in 'ascending_order'"
+            "'sorting_columns' and 'ascending_order' lengths must be equal."
         )
+
+    cond_sort = sorting_columns[:3] != ["person_id", "start_date", "end_date"]
+    cond_asce = ascending_order[:3] != [True, True, False]
+    if cond_sort or cond_asce:
+        warnings.warn(
+            "Sorting and ascending initial columns are not the expected order. \
+                 Make sure data output is correct."
+        )
+
     # Sort the dataframe if first iteration
     if _counter == 0:
         if verbose > 0:
@@ -223,7 +229,7 @@ def remove_overlap(
             idx_max = df.index.get_loc(idx_to_remove.idxmax())
             print(f"{df.iloc[(idx_max-1):idx_max+1, :4]}")
         return remove_overlap(
-            df.loc[~idx_to_remove], ncols, ascending_order, verbose, _counter
+            df.loc[~idx_to_remove], sorting_columns, ascending_order, verbose, _counter
         )
     else:
         return df

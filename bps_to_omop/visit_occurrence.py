@@ -383,6 +383,8 @@ def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa
         print("Cleaning records...")
     # Load configuration
     visit_concept_order = params["visit_concept_order"]
+    sorting_columns = params["remove_overlap"]["sorting_columns"]
+    ascending_order = params["remove_overlap"]["ascending_order"]
 
     # Convert to dataframe
     df_raw = gathered_table.to_pandas()
@@ -401,7 +403,9 @@ def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa
     )
 
     # -- Remove overlap
-    df_done = gen.remove_overlap(df_raw, ncols=5, verbose=verbose)
+    df_done = gen.remove_overlap(
+        df_raw, sorting_columns, ascending_order, verbose=verbose
+    )
 
     # Convert back to PyArrow Table
     return pa.Table.from_pandas(df_done, preserve_index=False)
