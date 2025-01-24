@@ -296,19 +296,6 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
         if concept_id is None:
             raise KeyError(f"No visit concept ID assigned to file: {input_file}")
 
-        # Hasta aquí llega cada archivo completo. Como están ompizados
-        # las columnas 'person_id', 'start_date', 'end_date', 'type_concept'
-        # están ya.
-
-        # Ahora habría que buscar una manera de añadir un provider_id, si lo
-        # hubiere.
-        # - Habría que añadir al config un dict que enlace cada archivo con su
-        #   columna que indique el provider.
-        # - Habría que añadir al config la ruta a la tabla PROVIDER
-        # Con esta info podríamos sacar un provider_source_value, mapearlo
-        # según la tabla PROVIDER y poner en el campo provider_id de
-        # VISIT_OCCURRENCE el valor correspondiente.
-
         # -- PROVIDER -------------------------------------------------
         # Read PROVIDER table
         provider_table = parquet.read_table(provider_table_path).to_pandas()
