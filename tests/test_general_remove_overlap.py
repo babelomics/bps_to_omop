@@ -34,8 +34,34 @@ def test_simple_overlap():
         start_date=lambda x: pd.to_datetime(x["start_date"]),
         end_date=lambda x: pd.to_datetime(x["end_date"]),
     )
-    result = remove_overlap(df_in).reset_index(drop=True)
+    result = remove_overlap(
+        df_in,
+        sorting_columns=["person_id", "start_date", "end_date", "visit_type"],
+        ascending_order=[True, True, False, True],
+    ).reset_index(drop=True)
     pd.testing.assert_frame_equal(result, df_out)
+
+
+def test_bad_input_lenght():
+    """Test that different lengths are not allowed"""
+    df_in = pd.DataFrame(
+        {
+            "person_id": [1, 1, 2],
+            "start_date": ["2024-01-01", "2024-01-05", "2024-03-01"],
+            "end_date": ["2024-01-31", "2024-01-05", "2024-03-31"],
+            "visit_type": ["A", "B", "C"],
+        }
+    ).assign(
+        start_date=lambda x: pd.to_datetime(x["start_date"]),
+        end_date=lambda x: pd.to_datetime(x["end_date"]),
+    )
+
+    with pytest.raises(ValueError):
+        _ = remove_overlap(
+            df_in,
+            sorting_columns=["person_id", "start_date", "end_date", "visit_type"],
+            ascending_order=[True, True, False],
+        ).reset_index(drop=True)
 
 
 def test_exact_dates_single_day():
@@ -62,7 +88,11 @@ def test_exact_dates_single_day():
         start_date=lambda x: pd.to_datetime(x["start_date"]),
         end_date=lambda x: pd.to_datetime(x["end_date"]),
     )
-    result = remove_overlap(df_in).reset_index(drop=True)
+    result = remove_overlap(
+        df_in,
+        sorting_columns=["person_id", "start_date", "end_date", "visit_type"],
+        ascending_order=[True, True, False, True],
+    ).reset_index(drop=True)
 
     pd.testing.assert_frame_equal(result, df_out)
 
@@ -91,7 +121,11 @@ def test_exact_dates_multiday():
         start_date=lambda x: pd.to_datetime(x["start_date"]),
         end_date=lambda x: pd.to_datetime(x["end_date"]),
     )
-    result = remove_overlap(df_in).reset_index(drop=True)
+    result = remove_overlap(
+        df_in,
+        sorting_columns=["person_id", "start_date", "end_date", "visit_type"],
+        ascending_order=[True, True, False, True],
+    ).reset_index(drop=True)
 
     pd.testing.assert_frame_equal(result, df_out)
 
@@ -121,7 +155,11 @@ def test_different_patients():
         end_date=lambda x: pd.to_datetime(x["end_date"]),
     )
 
-    result = remove_overlap(df_in).reset_index(drop=True)
+    result = remove_overlap(
+        df_in,
+        sorting_columns=["person_id", "start_date", "end_date", "visit_type"],
+        ascending_order=[True, True, False, True],
+    ).reset_index(drop=True)
     pd.testing.assert_frame_equal(result, df_out)
 
 
@@ -135,7 +173,11 @@ def test_empty_dataframe():
         end_date=lambda x: pd.to_datetime(x["end_date"]),
     )
 
-    result = remove_overlap(df)
+    result = remove_overlap(
+        df,
+        sorting_columns=["person_id", "start_date", "end_date", "visit_type"],
+        ascending_order=[True, True, False, True],
+    )
     assert len(result) == 0
 
 
@@ -153,7 +195,11 @@ def test_single_row():
         end_date=lambda x: pd.to_datetime(x["end_date"]),
     )
 
-    result = remove_overlap(df)
+    result = remove_overlap(
+        df,
+        sorting_columns=["person_id", "start_date", "end_date", "visit_type"],
+        ascending_order=[True, True, False, True],
+    )
     pd.testing.assert_frame_equal(result, df)
 
 
@@ -189,7 +235,11 @@ def test_multiple_overlaps():
         end_date=lambda x: pd.to_datetime(x["end_date"]),
     )
 
-    result = remove_overlap(df_in).reset_index(drop=True)
+    result = remove_overlap(
+        df_in,
+        sorting_columns=["person_id", "start_date", "end_date", "visit_type"],
+        ascending_order=[True, True, False, True],
+    ).reset_index(drop=True)
     pd.testing.assert_frame_equal(result, df_out)
 
 
@@ -218,7 +268,11 @@ def test_mixed_single_and_multiple_day_visits():
         end_date=lambda x: pd.to_datetime(x["end_date"]),
     )
 
-    result = remove_overlap(df_in).reset_index(drop=True)
+    result = remove_overlap(
+        df_in,
+        sorting_columns=["person_id", "start_date", "end_date", "visit_type"],
+        ascending_order=[True, True, False, True],
+    ).reset_index(drop=True)
     pd.testing.assert_frame_equal(result, df_out)
 
 
@@ -252,7 +306,15 @@ def test_provider_id_singleday():
     )
 
     result = remove_overlap(
-        df_in, 5, ascending_order=[True, True, False, True, True]
+        df_in,
+        sorting_columns=[
+            "person_id",
+            "start_date",
+            "end_date",
+            "visit_type",
+            "provider_id",
+        ],
+        ascending_order=[True, True, False, True, True],
     ).reset_index(drop=True)
     pd.testing.assert_frame_equal(result, df_out)
 
@@ -287,6 +349,14 @@ def test_provider_id_singleday_and_multiday():
     )
 
     result = remove_overlap(
-        df_in, 5, ascending_order=[True, True, False, True, True]
+        df_in,
+        sorting_columns=[
+            "person_id",
+            "start_date",
+            "end_date",
+            "visit_type",
+            "provider_id",
+        ],
+        ascending_order=[True, True, False, True, True],
     ).reset_index(drop=True)
     pd.testing.assert_frame_equal(result, df_out)
