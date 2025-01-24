@@ -94,7 +94,7 @@ def get_visit_concept_id(
         return np.where(idx, code, array)
 
     def field_code(
-        table: pa.Table, array: np.ndarray, code: int, colname: str, colvalue: str | int
+        table: pa.Table, array: np.ndarray, code: int, colname: str, colvalue: Any
     ) -> np.ndarray:
         """This file codes depend on the values of a field in table.
         The arguments relate to the name of the column and the value
@@ -171,7 +171,7 @@ def ad_hoc_read(data_dir: Path, filename: str, transformations: dict) -> pa.Tabl
     func_dict = {"remove_end_date": remove_end_date}
 
     if not isinstance(transformations, dict):
-        return parquet.read_table(filename)
+        return parquet.read_table(data_dir / filename)
 
     elif filename in transformations:
         transform_func, *args = transformations[filename]
@@ -181,10 +181,10 @@ def ad_hoc_read(data_dir: Path, filename: str, transformations: dict) -> pa.Tabl
                 raise ValueError(
                     f"The transformation for {filename}" + "is not a callable function."
                 )
-        return transform_func(filename, *args)
+        return transform_func(data_dir / filename, *args)
 
     else:
-        return parquet.read_table(filename)
+        return parquet.read_table(data_dir / filename)
 
 
 def remove_end_date(filename: str) -> pa.Table:
@@ -303,9 +303,16 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
             "person_id",
             "start_date",
             "end_date",
-            "provider_id",
             "type_concept",
         ]
+        tmp_schema = pa.schema(
+            [
+                ("person_id", pa.int64()),
+                ("start_date", pa.timestamp("us")),
+                ("end_date", pa.timestamp("us")),
+                ("type_concept", pa.int64()),
+            ]
+        )
 
         # -- PROVIDER -------------------------------------------------
         if possible_labels["provider_table_path"]:
@@ -331,30 +338,22 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
             # Append a new column with the provider_id
             raw_table = raw_table.append_column("provider_id", [provider_id])
             final_columns.append("provider_id")
+            tmp_schema = tmp_schema.append(pa.field("provider_id", pa.int64()))
 
         # Select relevant columns and add visit_concept_id
-        processed_table = raw_table.select(final_columns).add_column(
-            4, "visit_concept_id", [concept_id]
+        processed_table = raw_table.select(final_columns).append_column(
+            "visit_concept_id", [concept_id]
         )
+        tmp_schema = tmp_schema.append(pa.field("visit_concept_id", pa.int64()))
 
         processed_tables.append(processed_table)
 
     # Combine all processed tables
     processed_tables = pa.concat_tables(processed_tables)
-    # Force timestamp datatype
+    # Cast to force timestamp
     # It is quicker and keeps rows with hour information
-    processed_tables = processed_tables.cast(
-        pa.schema(
-            [
-                ("person_id", pa.int64()),
-                ("start_date", pa.timestamp("us")),
-                ("end_date", pa.timestamp("us")),
-                ("provider_id", pa.int64()),
-                ("visit_concept_id", pa.int64()),
-                ("type_concept", pa.int64()),
-            ]
-        )
-    )
+    processed_tables = processed_tables.cast(tmp_schema)
+
     return processed_tables
 
 
