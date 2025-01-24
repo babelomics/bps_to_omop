@@ -125,7 +125,7 @@ def get_visit_concept_id(
     return visit_concept_id
 
 
-def ad_hoc_read(filename: str, transformations: dict) -> pa.Table:
+def ad_hoc_read(data_dir: Path, filename: str, transformations: dict) -> pa.Table:
     """
     Read a Parquet file and apply custom transformations if needed.
 
@@ -135,6 +135,8 @@ def ad_hoc_read(filename: str, transformations: dict) -> pa.Table:
 
     Parameters
     ----------
+    data_dir : Path
+        Common directory for the file.
     filename : str
         Path to the Parquet file to be read.
     transformations : dict
@@ -163,24 +165,26 @@ def ad_hoc_read(filename: str, transformations: dict) -> pa.Table:
     >>> transformations = {'example.parquet': [remove_end_date,]}
     >>> result = ad_hoc_read('example.parquet', transformations)
     """
-    if not os.path.exists(filename):
+    if not os.path.exists(data_dir / filename):
         raise FileNotFoundError(f"The file {filename} does not exist.")
 
     func_dict = {"remove_end_date": remove_end_date}
 
-    basename = os.path.basename(filename)
+    if not isinstance(transformations, dict):
+        return parquet.read_table(filename)
 
-    if basename in transformations:
-        transform_func, *args = transformations[basename]
+    elif filename in transformations:
+        transform_func, *args = transformations[filename]
         if not callable(transform_func):
             transform_func = func_dict[transform_func]
             if not callable(transform_func):
                 raise ValueError(
-                    f"The transformation for {basename}" + "is not a callable function."
+                    f"The transformation for {filename}" + "is not a callable function."
                 )
         return transform_func(filename, *args)
 
-    return parquet.read_table(filename)
+    else:
+        return parquet.read_table(filename)
 
 
 def remove_end_date(filename: str) -> pa.Table:
@@ -253,7 +257,6 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
         "output_dir",
         "input_files",
         "visit_concept_dict",
-        "n_days",
     ]
     possible_labels = {
         "transformations": True,
@@ -272,7 +275,7 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
             _ = params[lbl]
         except KeyError:
             possible_labels[lbl] = False
-            print(f" Ignoring {lbl}...")
+            print(f" {lbl} not found. Moving on...")
 
     input_dir = params["input_dir"]
     input_files = params["input_files"]
@@ -282,12 +285,13 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
     processed_tables = []
 
     # Process each input file
+    print("Processing:")
     for input_file in input_files:
         if verbose > 0:
-            print(f"- Processing file: {input_file}")
+            print(f"- File: {input_file}")
 
         # Read and transform the input table
-        raw_table = ad_hoc_read(data_dir / input_dir / input_file, transformations)
+        raw_table = ad_hoc_read(data_dir / input_dir, input_file, transformations)
 
         # Assign visit concept ID
         concept_id = get_visit_concept_id(raw_table, concept_id_functions[input_file])
