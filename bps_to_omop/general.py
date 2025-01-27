@@ -22,8 +22,8 @@ def create_uniform_int_array(length: int, value: int = 0) -> pa.array:
     ----------
     length : int
         length of the array.
-    value : int, optional
-        Value that fills the array, by default 0
+    value : int, optional, default 0
+        Value that fills the array
 
     Returns
     -------
@@ -168,8 +168,8 @@ def remove_overlap(
     _counter : int
         Iteration control param. Number of iterations.
         0 will be used to begin and function will take over.
-    _counter_lim : int, optional
-        Iteration control param. Limit of iterations, by default 1000
+    _counter_lim : int, optional, default 1000
+        Iteration control param. Limit of iterations
 
     Returns
     -------
@@ -291,7 +291,7 @@ def group_dates(df: pd.DataFrame, n_days: int, verbose: int = 0) -> pd.DataFrame
         them as separate periods. Any interval under n_days will be
         removed. Any interval above n_days will be kept.
     verbose : int, optional
-        Information output, by default 0
+        Information output, default 0
         - 0 No info
         - 1 Show stage of processing
 
@@ -395,8 +395,8 @@ def find_visit_occurence_id(
         'visit_end_date', 'visit_occurrence_id'.
         Column names need to be the same. This is to ensure
         the correct table (VISIT_OCCURRENCE) is being used.
-    verbose : int, optional
-        Verbosity level for function output (default is 0).
+    verbose : int, optional, default 0
+        Verbosity level for function output.
         0: No output
         1: Additionally, print state of the processing
         2+: Additionally, print all debug information
@@ -547,9 +547,10 @@ def fill_omop_table(
         The input PyArrow table to be filled.
     omop_schema : pa.Schema
         The target OMOP schema to conform to.
-    verbose : int, optional
-        Verbosity level for logging. If > 0, prints information about added columns.
-        Default is 0 (no verbose output).
+    verbose : int, optional, default 0
+        Verbosity level for function output.
+        0: No output
+        1+: Prints information about added columns.
 
     Returns
     -------
