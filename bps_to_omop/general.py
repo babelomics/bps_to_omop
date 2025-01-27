@@ -876,13 +876,13 @@ def map_source_value(
 
     # Create a copy of the input DataFrame to store results
     result_df = df.copy()
-    result_df["source_concept_id"] = np.nan
+    result_df[concept_id_column] = np.nan
 
     # Process each vocabulary
     for vocab in vocabs:
         # Create masks for current vocabulary
         df_mask = df[vocabulary_column] == vocab
-        concept_mask = concept_df[vocabulary_column] == vocab
+        concept_mask = concept_df["vocabulary_id"] == vocab
 
         # Get subset of data for current vocabulary
         df_subset = df[df_mask]
