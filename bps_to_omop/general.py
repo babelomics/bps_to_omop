@@ -811,7 +811,7 @@ def get_icd_codes(code_bps: str, bps_df: pd.DataFrame) -> list[tuple[str, str]]:
 def map_source_value(
     df: pd.DataFrame, col_to_map: str, concept_df: pd.DataFrame
 ) -> pd.DataFrame:
-    """Map *_source_value concepts to concept IDs across multiple vocabularies.
+    """Map source_value concepts to concept IDs across multiple vocabularies.
 
     This function takes two dataframes - one containing source concepts and another
     containing the OMOP CONCEPT table (concept_df) - and maps the source concepts to their
@@ -825,7 +825,7 @@ def map_source_value(
         Input DataFrame containing source concepts to be mapped.
         Must contain columns:
             - vocabulary_id : str
-            - concept_source_value : str
+            - source_value : str
     col_to_map : pd.DataFrame
         df column to use to map. Can be:
             - 'concept_name' to map to concept names in concept_df table.
