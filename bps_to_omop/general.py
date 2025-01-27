@@ -879,7 +879,7 @@ def map_source_value(
         unique_concepts = df_subset["source_value"].unique()
         mapping_df = concept_subset[concept_subset[col_to_map].isin(unique_concepts)]
 
-        # Create and apply mapping for current vocabulary
+        # Create mapping for current vocabulary
         concept_map = dict(zip(mapping_df[col_to_map], mapping_df["concept_id"]))
 
         # Update only the rows for current vocabulary
