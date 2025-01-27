@@ -809,7 +809,12 @@ def get_icd_codes(code_bps: str, bps_df: pd.DataFrame) -> list[tuple[str, str]]:
 
 
 def map_source_value(
-    df: pd.DataFrame, target_column: str, concept_df: pd.DataFrame
+    df: pd.DataFrame,
+    target_column: str,
+    concept_df: pd.DataFrame,
+    source_column: str = "source_value",
+    vocabulary_column: str = "vocabulary_id",
+    concept_id_column: str = "source_concept_id",
 ) -> pd.DataFrame:
     """Map source_value concepts to concept IDs across multiple vocabularies.
 
@@ -837,6 +842,13 @@ def map_source_value(
             - concept_code : str
             - concept_name : str
             - concept_id : int
+    source_column : str, optional, default "source_value"
+        Name of the column that has the source values.
+    vocabulary_column : str, optional, default "vocabulary_id"
+        Name of the column that has the vocabulary_id values.
+    concept_id_column : str, optional, default "source_concept_id"
+        Name of the column that will be returned with the corresponding concept_id.
+
 
     Returns
     -------
@@ -857,7 +869,7 @@ def map_source_value(
     - The original DataFrame is not modified; a copy is returned
     """
     # Get unique vocabularies
-    vocabs = df["vocabulary_id"].unique()
+    vocabs = df[vocabulary_column].unique()
     if len(vocabs) == 0:
         raise ValueError("No vocab found.")
 
@@ -868,29 +880,27 @@ def map_source_value(
     # Process each vocabulary
     for vocab in vocabs:
         # Create masks for current vocabulary
-        df_mask = df["vocabulary_id"] == vocab
-        concept_mask = concept_df["vocabulary_id"] == vocab
+        df_mask = df[vocabulary_column] == vocab
+        concept_mask = concept_df[vocabulary_column] == vocab
 
         # Get subset of data for current vocabulary
         df_subset = df[df_mask]
         concept_subset = concept_df[concept_mask]
 
         # Get unique concepts for current vocabulary
-        unique_concepts = df_subset["source_value"].unique()
+        unique_concepts = df_subset[source_column].unique()
         mapping_df = concept_subset[concept_subset[target_column].isin(unique_concepts)]
 
         # Create mapping for current vocabulary
         concept_map = dict(zip(mapping_df[target_column], mapping_df["concept_id"]))
 
         # Update only the rows for current vocabulary
-        result_df.loc[df_mask, "source_concept_id"] = df_subset["source_value"].map(
+        result_df.loc[df_mask, concept_id_column] = df_subset[source_column].map(
             concept_map
         )
 
     # Force correct datatypes
-    result_df["source_concept_id"] = result_df["source_concept_id"].astype(
-        pd.Int64Dtype()
-    )
+    result_df[concept_id_column] = result_df[concept_id_column].astype(pd.Int64Dtype())
     return result_df
 
 
