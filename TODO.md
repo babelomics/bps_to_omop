@@ -7,11 +7,6 @@
   - Usar dvc y pipelines como en hgsoc
   - Mover docs allí
   - reducir al mínimo el contenido de bps_to_omop, para que sea lo más genérico posible.
-- initialize_extraction()
-  - Sort files at initialize.
-    - Así siempre tienen el mismo orden luego
-  - Remove section 'data'
-    - That way parameters can be easily integrated with dvc
 - group_dates()
 	- Eliminar salto en group_dates (\n en línea 268)
 	- Indicar filas iniciales y finales
@@ -63,4 +58,6 @@
   - ~~Change initialize not to require save dir~~
     - Que use la misma sintaxis que read_yaml y update_yaml
 - ~~Mover C*.ipynb a docs~~
+- initialize_extraction()
+  -se ha eliminado la funcion por completo
   
