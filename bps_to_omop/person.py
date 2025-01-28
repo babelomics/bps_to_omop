@@ -90,6 +90,40 @@ def transform_person_dates(
     return (year_of_birth, month_of_birth, day_of_birth)
 
 
+def build_date_columns(input_table: pa.table):
+    """
+    Extracts year, month, and day components from a start_date column and appends them
+    as new columns to the input table.
+
+    Parameters
+    ----------
+    input_table : pyarrow.Table
+        Input table containing a 'start_date' column.
+
+    Returns
+    -------
+    pyarrow.Table
+        A new table with three additional columns:
+        - 'year_of_birth': Extracted year from start_date
+        - 'month_of_birth': Extracted month from start_date
+        - 'day_of_birth': Extracted day from start_date
+
+    Examples
+    --------
+    >>> table = pa.table({'start_date': ['2000-01-01', '1995-12-31']})
+    >>> result = build_date_columns(table)
+    >>> print(result.column_names)
+    ['start_date', 'year_of_birth', 'month_of_birth', 'day_of_birth']
+    """
+
+    year, month, day = transform_person_dates(input_table, "start_date")
+    output_table = input_table.append_column("year_of_birth", year)
+    output_table = output_table.append_column("month_of_birth", month)
+    output_table = output_table.append_column("day_of_birth", day)
+
+    return output_table
+
+
 def transform_gender(
     input_table: pa.Table, input_fieldname: tuple[str, str], mapping: dict
 ) -> tuple[pa.array, pa.array, pa.array]:
