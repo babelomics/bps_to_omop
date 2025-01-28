@@ -30,9 +30,6 @@
   - groupby that id
   - compute mode on groupby
 - AÑADIR TESTS!!
-  - Test para intialize_extraction, read_yaml y update_yaml
-    - Probar que funcionen bien en conjunto y que se entiendan entre ellos.
-    - Que sean capaces de hacer las operaciones típicas que se esperan de ellos.
   - Test generales
     - All clinical event_start_dates must be populted
     - Start dates must be <= death_date
@@ -54,6 +51,7 @@
   - ~~Test que al quitar el overlap, si hay dos citas diferentes **en un mismo día** con dos provider_id diferentes, queden ambos.~~
 - group_dates()
   - ~~Eliminar salto en group_dates (\n en línea 268)~~
+  - Test para intialize_extraction, read_yaml y update_yaml
 - initialize_extraction()
   - ~~Change initialize not to require save dir~~
     - Que use la misma sintaxis que read_yaml y update_yaml
