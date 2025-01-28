@@ -109,17 +109,15 @@ def test_new_dict(temp_yaml_file):
     assert result["new_dict"] == {"file3": "path3", "file4": "path4"}
 
 
-# def test_overwrite_existing_value(temp_yaml_file):
-#     """Test overwriting an existing value."""
-#     updates = {"api_key": "new_key"}
-#     result = update_yaml_file(temp_yaml_file, updates)
+def test_overwrite_existing_value(temp_yaml_file):
+    """Test overwriting an existing value."""
+    new_dict = {"file3": "path3", "file4": "path4"}
+    update_yaml_params(temp_yaml_file, "dict", new_dict)
+    result = read_yaml_params(temp_yaml_file)
 
-#     assert result["api_key"] == "new_key"
-
-#     # Verify old value is gone
-#     with open(temp_yaml_file, 'r') as file:
-#         loaded_content = yaml.safe_load(file)
-#         assert loaded_content["api_key"] == "new_key"
+    assert result["str"] == "/path1"
+    assert result["list"] == ["file1", "file2"]
+    assert result["dict"] == {"file3": "path3", "file4": "path4"}
 
 
 # def test_update_nested_value(temp_yaml_file):
