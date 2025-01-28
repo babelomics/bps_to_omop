@@ -5,60 +5,62 @@ import pytest
 import yaml
 
 sys.path.append("../bps_to_omop/")
-from bps_to_omop.extract import read_yaml_config, update_yaml_config
+from bps_to_omop.extract import read_yaml_params, update_yaml_params
 
-# # == Fixtures =========================================================
-# @pytest.fixture
-# def temp_yaml_file(tmp_path):
-#     """Create a temporary YAML file with initial content."""
-#     file_path = tmp_path / "config.yaml"
-#     initial_content = {
-#         "database": {
-#             "host": "localhost",
-#             "port": 5432
-#         },
-#         "api_key": "initial_key"
-#     }
 
-#     with open(file_path, 'w') as f:
-#         yaml.safe_dump(initial_content, f)
+# == Fixtures =========================================================
+@pytest.fixture
+def temp_yaml_file(tmp_path):
+    """Create a temporary YAML file with initial content."""
+    file_path = tmp_path / "params.yaml"
+    initial_content = {
+        "str": "path1",
+        "list": ["file1", "file2"],
+        "dict": {"file1": "/path1", "file2": "/path2"},
+    }
 
-#     return file_path
+    with open(file_path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(initial_content, f)
+
+    return file_path
+
 
 # == Tests ============================================================
 
 
 def test_create_new_file_with_dict(tmp_path):
     """Test creating a new YAML file if it doesn't exist."""
-    new_file = tmp_path / "new_config.yaml"
-    updates = {"new_setting": "value"}
+    new_file = tmp_path / "new_params.yaml"
+    new_setting = {"new_setting": "new_value"}
 
-    update_yaml_config(str(new_file), "updates", updates)
-    result = read_yaml_config(str(new_file))
+    update_yaml_params(str(new_file), "new_setting", new_setting)
+    result = read_yaml_params(str(new_file))
 
-    assert result["new_setting"] == "value"
+    assert result["new_setting"] == "new_value"
     assert os.path.exists(new_file)
 
 
-def test_create_new_file_with_dict(tmp_path):
+def test_create_new_file_with_value(tmp_path):
     """Test creating a new YAML file if it doesn't exist."""
-    new_file = tmp_path / "new_config.yaml"
-    updates = {"new_setting": "value"}
+    new_file = tmp_path / "new_params.yaml"
+    new_setting = "new_value"
 
-    update_yaml_config(str(new_file), "updates", updates)
-    result = read_yaml_config(str(new_file))
+    update_yaml_params(str(new_file), "new_setting", new_setting)
+    result = read_yaml_params(str(new_file))
 
     assert result["new_setting"] == "value"
     assert os.path.exists(new_file)
 
 
-# def test_empty_updates(temp_yaml_file):
-#     """Test applying empty updates."""
-#     updates = {}
-#     result = update_yaml_config(temp_yaml_file, updates)
+def test_empty_updates(temp_yaml_file):
+    """Test applying empty updates."""
+    updates = {}
+    result = update_yaml_params(temp_yaml_file, updates)
 
-#     assert result["api_key"] == "initial_key"
-#     assert result["database"]["port"] == 5432
+    assert result["str"] == "path1"
+    assert result["list"] == ["file1", "file2"]
+    assert result["dict"] == {"file1": "/path1", "file2": "/path2"}
+
 
 # # Tests
 # def test_read_existing_file(temp_yaml_file):
