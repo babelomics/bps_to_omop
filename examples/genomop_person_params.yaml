@@ -1,0 +1,12 @@
+input_dir: preomop/03_omop_initial/
+output_dir: preomop/04_omop_intermediate/PERSON/
+input_files:
+  - 01_sociodemo.parquet
+column_name_map:
+  01_sociodemo.parquet:
+    desc_sexo: gender_source_value
+column_values_map:
+  01_sociodemo.parquet:
+    gender_source_value:
+      Mujer: 8532
+      Hombre: 8507
