@@ -506,7 +506,7 @@ def find_start_end_dates(
     return (start_tmp, end_tmp)
 
 
-def read_yaml_config(config_file_path: str) -> dict:
+def read_yaml_params(config_file_path: str) -> dict:
     """
     Reads a YAML configuration file and returns its contents as a dictionary.
 
@@ -533,7 +533,7 @@ def read_yaml_config(config_file_path: str) -> dict:
 
     Examples
     --------
-    >>> config = read_yaml_config('settings.yaml')
+    >>> config = read_yaml_params('settings.yaml')
     >>> print(config['database']['host'])
     'localhost'
     """
@@ -550,7 +550,7 @@ def read_yaml_config(config_file_path: str) -> dict:
         raise yaml.YAMLError(f"Error parsing YAML file: {e}") from e
 
 
-def update_yaml_config(
+def update_yaml_params(
     config_file_path: str,
     new_entry_key: str,
     new_entry_data: dict,
@@ -581,12 +581,12 @@ def update_yaml_config(
 
     Examples
     --------
-    >>> update_yaml_config('config.yaml', 'new_entry', {'key': 'value'})
-    >>> update_yaml_config('config.yaml', 'visit_1', {'date': '2023-09-26', 'doctor': 'Dr. Smith'})
+    >>> update_yaml_params('config.yaml', 'new_entry', {'key': 'value'})
+    >>> update_yaml_params('config.yaml', 'visit_1', {'date': '2023-09-26', 'doctor': 'Dr. Smith'})
     """
     # Read existing configuration and append new one
     try:
-        config_data = read_yaml_config(config_file_path)
+        config_data = read_yaml_params(config_file_path)
         config_data[new_entry_key] = new_entry_data
     except (FileNotFoundError, TypeError):
         if isinstance(new_entry_data, dict):
@@ -650,7 +650,7 @@ def apply_modifications(data_dir: Path, yaml_file: str, verbose: int = 0) -> Non
     if verbose > 0:
         print("Reading configuration file...")
 
-    yaml_dict = read_yaml_config(yaml_file)
+    yaml_dict = read_yaml_params(yaml_file)
 
     input_dir = data_dir / yaml_dict["input_dir"]
     output_dir = data_dir / yaml_dict["output_dir"]
