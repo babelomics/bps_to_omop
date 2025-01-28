@@ -37,7 +37,7 @@ def test_read_existing_file(temp_yaml_file):
 
 
 def test_create_new_file_with_dict(tmp_path):
-    """Test creating a new YAML file if it doesn't exist."""
+    """Test creating a new YAML file with a new dict if it doesn't exist."""
     new_file = tmp_path / "new_params.yaml"
     new_setting = {"new_setting": "new_value"}
 
@@ -49,7 +49,7 @@ def test_create_new_file_with_dict(tmp_path):
 
 
 def test_create_new_file_with_value(tmp_path):
-    """Test creating a new YAML file if it doesn't exist."""
+    """Test creating a new YAML file with a new value if it doesn't exist."""
     new_file = tmp_path / "new_params.yaml"
     new_setting = "new_value"
 
@@ -74,7 +74,7 @@ def test_empty_updates(temp_yaml_file):
 
 
 def test_new_string(temp_yaml_file):
-    """Test applying empty updates."""
+    """Test writing new string."""
     new_string = "new_string"
     update_yaml_params(temp_yaml_file, "new_string", new_string)
     result = read_yaml_params(temp_yaml_file)
@@ -86,7 +86,7 @@ def test_new_string(temp_yaml_file):
 
 
 def test_new_list(temp_yaml_file):
-    """Test applying empty updates."""
+    """Test writing new list."""
     new_list = ["file3", "file4"]
     update_yaml_params(temp_yaml_file, "new_list", new_list)
     result = read_yaml_params(temp_yaml_file)
@@ -98,7 +98,7 @@ def test_new_list(temp_yaml_file):
 
 
 def test_new_dict(temp_yaml_file):
-    """Test applying empty updates."""
+    """Test writing new dict"""
     new_dict = {"file3": "path3", "file4": "path4"}
     update_yaml_params(temp_yaml_file, "new_dict", new_dict)
     result = read_yaml_params(temp_yaml_file)
@@ -118,16 +118,3 @@ def test_overwrite_existing_value(temp_yaml_file):
     assert result["str"] == "/path1"
     assert result["list"] == ["file1", "file2"]
     assert result["dict"] == {"file3": "path3", "file4": "path4"}
-
-
-# def test_update_nested_value(temp_yaml_file):
-#     """Test updating a nested value in the YAML file."""
-#     updates = {"database": {"host": "new_host", "port": 5432}}
-#     result = update_yaml_file(temp_yaml_file, updates)
-
-#     assert result["database"]["host"] == "new_host"
-
-#     # Verify file was actually updated
-#     with open(temp_yaml_file, 'r') as file:
-#         loaded_content = yaml.safe_load(file)
-#         assert loaded_content["database"]["host"] == "new_host"
