@@ -60,7 +60,7 @@ def gather_tables(config_file_path: str, verbose: int = 0) -> pa.Table:
     if verbose > 0:
         print("Gathering tables...")
     # Load configuration
-    config = ext.read_yaml_config(config_file_path)
+    config = ext.read_yaml_params(config_file_path)
     input_files = config["condition_occurrence"]["files_to_use"]
     read_transformations = config["condition_occurrence"]["read_transformations"]
     concept_id_functions = config["condition_occurrence"]["condition_concept_dict"]
@@ -363,7 +363,7 @@ def clean_tables(
     if verbose > 0:
         print("Cleaning records...")
     # Load configuration
-    config: Dict[str, Any] = ext.read_yaml_config(config_path)
+    config: Dict[str, Any] = ext.read_yaml_params(config_path)
     visit_concept_order = config["visit_occurrence"]["visit_concept_order"]
 
     # Convert to dataframe
