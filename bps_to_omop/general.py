@@ -1047,3 +1047,67 @@ def normalize_text(text):
         text = text.replace(accented, normal)
 
     return text
+
+
+def apply_source_mapping(
+    table: pa.Table, value_mappings: dict, output_columns: dict = None
+) -> pa.Table:
+    """
+    Apply value mappings to specified columns in a PyArrow table and create new mapped columns.
+
+    This function takes source value columns and creates corresponding concept_id columns
+    based on provided mappings. For each source column, it creates a new column with '_concept_id'
+    suffix containing the mapped values.
+
+    Parameters
+    ----------
+    table : pa.Table
+        Input PyArrow table containing the source value columns to be mapped
+    value_mappings : dict
+        Dictionary where keys are column names and values are mapping dictionaries.
+        Each mapping dictionary maps source values to their corresponding concept IDs.
+    output_columns : Optional, dict, default None
+        Optional dictionary mapping source column names to desired output column names.
+        If not provided or if a column is not in the dictionary, defaults to replacing
+        '_source_value' with '_concept_id'.
+
+    Returns
+    -------
+    pa.Table
+        PyArrow table with additional columns containing the mapped values.
+        New columns are named by replacing '_source_value' with '_concept_id' in
+        the original column names.
+
+    Examples
+    --------
+    >>> mappings = {
+    ...     "gender_source_value": {"M": 8507, "F": 8532}
+    ... }
+    >>> table = pa.table({
+    ...     "gender_source_value": ["M", "F", "M"]
+    ... })
+    >>> result = apply_source_mapping(table, mappings)
+    >>> print(result.column_names)
+    ['gender_source_value', 'gender_concept_id']
+    """
+    result_table = table
+
+    for source_column, mapping in value_mappings.items():
+        # Vectorize the mapping function with a default value of None
+        vectorized_map = np.vectorize(lambda x: mapping.get(x, None))
+
+        # Apply mapping and convert to PyArrow array
+        mapped_values = pa.array(vectorized_map(table[source_column].to_numpy()))
+
+        # Get output column name from custom mapping or use default
+        if output_columns:
+            concept_column = output_columns.get(
+                source_column, source_column.replace("_source_value", "_concept_id")
+            )
+        else:
+            concept_column = source_column.replace("_source_value", "_concept_id")
+
+        # Append new column with mapped values
+        result_table = result_table.append_column(concept_column, mapped_values)
+
+    return result_table
