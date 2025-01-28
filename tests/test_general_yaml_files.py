@@ -14,7 +14,7 @@ def temp_yaml_file(tmp_path):
     """Create a temporary YAML file with initial content."""
     file_path = tmp_path / "params.yaml"
     initial_content = {
-        "str": "path1",
+        "str": "/path1",
         "list": ["file1", "file2"],
         "dict": {"file1": "/path1", "file2": "/path2"},
     }
@@ -26,6 +26,14 @@ def temp_yaml_file(tmp_path):
 
 
 # == Tests ============================================================
+def test_read_existing_file(temp_yaml_file):
+    """Test reading from an existing YAML file."""
+
+    result = read_yaml_params(temp_yaml_file)
+
+    assert result["str"] == "/path1"
+    assert result["list"] == ["file1", "file2"]
+    assert result["dict"] == {"file1": "/path1", "file2": "/path2"}
 
 
 def test_create_new_file_with_dict(tmp_path):
@@ -48,29 +56,22 @@ def test_create_new_file_with_value(tmp_path):
     update_yaml_params(str(new_file), "new_setting", new_setting)
     result = read_yaml_params(str(new_file))
 
-    assert result["new_setting"] == "value"
+    assert result["new_setting"] == "new_value"
     assert os.path.exists(new_file)
 
 
 def test_empty_updates(temp_yaml_file):
     """Test applying empty updates."""
     updates = {}
-    result = update_yaml_params(temp_yaml_file, updates)
+    update_yaml_params(temp_yaml_file, "updates", updates)
+    result = read_yaml_params(temp_yaml_file)
 
-    assert result["str"] == "path1"
+    assert len(result["updates"]) == 0
+
+    assert result["str"] == "/path1"
     assert result["list"] == ["file1", "file2"]
     assert result["dict"] == {"file1": "/path1", "file2": "/path2"}
 
-
-# # Tests
-# def test_read_existing_file(temp_yaml_file):
-#     """Test reading from an existing YAML file."""
-#     updates = {"new_key": "new_value"}
-#     result = update_yaml_file(temp_yaml_file, updates)
-
-#     assert "database" in result
-#     assert result["database"]["host"] == "localhost"
-#     assert result["new_key"] == "new_value"
 
 # def test_update_nested_value(temp_yaml_file):
 #     """Test updating a nested value in the YAML file."""
