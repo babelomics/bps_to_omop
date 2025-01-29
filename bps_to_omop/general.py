@@ -1035,6 +1035,48 @@ def normalize_text(text):
     return text
 
 
+def create_vocabulary_mapping(
+    df: pd.DataFrame,
+    vocabulary_df: pd.DataFrame,
+    source_column: str,
+    vocab_code_column: str,
+    vocab_value_column: str,
+) -> dict:
+    """
+    Create a mapping dictionary between source codes and their corresponding vocabulary values.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        The source dataframe containing the codes to be mapped.
+    vocabulary_df : pandas.DataFrame
+        The vocabulary dataframe containing the mapping information.
+    source_column : str
+        The column name in source_df containing the codes to be mapped.
+    vocab_code_column : str
+        The column name in vocabulary_df containing the codes that match source_column.
+    vocab_value_column : str
+        The column name in vocabulary_df containing the values to map to.
+
+    Returns
+    -------
+    dict
+        A dictionary mapping codes from source_column to their corresponding values.
+    """
+    unique_codes = df[source_column].unique()
+
+    filtered_vocab = vocabulary_df.loc[
+        vocabulary_df[vocab_code_column].isin(unique_codes),
+        [vocab_code_column, vocab_value_column],
+    ].drop_duplicates()
+
+    mapping_dict = filtered_vocab.set_index(vocab_code_column)[
+        vocab_value_column
+    ].to_dict()
+
+    return mapping_dict
+
+
 def apply_source_mapping(
     table: pa.Table, value_mappings: dict, output_columns: dict = None
 ) -> pa.Table:
