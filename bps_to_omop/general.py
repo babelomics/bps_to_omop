@@ -903,10 +903,13 @@ def map_source_value(
 
 
 def map_source_concept_id(
-    df: pd.DataFrame, concept_rel_df: pd.DataFrame
+    df: pd.DataFrame,
+    concept_rel_df: pd.DataFrame,
+    source_column: str = "source_concept_id",
+    concept_id_column: str = "concept_id",
 ) -> pd.DataFrame:
     """
-    Maps source concepts to standard concepts using an OMOP CONCEPT_RELATIONSHIP DataFrame .
+    Maps source concepts to standard concepts using an OMOP CONCEPT_RELATIONSHIP DataFrame.
 
     This function identifies source concept IDs in the input DataFrame and maps them
     to their corresponding standard concepts using a 'Maps to' relationship from the
@@ -915,57 +918,43 @@ def map_source_concept_id(
     Parameters
     ----------
     df : pandas.DataFrame
-        Input DataFrame containing source concepts. Must have exactly one column
-        ending with 'source_concept_id'.
+        Input DataFrame containing source concepts.
     concept_rel_df : pandas.DataFrame
         CONCEPT_RELATIONSHIP table DataFrame containing the mapping information.
         Must have columns: 'relationship_id', 'concept_id_1', 'concept_id_2'.
+    source_column : str, optional, default "source_concept_id"
+        Name of the column in df containing the source concept IDs to be mapped.
+    target_column : str, optional, default is "concept_id"
+        Name of the output column that will contain the mapped standard concept IDs.
 
     Returns
     -------
     pandas.DataFrame
-        A copy of the input DataFrame with an additional 'condition_concept_id'
-        column containing the mapped standard concepts.
-
-    Raises
-    ------
-    ValueError
-        If no column or multiple columns with '_source_concept_id' suffix are found
-        in the input DataFrame.
+        A copy of the input DataFrame with an additional column (specified by target_column)
+        containing the mapped standard concepts. Unmapped concepts will be set to 0.
 
     Notes
     -----
     - The function only considers 'Maps to' relationships from the concept_rel_df
-    - Unmapped concepts will result in NaN values in the output
+    - Unmapped concepts will be set to 0 in the output
     - The original DataFrame is not modified; a copy is returned
+    - All concept IDs are converted to Int64 type
 
     Examples
     --------
-    >>> df = pd.DataFrame({'condition_source_concept_id': [1, 2, 3]})
+    >>> df = pd.DataFrame({'source_concept_id': [1, 2, 3]})
     >>> concept_rel_df = pd.DataFrame({
     ...     'relationship_id': ['Maps to', 'Maps to'],
     ...     'concept_id_1': [1, 2],
     ...     'concept_id_2': [100, 200]
     ... })
-    >>> result = map_source_concepts(df, concept_rel_df)
-    >>> result['condition_concept_id']
-    0    100.0
-    1    200.0
-    2      NaN
-    Name: condition_concept_id, dtype: float64
+    >>> result = map_source_concept_id(df, concept_rel_df)
+    >>> result['source_concept_id']
+    0    100
+    1    200
+    2      0
+    Name: source_concept_id, dtype: Int64
     """
-    # Retrieve any columns that match *_source_concept_id or *_concept_id
-    col_source_concept_id = [
-        col for col in df.columns if col.endswith("source_concept_id")
-    ]
-    if len(col_source_concept_id) == 0:
-        raise ValueError("There are no columns with 'source_concept_id' structure.")
-    if len(col_source_concept_id) > 1:
-        raise ValueError(
-            "There is more than one column with 'source_concept_id' structure."
-        )
-    else:
-        col_source_concept_id = col_source_concept_id[0]
 
     # Filter for 'Maps to' relationships
     mapping_relationships = concept_rel_df[
@@ -974,10 +963,9 @@ def map_source_concept_id(
 
     # Create a copy of the input DataFrame to store results
     result_df = df.copy()
-    result_df["concept_id"] = np.nan
 
     # Get unique concepts
-    unique_concepts = df[col_source_concept_id].unique()
+    unique_concepts = df[source_column].unique()
     mapping_df = mapping_relationships[
         mapping_relationships["concept_id_1"].isin(unique_concepts)
     ]
@@ -986,16 +974,14 @@ def map_source_concept_id(
     concept_map = dict(zip(mapping_df["concept_id_1"], mapping_df["concept_id_2"]))
 
     # Update only the rows for current vocabulary
-    result_df["concept_id"] = result_df[col_source_concept_id].map(concept_map)
+    result_df[concept_id_column] = result_df[source_column].map(concept_map)
 
-    # Fill nans with 0
-    result_df["concept_id"] = result_df["concept_id"].fillna(0)
+    # Fill unmapped values (NaN) with 0
+    result_df[concept_id_column] = result_df[concept_id_column].fillna(0)
 
     # Force correct datatypes
-    result_df[col_source_concept_id] = result_df[col_source_concept_id].astype(
-        pd.Int64Dtype()
-    )
-    result_df["concept_id"] = result_df["concept_id"].astype(pd.Int64Dtype())
+    result_df[source_column] = result_df[source_column].astype(pd.Int64Dtype())
+    result_df[concept_id_column] = result_df[concept_id_column].astype(pd.Int64Dtype())
 
     return result_df
 
