@@ -1,6 +1,8 @@
 
 # TO DO
 
+- In most scripts there's a gather up stage. This could be refactored.
+  - It will need a list of necessary columns for the rest of the script to work, which will be retrieved from each file or created with nans as needed.
 - Corregir C5 (De qué, past-isi? D:)
 - Plantear aislamiento del código de bps_to_omop del proyecto covid.
   - Crear repo para covid, igual que en hgsoc
