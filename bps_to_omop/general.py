@@ -1139,3 +1139,106 @@ def apply_source_mapping(
         result_table = result_table.append_column(concept_column, mapped_values)
 
     return result_table
+
+
+def find_unmapped_values(
+    df: pd.DataFrame, source_value_column: str, source_concept_id_column: str
+) -> list:
+    """
+    Identify source values that have no concept ID mapping (NaN values).
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input DataFrame containing source values and concept IDs
+    source_value_column : str
+        Name of column containing original source values/codes
+    source_concept_id_column : str
+        Name of column containing existing concept ID mappings
+
+    Returns
+    -------
+    list
+        List of source values that have no concept ID mapping
+
+    Examples
+    --------
+    >>> df = pd.DataFrame({
+    ...     'source_code': ['A1', 'B2', 'C3'],
+    ...     'source_concept_id': [123, np.nan, 789]
+    ... })
+    >>> unmapped = find_unmapped_values(df, 'source_code', 'source_concept_id')
+    >>> print(unmapped)  # ['B2']
+    """
+    existing_mappings = (
+        df.set_index(source_value_column)[source_concept_id_column]
+        .drop_duplicates()
+        .to_dict()
+    )
+
+    return [
+        value for value, concept_id in existing_mappings.items() if pd.isna(concept_id)
+    ]
+
+
+def update_concept_mappings(
+    df: pd.DataFrame,
+    source_value_column: str,
+    source_concept_id_column: str,
+    target_concept_id_column: str,
+    new_concept_mappings: dict,
+) -> pd.DataFrame:
+    """
+    Update concept mappings in a DataFrame using provided new mappings.
+    Only proceeds if there are unmapped values in the DataFrame.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input DataFrame containing source values and concept IDs
+    source_value_column : str
+        Name of column containing original source values/codes
+    source_concept_id_column : str
+        Name of column containing existing concept ID mappings
+    target_concept_id_column : str
+        Name of column where updated concept IDs will be stored
+    new_concept_mappings : dict
+        Dictionary of {source_value: concept_id} pairs to update existing mappings
+
+    Returns
+    -------
+    pandas.DataFrame
+        Copy of input DataFrame with updated concept ID mappings if unmapped values
+        exist, otherwise returns original DataFrame unchanged
+
+    Examples
+    --------
+    >>> df = pd.DataFrame({
+    ...     'source_code': ['A1', 'B2', 'C3'],
+    ...     'source_concept_id': [123, np.nan, 789],
+    ...     'concept_id': [None, None, None]
+    ... })
+    >>> new_mappings = {'B2': 456}
+    >>> result = update_concept_mappings(
+    ...     df, 'source_code', 'source_concept_id', 'concept_id', new_mappings
+    ... )
+    """
+    result_df = df.copy()
+    existing_mappings = (
+        result_df.set_index(source_value_column)[source_concept_id_column]
+        .drop_duplicates()
+        .to_dict()
+    )
+
+    try:
+        # Update existing mappings with new ones
+        existing_mappings.update(new_concept_mappings)
+
+        # Apply updated mappings to create new concept ID column
+        result_df[target_concept_id_column] = result_df[source_value_column].map(
+            existing_mappings
+        )
+    except KeyError as e:
+        print(f"Error: No concept ID found for source value '{e.args[0]}'")
+
+    return result_df
