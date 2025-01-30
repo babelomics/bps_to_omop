@@ -1177,7 +1177,9 @@ def find_unmapped_values(
     )
 
     return [
-        value for value, concept_id in existing_mappings.items() if pd.isna(concept_id)
+        value
+        for value, concept_id in existing_mappings.items()
+        if (pd.isna(concept_id) | (concept_id == 0))
     ]
 
 
