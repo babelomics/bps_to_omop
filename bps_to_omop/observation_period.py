@@ -1,12 +1,9 @@
-# 22/07/2024
+# This script gathers useful functions to generate the OBSERVATION_PERIOD
+# table in an OMOP-CDM instance.
 #
-# Este archivo agrupa las transformaciones necesarias para generar
-# la tabla OBSERVATION_PERIOD en una instancia OMOP-CDM.
-#
+# See:
 # https://ohdsi.github.io/CommonDataModel/cdm54.html#observation_period
-#
 # http://omop-erd.surge.sh/omop_cdm/tables/OBSERVATION_PERIOD.html
-#
 
 import os
 
