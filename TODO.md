@@ -5,7 +5,6 @@
   - It will need a list of necessary columns for the rest of the script to work, which will be retrieved from each file or created with nans as needed.
 - Corregir C5 (De qué, past-isi? D:)
 - group_dates()
-	- Eliminar salto en group_dates (\n en línea 268)
 	- Indicar filas iniciales y finales
 - source_to_omop mapping
   - Usar metodo de hgsoc, limpiar los anteriores.
