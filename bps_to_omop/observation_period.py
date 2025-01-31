@@ -16,56 +16,6 @@ from bps_to_omop import general as gen
 from bps_to_omop import person as per
 
 
-def prepare_table_raw_to_rare(
-    table_raw: pa.Table, period_type: str, date_cols: list[str]
-) -> pa.Table:
-    """Prepare a just read table (table_raw) to be grouped by
-    observation dates.
-
-    Parameters
-    ----------
-    table_raw : pa.Table
-        Table read from the file. Includes at least a column with
-        person_id and the columns with date information.
-    period_type : str
-        period_type code to be assigned to the table
-    date_cols : list[str]
-        column names to be used to group by dates
-
-    Returns
-    -------
-    pa.Table
-        table ready to be grouped by person and dates
-    """
-
-    # Build person_id and period_type
-    person_id, _ = per.transform_person_id(table_raw, table_raw.column_names[0])
-    period_type_concept_id = gen.create_uniform_int_array(
-        len(person_id), value=period_type
-    )
-
-    # "Buscamos" la fecha inicial y final
-    start_dates_0, end_dates_0 = ext.find_start_end_dates(table_raw, date_cols)
-
-    # -- Make sure every variable has the same lenght
-    if len(person_id) != len(start_dates_0):
-        raise ValueError("person_id and dates lenghts are not equal.")
-
-    # -- Create the table
-    table_rare = pa.Table.from_arrays(
-        [person_id, start_dates_0, end_dates_0, period_type_concept_id],
-        names=[
-            "person_id",
-            "observation_period_start_date",
-            "observation_period_end_date",
-            "period_type_concept_id",
-        ],
-    )
-    # Sort it
-    table_rare = table_rare.sort_by("observation_period_start_date")
-    return table_rare
-
-
 def ad_hoc_read(filename: str) -> pa.Table:
     """Wrapper for ad_hoc functions to deal with specific files
     if needed.
