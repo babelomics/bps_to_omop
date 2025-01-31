@@ -1,0 +1,13 @@
+output_dir: preomop/04_omop_intermediate/CDM_SOURCE/
+cdm_source_fields:
+  cdm_source_name: package
+  cdm_source_abbreviation: package
+  cdm_holder: FPS
+  source_description: Instancia OMOP para el estudio de datos de <proyecto>.
+  source_documentation_reference: ""
+  cdm_etl_reference: v1.0
+  source_release_date: 2023-12-14
+  cdm_release_date: 2025-01-21
+  cdm_version: "5.4"
+  cdm_version_concept_id: 756265
+  vocabulary_version: v20240830
