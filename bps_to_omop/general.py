@@ -1,7 +1,4 @@
-# 10/07/2024
-#
 # General functions to aid in the OMOP-CDM ETL
-
 
 import warnings
 
