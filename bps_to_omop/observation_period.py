@@ -139,7 +139,7 @@ def ad_hoc_read(filename: str) -> pa.Table:
     def melt_start_end(filename: str) -> pa.Table:
         """This file does not reflect a time period between start_date and
         end_date, but rather specific events at the begining and the end.
-        Before proceeding,w e want to separate this columns in two independet
+        Before proceeding, we want to separate this columns in two independent
         events."""
         df_raw = pd.read_parquet(filename)
         # nos quedamos solo con las columnas que queremos
