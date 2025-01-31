@@ -19,49 +19,6 @@ from bps_to_omop import general as gen
 from bps_to_omop import person as per
 
 
-def get_period_type_concept(
-    filepath: str, period_types: dict[str : [int, list[str]]]
-) -> int:
-    """Checks the basename of the path to a filename
-    to look for any substrings contained in a list of
-    strings in period_types.
-
-    If the filename contains a substring that matches
-    to any string in the second item in the dict tuple,
-    it will return that code and stop tryinh.
-
-    See:
-    https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT
-    https://athena.ohdsi.org/search-terms/terms?domain=Type+Concept&standardConcept=Standard&page=1&pageSize=500&query=&boosts
-
-    Parameters
-    ----------
-    filepath : str
-        relative path to the file, including filename.
-    period_types : dict[str:[int,list[str]]]
-        the mapping dict has the name of the period type as key,
-        and a tuple as value.
-        The first item in the tuple is the omop code.
-        The second item is a list with substring to match.
-
-    Returns
-    -------
-    int
-        omop code for the period type.
-    """
-
-    # -- Get period_type_concept_id
-    basename = os.path.basename(filepath).lower()
-    for _key, (code, wordlist) in period_types.items():
-        if any(word in basename for word in wordlist):
-            period_type_concept_id = code
-            break
-    else:
-        print(f"\033[1m??\033[0m {filepath}")
-
-    return period_type_concept_id
-
-
 def prepare_table_raw_to_rare(
     table_raw: pa.Table, period_type: str, date_cols: list[str]
 ) -> pa.Table:
