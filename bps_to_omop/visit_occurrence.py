@@ -9,7 +9,7 @@ http://omop-erd.surge.sh/omop_cdm/tables/VISIT_OCCURRENCE.html
 
 import os
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -17,22 +17,8 @@ import pyarrow as pa
 import pyarrow.compute as pc
 from pyarrow import parquet
 
-from bps_to_omop import extract as ext
 from bps_to_omop import general as gen
 from bps_to_omop.omop_schemas import omop_schemas
-
-# Aquí definimos las funciones que se usarán más adelante.
-# Para que tengan la misma sintaxis, todas piden:
-# - la tabla original
-# - el array con los valores de la columna donde aplicar los cambios
-# - el código a aplicar en el array anterior
-# - kwargs! Algunas funciones tienen parámetros extras que se añaden como
-#           un diccionario.
-# La idea es partir de un array con 0s, (concept_id = not defined concept)
-# Luego, cada función aplica una condición determinada y cambia aquellas filas
-# que la verifiquen, dejando el array original donde no se verifique.
-# Para esto se usa np.where(), por eso se pide la tabla y el array con los valores
-# => Este array se usa luego para hacer la tabla final, sin cambiar la tabla inicial.
 
 
 def get_visit_concept_id(
