@@ -4,6 +4,45 @@ incorporating them to an OMOP-CDM instance."""
 import pyarrow as pa
 
 
+# -- Main function --
+def apply_transformation(table: pa.Table, params: dict, key: str) -> pa.Table:
+    """
+    Apply transformations to a PyArrow table based on provided parameters.
+
+    Parameters
+    ----------
+    table : pa.Table
+        Input PyArrow table to be transformed
+    params : dict
+        Dictionary containing transformation parameters
+    key : str
+        Specific key to identify transformations
+
+    Returns
+    -------
+    pa.Table
+        Transformed PyArrow table
+
+    Notes
+    -----
+    - Skips transformation if no transformations are specified for the given key
+    - Applies each transformation function sequentially
+    """
+    # Check if transformations exist for the specific key
+    transformations = params.get("transformations", {}).get(key, [])
+
+    # If no transformations, return the original table
+    if not transformations:
+        return table
+
+    # Apply each transformation function
+    for transform_func in transformations:
+        transformed_table = transform_func(transformed_table)
+
+    return transformed_table
+
+
+# -- Helper functions --
 def melt_start_end(table: pa.Table) -> pa.Table:
     """This table does not reflect a time period between start_date and
     end_date, but rather specific events at the begining and the end.
@@ -28,10 +67,3 @@ def melt_start_end(table: pa.Table) -> pa.Table:
     df_melt = df_melt.drop_duplicates(ignore_index=True)
     # Pasamos a pyarrow table y devolvemos
     return pa.Table.from_pandas(df_melt, preserve_index=False)
-
-
-##
-# Define a final dict for easy access
-transformations = {
-    "melt_start_end": melt_start_end,
-}
