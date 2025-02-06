@@ -29,15 +29,15 @@ def apply_transformation(table: pa.Table, params: dict, key: str) -> pa.Table:
     - Applies each transformation function sequentially
     """
     # Check if transformations exist for the specific key
-    transformations = params.get("transformations", {}).get(key, [])
+    transformations_list = params.get("transformations", {}).get(key, [])
 
     # If no transformations, return the original table
-    if not transformations:
+    if not transformations_list:
         return table
 
     # Apply each transformation function
-    for transform_func in transformations:
-        transformed_table = transform_func(transformed_table)
+    for func in transformations_list:
+        transformed_table = transformations[func](table)
 
     return transformed_table
 
@@ -67,3 +67,31 @@ def melt_start_end(table: pa.Table) -> pa.Table:
     df_melt = df_melt.drop_duplicates(ignore_index=True)
     # Pasamos a pyarrow table y devolvemos
     return pa.Table.from_pandas(df_melt, preserve_index=False)
+
+
+def remove_end_date(table: pa.Table) -> pa.Table:
+    """
+    Remove the end_date column and use start_date as the new end_date.
+
+    This function is designed to handle files where the end_date is not relevant,
+    treating the event as a single-day occurrence.
+
+    Parameters
+    ----------
+    filename : str
+        Path to the Parquet file to be processed.
+
+    Returns
+    -------
+    pa.Table
+        A PyArrow table with the end_date column removed and replaced by start_date.
+    """
+    table = table.drop("end_date")
+    return table.add_column(2, "end_date", table["start_date"])
+
+
+# -- Definition of transformations
+transformations = {
+    "melt_start_end": melt_start_end,
+    "remove_end_date": remove_end_date,
+}
