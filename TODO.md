@@ -14,7 +14,6 @@
   2- Buscar*_source_concept_id (gen.map_source_value())
   3- Buscar *_concept_id (gen.map_source_concept_id())
 - Añadir PERSON y OBSERVATION_PERIOD al esquema gather, clean, format.
-- Purgar funciones en OBSERVATION_PERIOD
 - Relanzar C3
 - Modificar computación type_concept
   - Assign id to groups
