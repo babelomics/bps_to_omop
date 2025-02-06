@@ -186,28 +186,6 @@ def ad_hoc_read(data_dir: Path, filename: str, transformations: dict) -> pa.Tabl
         return parquet.read_table(data_dir / filename)
 
 
-def remove_end_date(filename: str) -> pa.Table:
-    """
-    Remove the end_date column and use start_date as the new end_date.
-
-    This function is designed to handle files where the end_date is not relevant,
-    treating the event as a single-day occurrence.
-
-    Parameters
-    ----------
-    filename : str
-        Path to the Parquet file to be processed.
-
-    Returns
-    -------
-    pa.Table
-        A PyArrow table with the end_date column removed and replaced by start_date.
-    """
-    table = parquet.read_table(filename)
-    table = table.drop("end_date")
-    return table.add_column(2, "end_date", table["start_date"])
-
-
 def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
     """Gather and process tables for creating the VISIT_OCCURRENCE table
     based on configuration.
