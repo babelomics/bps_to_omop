@@ -28,16 +28,15 @@ def apply_transformation(table: pa.Table, params: dict, key: str) -> pa.Table:
     - Skips transformation if no transformations are specified for the given key
     - Applies each transformation function sequentially
     """
-    # Check if transformations exist for the specific key
-    transformations_list = params.get("transformations", {}).get(key, [])
-
     # If no transformations, return the original table
-    if not transformations_list:
+    if not params.get("transformations", {}):
+        return table
+    elif not params.get("transformations", {}).get(key, []):
         return table
 
     # Apply each transformation function
     transformed_table = table
-    for func in transformations_list:
+    for func in params.get("transformations", {}).get(key, []):
         transformed_table = transformations[func](transformed_table)
 
     return transformed_table
