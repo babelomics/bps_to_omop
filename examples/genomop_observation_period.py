@@ -8,8 +8,8 @@ from pyarrow import parquet
 
 sys.path.append("./external/bps_to_omop")
 import bps_to_omop.extract as ext
+import bps_to_omop.file_transformations as ftr
 import bps_to_omop.general as gen
-import bps_to_omop.observation_period as obs
 from bps_to_omop.omop_schemas import omop_schemas
 
 # %%
@@ -17,7 +17,7 @@ from bps_to_omop.omop_schemas import omop_schemas
 params_file = "./package/preomop/genomop_observation_period_params.yaml"
 
 # -- Load parameters --------------------------------------------------
-print("Reading parameters...")
+print("Reading parameters... ", end="")
 
 # -- Load yaml file and related info
 params_data = ext.read_yaml_params(params_file)
@@ -27,19 +27,44 @@ input_files = params_data["input_files"]
 n_days = params_data["n_days"]
 
 os.makedirs(data_dir / output_dir, exist_ok=True)
+print("Done!")
 
 # %%
 # -- Firstly, concatenate all files -----------------------------------------
-table_raw = [obs.ad_hoc_read(data_dir / input_dir / f) for f in input_files]
-table_raw = pa.concat_tables(table_raw)
+print("Preprocessing files... ")
+table = []
+for f in input_files:
+    print(" ", f)
+    table_raw = parquet.read_table(
+        data_dir / input_dir / f,
+        columns=["person_id", "start_date", "end_date", "type_concept"],
+    )
+
+    # If no transformations, finish iteration
+    if not params_data.get("transformations", False):
+        table.append(table_raw)
+        continue
+    elif not params_data.get("transformations", False).get(f, False):
+        table.append(table_raw)
+        continue
+    # If transformations have to be done, do them
+    else:
+        for func in params_data["transformations"][f]:
+            func = ftr.transformations[params_data["transformations"][f]]
+            table_raw = func(table_raw)
+        table.append(table_raw)
+# Join them all
+table = pa.concat_tables(table)
 
 # %%
 # -- Secondly, pretreatment --------------------------------------------
+print("Cleaning files... ", end="")
 # Change to pandas to clean easily.
-df_rare = table_raw.to_pandas()
+df_rare = table.to_pandas()
 # Remove duplicates and nans
 df_rare = df_rare.drop_duplicates()
 df_rare = df_rare.dropna(subset=["start_date", "end_date"])
+print("Done!")
 
 # %%
 # -- Thirdly, treat dates -----------------------------------------------
@@ -56,34 +81,34 @@ df_rare = gen.group_dates(df_rare, n_days, verbose=2)
 
 # %%
 # -- Final treatment -----------------------------------------------------
+print("Casting to schema... ", end="")
 # We assign the local id, rename columns to their final name and caste
 # to the final format of each column. Show some info and save.
 
 # Convert back to pyarrow table
-table_OBSERVATION_PERIOD = pa.Table.from_pandas(df_rare, preserve_index=False)
+table = pa.Table.from_pandas(df_rare, preserve_index=False)
 
 # Add observation_period_id
-observation_period_id = pa.array(range(len(table_OBSERVATION_PERIOD)))
-table_OBSERVATION_PERIOD = table_OBSERVATION_PERIOD.add_column(
-    0, "observation_period_id", observation_period_id
+observation_period_id = pa.array(range(len(table)))
+table = table.add_column(0, "observation_period_id", observation_period_id)
+
+# Rename to omop columns
+table = gen.rename_table_columns(
+    table,
+    {
+        "start_date": "observation_period_start_date",
+        "end_date": "observation_period_end_date",
+        "type_concept": "period_type_concept_id",
+    },
 )
 
-# Rename columns
-new_names = [
-    "observation_period_id",
-    "person_id",
-    "observation_period_start_date",
-    "observation_period_end_date",
-    "period_type_concept_id",
-]
-table_OBSERVATION_PERIOD = table_OBSERVATION_PERIOD.rename_columns(new_names)
-
-# Cast to final scheme
-table_OBSERVATION_PERIOD = table_OBSERVATION_PERIOD.cast(
-    omop_schemas["OBSERVATION_PERIOD"]
-)
+# Fill, reorder and cast to schema
+table = gen.fill_omop_table(table, omop_schemas["OBSERVATION_PERIOD"])
+table = gen.reorder_omop_table(table, omop_schemas["OBSERVATION_PERIOD"])
+table = table.cast(omop_schemas["OBSERVATION_PERIOD"])
+print("Done!")
 
 # %%
-parquet.write_table(
-    table_OBSERVATION_PERIOD, data_dir / output_dir / "OBSERVATION_PERIOD.parquet"
-)
+print("Saving... ", end="")
+parquet.write_table(table, data_dir / output_dir / "OBSERVATION_PERIOD.parquet")
+print("Done!")

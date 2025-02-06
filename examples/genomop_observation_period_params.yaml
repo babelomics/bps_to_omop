@@ -4,3 +4,5 @@ input_files:
   - 02_Patologias_BPS.parquet
   - 03_MPA.parquet
 n_days: 365
+transformations:
+  02_Patologias_BPS.parquet: melt_start_end
