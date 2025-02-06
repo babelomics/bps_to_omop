@@ -241,11 +241,10 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
 
     Notes
     -----
-    The configuration file should contain the following sections:
-    - 'visit_occurrence.files_to_use': List of input files to process.
-    - 'visit_occurrence.transformations': Dict of transformations to apply to files
-        that need one.
-    - 'visit_occurrence.visit_concept_dict': Dict mapping files to concept ID functions.
+    The configuration file must contain the following sections:
+    - 'input_dir': Path to directory inside data_dir that contains all input_files paths.
+    - 'input_files': List of input files to process.
+    - 'visit_concept_dict': Dict mapping files to concept ID functions.
         Every file should have a visit_concept_dict logic assigned.
     """
     if verbose > 0:
