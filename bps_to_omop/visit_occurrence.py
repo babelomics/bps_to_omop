@@ -1,12 +1,11 @@
-# 02/09/2024
-#
-# Este archivo agrupa las transformaciones necesarias para generar
-# la tabla VISIT_OCCURRENCE en una instancia OMOP-CDM.
-#
-# https://ohdsi.github.io/CommonDataModel/cdm54.html#visit_occurrence
-#
-# http://omop-erd.surge.sh/omop_cdm/tables/VISIT_OCCURRENCE.html
-#
+"""
+This module contains neccesary functions to build the VISIT_OCCURRENCE
+table of an OMOP-CDM instance.
+
+See:
+https://ohdsi.github.io/CommonDataModel/cdm54.html#visit_occurrence
+http://omop-erd.surge.sh/omop_cdm/tables/VISIT_OCCURRENCE.html
+"""
 
 import os
 from pathlib import Path
