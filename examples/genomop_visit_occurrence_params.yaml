@@ -1,0 +1,23 @@
+input_dir: preomop/03_omop_initial/
+output_dir: preomop/04_omop_intermediate/VISIT_OCCURRENCE/
+input_files:
+  - 02_Patologias_BPS.parquet
+  - 03_MPA.parquet
+transformations: # Transformation to apply to each file
+
+visit_concept_dict: # For each file
+  02_Patologias_BPS.parquet:
+    - - single_code # Apply this value for every row
+      - 9202
+      - {}
+  03_MPA.parquet:
+    - - single_code # Apply this value for every row
+      - 32036
+      - {}
+visit_concept_order: # Hierarchy of concepts. When one of two rows have to be removed, the top one stays
+  - 9202
+  - 32036
+  - 0
+remove_overlap:
+  sorting_columns: ["person_id", "start_date", "end_date", "visit_concept_id"]
+  ascending_order: [True, True, False, True]
