@@ -5,7 +5,7 @@ import pyarrow as pa
 
 
 def melt_start_end(table: pa.Table) -> pa.Table:
-    """This file does not reflect a time period between start_date and
+    """This table does not reflect a time period between start_date and
     end_date, but rather specific events at the begining and the end.
     Before proceeding, we want to separate this columns in two independent
     events."""
