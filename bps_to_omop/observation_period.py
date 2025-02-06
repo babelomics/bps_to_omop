@@ -1,9 +1,11 @@
-# This script gathers useful functions to generate the OBSERVATION_PERIOD
-# table in an OMOP-CDM instance.
-#
-# See:
-# https://ohdsi.github.io/CommonDataModel/cdm54.html#observation_period
-# http://omop-erd.surge.sh/omop_cdm/tables/OBSERVATION_PERIOD.html
+""" 
+This script gathers useful functions to generate the OBSERVATION_PERIOD
+table in an OMOP-CDM instance."
+
+See:
+https://ohdsi.github.io/CommonDataModel/cdm54.html#observation_period
+http://omop-erd.surge.sh/omop_cdm/tables/OBSERVATION_PERIOD.html
+"""
 
 import os
 
