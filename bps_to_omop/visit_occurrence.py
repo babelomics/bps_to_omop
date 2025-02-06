@@ -18,6 +18,7 @@ import pyarrow.compute as pc
 from pyarrow import parquet
 
 from bps_to_omop import general as gen
+from bps_to_omop import table_transformer as ttr
 from bps_to_omop.omop_schemas import omop_schemas
 
 
@@ -110,68 +111,6 @@ def get_visit_concept_id(
     return visit_concept_id
 
 
-def ad_hoc_read(data_dir: Path, filename: str, transformations: dict) -> pa.Table:
-    """
-    Read a Parquet file and apply custom transformations if needed.
-
-    This function reads a Parquet file and checks if any specific transformations
-    need to be applied based on the filename. If a transformation is defined for
-    the file, it is applied before returning the data.
-
-    Parameters
-    ----------
-    data_dir : Path
-        Common directory for the file.
-    filename : str
-        Path to the Parquet file to be read.
-    transformations : dict
-        A dictionary mapping filenames to tuples containing a transformation
-        function and its arguments. The structure should be:
-        {filename: [transformation_function, arg1, arg2, ...]}
-
-    Returns
-    -------
-    pa.Table
-        A PyArrow table containing the data, with any necessary transformations applied.
-
-    Raises
-    ------
-    FileNotFoundError
-        If the specified file does not exist.
-    ValueError
-        If the transformation function is not callable.
-
-    Examples
-    --------
-    >>> def remove_end_date(filename):
-    ...     table = pq.read_table(filename)
-    ...     table = table.drop('end_date')
-    ...     return table.add_column(2, 'end_date', table['start_date'])
-    >>> transformations = {'example.parquet': [remove_end_date,]}
-    >>> result = ad_hoc_read('example.parquet', transformations)
-    """
-    if not os.path.exists(data_dir / filename):
-        raise FileNotFoundError(f"The file {filename} does not exist.")
-
-    func_dict = {"remove_end_date": remove_end_date}
-
-    if not isinstance(transformations, dict):
-        return parquet.read_table(data_dir / filename)
-
-    elif filename in transformations:
-        transform_func, *args = transformations[filename]
-        if not callable(transform_func):
-            transform_func = func_dict[transform_func]
-            if not callable(transform_func):
-                raise ValueError(
-                    f"The transformation for {filename}" + "is not a callable function."
-                )
-        return transform_func(data_dir / filename, *args)
-
-    else:
-        return parquet.read_table(data_dir / filename)
-
-
 def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
     """Gather and process tables for creating the VISIT_OCCURRENCE table
     based on configuration.
@@ -241,12 +180,11 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
             print(f"- File: {input_file}")
 
         # Read and transform the input table
-        raw_table = ad_hoc_read(
-            data_dir / input_dir, input_file, params["transformations"]
-        )
+        table = parquet.read_table(data_dir / input_dir / input_file)
+        table = ttr.apply_transformation(table, params, input_file)
 
         # Assign visit concept ID
-        concept_id = get_visit_concept_id(raw_table, concept_id_functions[input_file])
+        concept_id = get_visit_concept_id(table, concept_id_functions[input_file])
 
         if concept_id is None:
             raise KeyError(f"No visit concept ID assigned to file: {input_file}")
