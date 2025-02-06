@@ -217,21 +217,21 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
             # Generate the mapping
             try:
                 # Retrieve provider values
-                provider_id = raw_table.to_pandas()[provider_cols[input_file]]
+                provider_id = table.to_pandas()[provider_cols[input_file]]
                 # normalize content
                 provider_id = provider_id.apply(gen.normalize_text)
                 # Apply mapping
                 provider_id = provider_id.map(provider_map)
             except KeyError:
                 # Create an array of nuls
-                provider_id = gen.create_null_int_array(len(raw_table))
+                provider_id = gen.create_null_int_array(len(table))
             # Append a new column with the provider_id
-            raw_table = raw_table.append_column("provider_id", [provider_id])
+            table = table.append_column("provider_id", [provider_id])
             final_columns.append("provider_id")
             tmp_schema = tmp_schema.append(pa.field("provider_id", pa.int64()))
 
         # Select relevant columns and add visit_concept_id
-        processed_table = raw_table.select(final_columns).append_column(
+        processed_table = table.select(final_columns).append_column(
             "visit_concept_id", [concept_id]
         )
         tmp_schema = tmp_schema.append(pa.field("visit_concept_id", pa.int64()))
