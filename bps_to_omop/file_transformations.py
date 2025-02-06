@@ -28,3 +28,10 @@ def melt_start_end(table: pa.Table) -> pa.Table:
     df_melt = df_melt.drop_duplicates(ignore_index=True)
     # Pasamos a pyarrow table y devolvemos
     return pa.Table.from_pandas(df_melt, preserve_index=False)
+
+
+##
+# Define a final dict for easy access
+transformations = {
+    "melt_start_end": melt_start_end,
+}
