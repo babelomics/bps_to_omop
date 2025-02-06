@@ -36,8 +36,9 @@ def apply_transformation(table: pa.Table, params: dict, key: str) -> pa.Table:
         return table
 
     # Apply each transformation function
+    transformed_table = table
     for func in transformations_list:
-        transformed_table = transformations[func](table)
+        transformed_table = transformations[func](transformed_table)
 
     return transformed_table
 
