@@ -1,7 +1,6 @@
-# Functions to help with common transformations to BPS files before
-# incorporating them to an OMOP-CDM instance.
+"""Functions to help with common transformations to BPS files before
+incorporating them to an OMOP-CDM instance."""
 
-import pandas as pd
 import pyarrow as pa
 
 
