@@ -2,3 +2,11 @@ input_dir: preomop/03_omop_initial/
 output_dir: preomop/04_omop_intermediate/PROVIDER/
 input_files:
   - 05_Consultas_externas.parquet
+column_name_map:
+  05_Consultas_externas.parquet:
+    ESPECIALIDAD: specialty_source_value
+column_values_map:
+  05_Consultas_externas.parquet:
+    specialty_source_value:
+      ginecologia: 38003902
+      aparato digestivo: 38004455
