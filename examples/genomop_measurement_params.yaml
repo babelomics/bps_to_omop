@@ -4,13 +4,15 @@ input_files:
   - 03_MPA.parquet
 vocab_dir: raw/omop_vocab/
 visit_dir: preomop/04_omop_intermediate/VISIT_OCCURRENCE/
-vocabulary_config:
-  03_MPA.parquet: 
-    CLC: concept_name
+append_vocabulary:
+  02_Patologias_BPS.parquet: CLC
 column_map:
   03_MPA.parquet:
     desc_clc: measurement_source_value
     valor_convencional: value_source_value
+vocabulary_config:
+  03_MPA.parquet: 
+    CLC: concept_name
 unmapped_measurement:
   0: 0
 unmapped_unit:
