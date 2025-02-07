@@ -1,0 +1,17 @@
+input_dir: preomop/03_omop_initial/
+output_dir: preomop/04_omop_intermediate/MEASUREMENT/
+input_files:
+  - 03_MPA.parquet
+vocab_dir: raw/omop_vocab/
+visit_dir: preomop/04_omop_intermediate/VISIT_OCCURRENCE/
+vocabulary_config:
+  03_MPA.parquet: 
+    CLC: concept_name
+column_map:
+  03_MPA.parquet:
+    desc_clc: measurement_source_value
+    valor_convencional: value_source_value
+unmapped_measurement:
+  0: 0
+unmapped_unit:
+  "x 10^3/µL": 8848
