@@ -1,0 +1,21 @@
+input_dir: /path/to/input_dir/ # Common path where all input_files are located
+output_dir: /path/to/output_dir/ # Common path where all output_files will be located
+input_files:  
+  # Path to each file from input_dir
+  - /path/tp/file_1
+  - /path/tp/file_2
+person_columns:
+  # For each file, name of the column that contains the patient id
+  file_1: NUHSA_ENCRIPTADO
+  file_2: NUHSA_ENCRIPTADO
+date_columns:
+  # For each file, name of the column or columns that contains the dates
+  file_1:
+  - FECHA_INICIO
+  file_2:
+  - COD_FEC_INI_DIAGNOSTICO
+type_concept_mapping:
+  # For each file, omop code that represent the origin of the information
+  # See https://github.com/OHDSI/Vocabulary-v5.0/wiki/Vocab.-TYPE_CONCEPT
+  file_1: 32817
+  file_2: 32840
