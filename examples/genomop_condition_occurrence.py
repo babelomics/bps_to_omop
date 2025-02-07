@@ -46,9 +46,11 @@ df_complete = []
 for f in input_files:
     print(f" Processing {f}: ")
     df = pd.read_parquet(data_dir / input_dir / f)
-    # assign new columns
-    if vocabulary_config[f]:
-        df["vocabulary_id"] = [*vocabulary_config[f]][0]
+    # assign new vocabulary column if needed
+    if params_data.get("append_vocabulary", False):
+        if params_data["append_vocabulary"].get(f, False):
+            df["vocabulary_id"] = params_data["append_vocabulary"][f]
+    # Apply renaming
     df = df.rename(column_map[f], axis=1)
     # Perform the mapping
     df = gen.map_source_value(df, vocabulary_config[f], concept_df)

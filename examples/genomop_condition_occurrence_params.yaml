@@ -4,11 +4,13 @@ input_files:
   - 02_Patologias_BPS.parquet
 vocab_dir: raw/omop_vocab/
 visit_dir: preomop/04_omop_intermediate/VISIT_OCCURRENCE/
-vocabulary_config:
-  02_Patologias_BPS.parquet: 
-    BPS Pathology: concept_name
+append_vocabulary:
+  02_Patologias_BPS.parquet: BPS Pathology
 column_map:
   02_Patologias_BPS.parquet:
     desc_patologia: source_value
+vocabulary_config:
+  02_Patologias_BPS.parquet: 
+    BPS Pathology: concept_name
 
   
