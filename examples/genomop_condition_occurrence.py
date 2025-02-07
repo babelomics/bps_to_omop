@@ -43,7 +43,6 @@ concept_rel_df = pd.read_parquet(
 print("Preprocessing files...")
 df_complete = []
 
-# -- 02_Patologias_BPS.parquet ----------------------------------------
 for f in input_files:
     print(f" Processing {f}: ")
     df = pd.read_parquet(data_dir / input_dir / f)
