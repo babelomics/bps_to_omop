@@ -1,0 +1,4 @@
+input_dir: preomop/03_omop_initial/
+output_dir: preomop/04_omop_intermediate/PROVIDER/
+input_files:
+  - 05_Consultas_externas.parquet
