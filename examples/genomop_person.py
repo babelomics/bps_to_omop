@@ -43,7 +43,7 @@ for f in input_files:
 
     # Rename columns
     col_map = {**column_name_map[f], "start_date": "birth_datetime"}
-    tmp_table = gen.rename_table_columns(tmp_table, column_name_map[f])
+    tmp_table = gen.rename_table_columns(tmp_table, col_map)
 
     # Apply the mapping
     if len(column_values_map[f]) > 0:
