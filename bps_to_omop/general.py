@@ -612,7 +612,7 @@ def fill_omop_table(
                 f"  Adding: {field.name}, Type: {field.type}, Nullable: {field.nullable}"
             )
 
-        if field.type not in [pa.int64(), pa.string()]:
+        if field.type not in [pa.int64(), pa.string(), pa.float64()]:
             warnings.warn(
                 f"Unhandled field type {field.type} for field {field.name}. "
                 f"Defaulting to string type.",
@@ -621,20 +621,34 @@ def fill_omop_table(
             field = field.with_type(pa.string())
 
         default_value = (
-            None if field.nullable else (0 if field.type == pa.int64() else "")
+            None
+            if field.nullable
+            else (
+                0
+                if field.type == pa.int64()
+                else 0.0 if field.type == pa.float64() else ""
+            )
         )
 
         if field.nullable:
             array = (
                 create_null_int_array(table_size)
                 if field.type == pa.int64()
-                else create_null_str_array(table_size)
+                else (
+                    create_null_double_array(table_size)
+                    if field.type == pa.float64()
+                    else create_null_str_array(table_size)
+                )
             )
         else:
             array = (
                 create_uniform_int_array(table_size, default_value)
                 if field.type == pa.int64()
-                else create_uniform_str_array(table_size, default_value)
+                else (
+                    create_uniform_double_array(table_size, default_value)
+                    if field.type == pa.float64()
+                    else create_uniform_str_array(table_size, default_value)
+                )
             )
 
         table = table.append_column(field.name, array)
