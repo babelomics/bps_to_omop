@@ -43,15 +43,34 @@ def sample_params(test_data_dir):
 
 @pytest.fixture
 def sample_measurement_values(test_data_dir):
-    """Create sample input parquet file."""
+    """Create sample input parquet file with numeric values."""
     df = pd.DataFrame(
         {
-            "ESPECIALIDAD": [
-                "CARDIOLOGIA",
-                "PEDIATRIA",
-                "CARDIOLOGIA",
-                "NUEVA_ESPECIALIDAD",
-            ]
+            "person_id": [1, 1, 2],
+            "start_date": ["2020-01-01", "2020-01-01", "2020-01-01"],
+            "end_date": ["2020-01-01", "2020-01-01", "2020-01-01"],
+            "type_concept": ["1", "1", "1"],
+            "desc_clc": ["Hemoglobina", "Albúmina", "Albúmina"],
+            "valor": ["11.0", "22.0", "33.0"],
+        }
+    )
+
+    file_path = test_data_dir / "input" / "test_provider.parquet"
+    df.to_parquet(file_path)
+    return file_path
+
+
+@pytest.fixture
+def sample_measurement_categorical(test_data_dir):
+    """Create sample input parquet file with categorical data."""
+    df = pd.DataFrame(
+        {
+            "person_id": [1, 2],
+            "start_date": ["2020-01-01", "2020-01-01"],
+            "end_date": ["2020-01-01", "2020-01-01"],
+            "type_concept": ["1", "1"],
+            "desc_clc": ["Measurement", "Measurement"],
+            "valor": ["Negative", "Positive"],
         }
     )
 
