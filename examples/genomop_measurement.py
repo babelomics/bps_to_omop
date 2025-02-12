@@ -342,7 +342,7 @@ def process_measurement_table(params_file: str, data_dir_: Path = None) -> pa.Ta
     clc_df = pd.read_parquet(data_dir_ / vocab_dir / "CLC.parquet")
 
     # -- Load each file and prepare it --------------------------------
-    df = preprocess_files(params_data, concept_df, data_dir)
+    df = preprocess_files(params_data, concept_df, data_dir_)
 
     # -- Map units ----------------------------------------------------
     df = map_units(df, clc_df, concept_df)
@@ -362,7 +362,7 @@ def process_measurement_table(params_file: str, data_dir_: Path = None) -> pa.Ta
 
     # -- Save ---------------------------------------------------------
     print("Saving to parquet...")
-    parquet.write_table(table, data_dir_ / output_dir / "MEASUREMENT_v2.parquet")
+    parquet.write_table(table, data_dir_ / output_dir / "MEASUREMENT.parquet")
     print("Done.")
 
 

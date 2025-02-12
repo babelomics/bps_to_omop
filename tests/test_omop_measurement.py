@@ -1,9 +1,8 @@
 import os
 import pathlib
 
+import numpy as np
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as parquet
 import pytest
 import yaml
 
@@ -14,7 +13,7 @@ from examples.genomop_measurement import process_measurement_table
 @pytest.fixture
 def test_data_dir(tmp_path):
     """Create a temporary directory structure for testing."""
-    for folder in ["input", "output", "vocab"]:
+    for folder in ["input", "output", "vocab", "visit"]:
         foder_dir = tmp_path / folder
         foder_dir.mkdir()
     return tmp_path
@@ -26,7 +25,10 @@ def sample_params(test_data_dir):
     params = {
         "input_dir": "input",
         "output_dir": "output",
-        "input_files": ["measurement_values.parquet", "measurement_concept.parquet"],
+        "input_files": [
+            "measurement_values.parquet",
+            "measurement_categorical.parquet",
+        ],
         "vocab_dir": "vocab",
         "visit_dir": "visit",
         "append_vocabulary": {"measurement_values.parquet": "CLC"},
@@ -38,14 +40,14 @@ def sample_params(test_data_dir):
         },
         "vocabulary_config": {
             "measurement_values.parquet": {"CLC": "concept_name"},
-            "measurement_concept.parquet": {"SNOMED": "concept_name"},
+            "measurement_categorical.parquet": {"SNOMED": "concept_name"},
         },  # TODO Add test to map by concept_code
         "value_map": {
             "measurement_values.parquet": "numeric",
-            "measurement_concept.parquet": "concept",
+            "measurement_categorical.parquet": "concept",
         },  # TODO Maybe rename concept to categorical for consistency
         "unmapped_measurement": {},
-        "unampped_unit": {"x 10^3/µL": 8848},
+        "unmapped_unit": {"x 10^3/µL": 8848},
     }
 
     params_file = test_data_dir / "test_params.yaml"
@@ -69,7 +71,7 @@ def sample_measurement_values(test_data_dir):
         }
     )
 
-    file_path = test_data_dir / "input" / "test_provider.parquet"
+    file_path = test_data_dir / "input" / "measurement_values.parquet"
     df.to_parquet(file_path)
     return file_path
 
@@ -83,16 +85,17 @@ def sample_measurement_categorical(test_data_dir):
             "start_date": ["2020-01-01", "2020-01-01"],
             "end_date": ["2020-01-01", "2020-01-01"],
             "type_concept": ["1", "1"],
-            "desc_clc": [
+            "measurement_source_value": [
                 "Hepatitis C virus measurement",
                 "Hepatitis C virus measurement",
             ],
             "vocabulary_id": ["SNOMED", "SNOMED"],
-            "valor": ["Negative", "Positive"],
+            "value_source_value": ["Negative", "Positive"],
+            "value_vocabulary_id": ["SNOMED", "SNOMED"],
         }
     )
 
-    file_path = test_data_dir / "input" / "test_provider.parquet"
+    file_path = test_data_dir / "input" / "measurement_categorical.parquet"
     df.to_parquet(file_path)
     return file_path
 
@@ -110,7 +113,7 @@ def sample_visit_table(test_data_dir):
         }
     )
 
-    file_path = test_data_dir / "input" / "test_provider.parquet"
+    file_path = test_data_dir / "visit" / "VISIT_OCCURRENCE.parquet"
     df.to_parquet(file_path)
     return file_path
 
@@ -242,16 +245,39 @@ def test_full_processing(
     sample_params,
     sample_measurement_values,
     sample_measurement_categorical,
+    sample_visit_table,
     sample_concept_table,
     sample_concept_relationship_table,
     sample_clc_table,
 ):
-    """Test that specialties are mapped correctly to concept IDs."""
+    """Test a 'simple' run of process_measurement_table."""
+    # Create output
     process_measurement_table(sample_params, test_data_dir)
     measurement_table = pd.read_parquet(
         test_data_dir / "output" / "MEASUREMENT.parquet"
     )
 
-    # Verify the result
+    # Create synth output to compare
+    person_id = pd.Series([1, 1, 1, 2, 2])
+    measurement_concept_id = pd.Series([3000963, 3024929, 4092846, 3024561, 4092846])
+    value_as_number = pd.Series([11.0, 22.0, np.nan, 33.0, np.nan])
+    value_as_concept_id = pd.Series([np.nan, np.nan, 9189, np.nan, 9191])
+    unit_concept_id = pd.Series([8713, 8848, np.nan, 8713, np.nan])
+
+    # General verifications
     assert measurement_table is not None
     assert len(measurement_table) > 0
+
+    # Check columns
+    assert len(measurement_table["measurement_id"].unique()) == len(measurement_table)
+    assert np.all(measurement_table["person_id"] == person_id)
+    assert np.all(measurement_table["measurement_concept_id"] == measurement_concept_id)
+    assert np.allclose(
+        measurement_table["value_as_number"], value_as_number, equal_nan=True
+    )
+    assert np.allclose(
+        measurement_table["value_as_concept_id"], value_as_concept_id, equal_nan=True
+    )
+    assert np.allclose(
+        measurement_table["unit_concept_id"], unit_concept_id, equal_nan=True
+    )
