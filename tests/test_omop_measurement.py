@@ -115,11 +115,75 @@ def sample_visit_table(test_data_dir):
     return file_path
 
 
+@pytest.fixture
+def sample_concept_table(test_data_dir):
+    """Create a non-exhaustive sample CONCEPT table file.
+
+    There are two items for 'Hepatitis C virus measurement' because one is
+    deprecated and we need to test if it picks the correct one.
+    """
+    df = pd.DataFrame(
+        {
+            "concept_id": [
+                2000001144,
+                2000001147,
+                2000001494,
+                4092846,
+                40627284,
+                9189,
+                9191,
+            ],
+            "concept_name": [
+                "Hemoglobina",
+                "Plaquetas (recuento)",
+                "Albúmina",
+                "Hepatitis C virus measurement",
+                "Hepatitis C virus measurement",
+                "Negative",
+                "Positive",
+            ],
+            "domain_id": [
+                "Measurement",
+                "Measurement",
+                "Measurement",
+                "Measurement",
+                "Measurement",
+                "Meas Value",
+                "Meas Value",
+            ],
+            "vocabulary_id": [
+                "CLC",
+                "CLC",
+                "CLC",
+                "SNOMED",
+                "SNOMED",
+                "SNOMED",
+                "SNOMED",
+            ],
+            "standard_code": [None, None, None, "S", None, "S", "S"],
+            "concept_code": [
+                "CLC00195",
+                "CLC00198",
+                "CLC00606",
+                "187033005",
+                "77958005",
+                "260385009",
+                "10828004",
+            ],
+        }
+    )
+
+    file_path = test_data_dir / "vocab" / "CONCEPT.parquet"
+    df.to_parquet(file_path)
+    return file_path
+
+
 def test_full_processing(
     test_data_dir,
     sample_params,
     sample_measurement_values,
     sample_measurement_categorical,
+    sample_concept_table,
 ):
     """Test that specialties are mapped correctly to concept IDs."""
     process_measurement_table(sample_params, test_data_dir)
