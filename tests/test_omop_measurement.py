@@ -135,6 +135,7 @@ def sample_concept_table(test_data_dir):
                 40627284,
                 9189,
                 9191,
+                8713,
             ],
             "concept_name": [
                 "Hemoglobina",
@@ -144,6 +145,7 @@ def sample_concept_table(test_data_dir):
                 "Hepatitis C virus measurement",
                 "Negative",
                 "Positive",
+                "gram per deciliter",
             ],
             "domain_id": [
                 "Measurement",
@@ -153,6 +155,7 @@ def sample_concept_table(test_data_dir):
                 "Measurement",
                 "Meas Value",
                 "Meas Value",
+                "Unit",
             ],
             "vocabulary_id": [
                 "CLC",
@@ -162,8 +165,9 @@ def sample_concept_table(test_data_dir):
                 "SNOMED",
                 "SNOMED",
                 "SNOMED",
+                "UCUM",
             ],
-            "standard_code": [None, None, None, "S", None, "S", "S"],
+            "standard_code": [None, None, None, "S", None, "S", "S", "S"],
             "concept_code": [
                 "CLC00195",
                 "CLC00198",
@@ -172,6 +176,7 @@ def sample_concept_table(test_data_dir):
                 "77958005",
                 "260385009",
                 "10828004",
+                "g/dL",
             ],
         }
     )
