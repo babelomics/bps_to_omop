@@ -27,6 +27,7 @@ def sample_params(test_data_dir):
         "output_dir": "output",
         "input_files": ["measurement_values.parquet", "measurement_concept.parquet"],
         "vocab_dir": "vocab",
+        "visit_dir": "visit",
         "column_name_map": {},
         "column_values_map": {
             "test_measurement.parquet": {"CARDIOLOGIA": 38004451, "PEDIATRIA": 38004477}
@@ -71,6 +72,24 @@ def sample_measurement_categorical(test_data_dir):
             "type_concept": ["1", "1"],
             "desc_clc": ["Measurement", "Measurement"],
             "valor": ["Negative", "Positive"],
+        }
+    )
+
+    file_path = test_data_dir / "input" / "test_provider.parquet"
+    df.to_parquet(file_path)
+    return file_path
+
+
+@pytest.fixture
+def sample_visit_table(test_data_dir):
+    """Create sample input parquet file with categorical data."""
+    df = pd.DataFrame(
+        {
+            "visit_occurrence_id": [1, 2],
+            "person_id": [1, 2],
+            "visit_start_date": ["2020-01-01", "2020-01-01"],
+            "visit_end_date": ["2020-01-01", "2020-01-01"],
+            "visit_type_concept_id": ["1", "1"],
         }
     )
 
