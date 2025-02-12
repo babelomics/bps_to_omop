@@ -28,6 +28,7 @@ def sample_params(test_data_dir):
         "input_files": ["measurement_values.parquet", "measurement_concept.parquet"],
         "vocab_dir": "vocab",
         "visit_dir": "visit",
+        "append_vocabulary": {"measurement_values.parquet": "CLC"},
         "column_name_map": {},
         "column_values_map": {
             "test_measurement.parquet": {"CARDIOLOGIA": 38004451, "PEDIATRIA": 38004477}
@@ -70,7 +71,11 @@ def sample_measurement_categorical(test_data_dir):
             "start_date": ["2020-01-01", "2020-01-01"],
             "end_date": ["2020-01-01", "2020-01-01"],
             "type_concept": ["1", "1"],
-            "desc_clc": ["Measurement", "Measurement"],
+            "desc_clc": [
+                "Hepatitis C virus measurement",
+                "Hepatitis C virus measurement",
+            ],
+            "vocabulary_id": ["SNOMED", "SNOMED"],
             "valor": ["Negative", "Positive"],
         }
     )
