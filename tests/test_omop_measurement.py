@@ -178,12 +178,55 @@ def sample_concept_table(test_data_dir):
     return file_path
 
 
+@pytest.fixture
+def sample_concept_relationship_table(test_data_dir):
+    """
+    Create a non-exhaustive sample CONCEPT_RELATIONSHIP table file.
+    """
+    df = pd.DataFrame(
+        {
+            "concept_id_1": [
+                2000001144,
+                2000001147,
+                2000001494,
+                4092846,
+                40627284,
+                9189,
+                9191,
+            ],
+            "concept_id_2": [
+                3000963,
+                3024929,
+                3024561,
+                4092846,
+                4092846,
+                9189,
+                9191,
+            ],
+            "relationship_id": [
+                "Maps to",
+                "Maps to",
+                "Maps to",
+                "Maps to",
+                "Maps to",
+                "Maps to",
+                "Maps to",
+            ],
+        }
+    )
+
+    file_path = test_data_dir / "vocab" / "CONCEPT_RELATIONSHIP.parquet"
+    df.to_parquet(file_path)
+    return file_path
+
+
 def test_full_processing(
     test_data_dir,
     sample_params,
     sample_measurement_values,
     sample_measurement_categorical,
     sample_concept_table,
+    sample_concept_relationship_table,
 ):
     """Test that specialties are mapped correctly to concept IDs."""
     process_measurement_table(sample_params, test_data_dir)
