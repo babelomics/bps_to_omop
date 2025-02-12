@@ -13,10 +13,9 @@ from bps_to_omop.omop_schemas import omop_schemas
 @pytest.fixture
 def test_data_dir(tmp_path):
     """Create a temporary directory structure for testing."""
-    input_dir = tmp_path / "input"
-    output_dir = tmp_path / "output"
-    input_dir.mkdir()
-    output_dir.mkdir()
+    for folder in ["input", "output", "vocab"]:
+        foder_dir = tmp_path / folder
+        foder_dir.mkdir()
     return tmp_path
 
 
@@ -27,6 +26,7 @@ def sample_params(test_data_dir):
         "input_dir": "input",
         "output_dir": "output",
         "input_files": ["measurement_values.parquet", "measurement_concept.parquet"],
+        "vocab_dir": "vocab",
         "column_name_map": {},
         "column_values_map": {
             "test_measurement.parquet": {"CARDIOLOGIA": 38004451, "PEDIATRIA": 38004477}
