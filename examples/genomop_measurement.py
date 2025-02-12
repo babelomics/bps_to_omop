@@ -11,7 +11,7 @@ import pyarrow.parquet as parquet
 
 try:
     from package.datasets import data_dir
-except:
+except ModuleNotFoundError:
     warnings.warn("No 'data_dir' variable provided.")
 
 sys.path.append("./external/bps_to_omop")
@@ -89,11 +89,8 @@ def preprocess_files(
 def map_units(
     df: pd.DataFrame, clc_df: pd.DataFrame, concept_df: pd.DataFrame
 ) -> pd.DataFrame:
-    """Create automatic mappings for measurement units based on CLC vocabulary.
-
-    This function maps measurement units from source values to standardized units
-    using CLC vocabulary mappings and concept relationships. It first maps units
-    using a CLC vocabulary lookup, then applies UCUM and SNOMED standardization.
+    """Create automatic mappings for measurement units from CLC vocabulary using
+    UCUM and SNOMED standardization.
 
     Parameters
     ----------
