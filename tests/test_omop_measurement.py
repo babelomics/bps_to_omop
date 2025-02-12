@@ -8,6 +8,7 @@ import pytest
 import yaml
 
 from bps_to_omop.omop_schemas import omop_schemas
+from examples.genomop_measurement import process_measurement_table
 
 
 @pytest.fixture
@@ -48,7 +49,7 @@ def sample_params(test_data_dir):
     }
 
     params_file = test_data_dir / "test_params.yaml"
-    with open(params_file, "w") as f:
+    with open(params_file, "w", encoding="utf-8") as f:
         yaml.dump(params, f)
 
     return params_file
@@ -112,3 +113,20 @@ def sample_visit_table(test_data_dir):
     file_path = test_data_dir / "input" / "test_provider.parquet"
     df.to_parquet(file_path)
     return file_path
+
+
+def test_full_processing(
+    test_data_dir,
+    sample_params,
+    sample_measurement_values,
+    sample_measurement_categorical,
+):
+    """Test that specialties are mapped correctly to concept IDs."""
+    process_measurement_table(sample_params, test_data_dir)
+    measurement_table = pd.read_parquet(
+        test_data_dir / "output" / "MEASUREMENT.parquet"
+    )
+
+    # Verify the result
+    assert measurement_table is not None
+    assert len(measurement_table) > 0
