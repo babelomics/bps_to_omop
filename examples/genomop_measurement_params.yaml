@@ -2,10 +2,11 @@ input_dir: preomop/03_omop_initial/
 output_dir: preomop/04_omop_intermediate/MEASUREMENT/
 input_files:
   - 03_MPA.parquet
+  - 04_Tests.parquet
 vocab_dir: raw/omop_vocab/
 visit_dir: preomop/04_omop_intermediate/VISIT_OCCURRENCE/
 append_vocabulary:
-  02_Patologias_BPS.parquet: CLC
+  03_MPA.parquet: CLC
 column_map:
   03_MPA.parquet:
     desc_clc: measurement_source_value
@@ -13,6 +14,11 @@ column_map:
 vocabulary_config:
   03_MPA.parquet: 
     CLC: concept_name
+  04_Tests.parquet: 
+    SNOMED: concept_name
+value_map:
+  03_MPA.parquet: numeric
+  04_Tests.parquet: concept
 unmapped_measurement:
   0: 0
 unmapped_unit:
