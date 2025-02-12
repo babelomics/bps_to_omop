@@ -220,6 +220,23 @@ def sample_concept_relationship_table(test_data_dir):
     return file_path
 
 
+@pytest.fixture
+def sample_clc_table(test_data_dir):
+    """
+    Create a non-exhaustive sample CLC-BPS vocabulary table file.
+    """
+    df = pd.DataFrame(
+        {
+            "NombreConvCLC": ["Hemoglobina", "Plaquetas (recuento)", "Albúmina"],
+            "UnidadConv": ["g/dL", "x 10^3/µL", "g/dL"],
+        }
+    )
+
+    file_path = test_data_dir / "vocab" / "CLC.parquet"
+    df.to_parquet(file_path)
+    return file_path
+
+
 def test_full_processing(
     test_data_dir,
     sample_params,
@@ -227,6 +244,7 @@ def test_full_processing(
     sample_measurement_categorical,
     sample_concept_table,
     sample_concept_relationship_table,
+    sample_clc_table,
 ):
     """Test that specialties are mapped correctly to concept IDs."""
     process_measurement_table(sample_params, test_data_dir)
