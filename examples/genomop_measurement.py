@@ -1,13 +1,18 @@
 import argparse
 import os
 import sys
+import warnings
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as parquet
-from hepapred.datasets import data_dir
+
+try:
+    from package.datasets import data_dir
+except:
+    warnings.warn("No 'data_dir' variable provided.")
 
 sys.path.append("./external/bps_to_omop")
 import bps_to_omop.extract as ext
@@ -368,8 +373,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--parameters_file",
         type=str,
-        help="Parameters file",
+        help="Parameters file. See guide.",
         default="./hepapred/preomop/genomop_measurement_params.yaml",
     )
+    parser.add_argument(
+        "--data_dir",
+        type=str,
+        help="Common path to all data files",
+        default=data_dir,
+    )
     args = parser.parse_args()
-    process_measurement_table(args.parameters_file, data_dir)
+    process_measurement_table(args.parameters_file, args.data_dir)
