@@ -29,11 +29,22 @@ def sample_params(test_data_dir):
         "vocab_dir": "vocab",
         "visit_dir": "visit",
         "append_vocabulary": {"measurement_values.parquet": "CLC"},
-        "column_name_map": {},
-        "column_values_map": {
-            "test_measurement.parquet": {"CARDIOLOGIA": 38004451, "PEDIATRIA": 38004477}
+        "column_map": {
+            "measurement_values.parquet": {
+                "desc_clc": "measurement_source_value",
+                "valor": "value_source_value",
+            }
         },
-        "unmapped_specialty": {"NUEVA_ESPECIALIDAD": 0},
+        "vocabulary_config": {
+            "measurement_values.parquet": {"CLC": "concept_name"},
+            "measurement_concept.parquet": {"SNOMED": "concept_name"},
+        },  # TODO Add test to map by concept_code
+        "value_map": {
+            "measurement_values.parquet": "numeric",
+            "measurement_concept.parquet": "concept",
+        },  # TODO Maybe rename concept to categorical for consistency
+        "unmapped_measurement": {},
+        "unampped_unit": {"x 10^3/µL": 8848},
     }
 
     params_file = test_data_dir / "test_params.yaml"
@@ -52,7 +63,7 @@ def sample_measurement_values(test_data_dir):
             "start_date": ["2020-01-01", "2020-01-01", "2020-01-01"],
             "end_date": ["2020-01-01", "2020-01-01", "2020-01-01"],
             "type_concept": ["1", "1", "1"],
-            "desc_clc": ["Hemoglobina", "Albúmina", "Albúmina"],
+            "desc_clc": ["Hemoglobina", "Plaquetas (recuento)", "Albúmina"],
             "valor": ["11.0", "22.0", "33.0"],
         }
     )
