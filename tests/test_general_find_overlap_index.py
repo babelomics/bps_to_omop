@@ -9,7 +9,7 @@ sys.path.append("../bps_to_omop/")
 from bps_to_omop.general import find_overlap_index
 
 
-# == TETS ==============================================================================
+# == TESTS ==============================================================================
 def test_no_overlap():
     """Test when there are no overlaps"""
     df = pd.DataFrame(
