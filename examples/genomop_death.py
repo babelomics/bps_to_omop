@@ -16,7 +16,6 @@ except ModuleNotFoundError:
 sys.path.append("./external/bps_to_omop/")
 import bps_to_omop.extract as ext
 import bps_to_omop.general as gen
-import bps_to_omop.person as per
 from bps_to_omop.omop_schemas import omop_schemas
 
 
