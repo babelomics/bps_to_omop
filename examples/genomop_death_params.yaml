@@ -1,0 +1,6 @@
+input_dir: preomop/03_omop_initial/
+output_dir: preomop/04_omop_intermediate/DEATH/
+input_files:
+  - 01_sociodemo.parquet
+column_name_map:
+column_values_map:
