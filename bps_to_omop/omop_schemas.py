@@ -180,4 +180,15 @@ omop_schemas = {
             ("gender_source_concept_id", int64(), True),
         ]
     ),
+    "DEATH": schema(
+        [
+            ("person_id", int64(), False),
+            ("death_date", date32(), False),
+            ("death_datetime", timestamp("us"), True),
+            ("death_type_concept_id", int64(), True),
+            ("cause_concept_id", int64(), True),
+            ("cause_source_value", string(), True),
+            ("cause_source_concept_id", int64(), True),
+        ]
+    ),
 }
