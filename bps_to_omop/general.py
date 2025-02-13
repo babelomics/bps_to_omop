@@ -680,6 +680,32 @@ def reorder_omop_table(table: pa.Table, omop_schema: pa.Schema) -> pa.Table:
     return table.select(column_order)
 
 
+def format_table(table: pa.Table, schema: pa.Schema) -> pa.Table:
+    """Formats table to provided schema, adding, removing and renaming
+    columns as necessary.
+
+    Parameters
+    ----------
+    df : pa.Table
+        Input table to be formatted
+    schema : dict
+        Schema information
+
+    Returns
+    -------
+    pa.Table
+        Formatted table
+    """
+    # -- Finishing up
+    # Fill other fields
+    table = fill_omop_table(table, schema)
+    table = reorder_omop_table(table, schema)
+    # Cast to schema
+    table = table.cast(schema)
+
+    return table
+
+
 def rename_table_columns(table: pa.Table, col_map: dict) -> pa.Table:
     """
     Rename columns in a pyarrow Table based on a mapping dictionary.
