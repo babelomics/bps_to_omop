@@ -4,7 +4,6 @@ import sys
 import warnings
 from pathlib import Path
 
-import numpy as np
 import pyarrow as pa
 from pyarrow import parquet
 
@@ -70,15 +69,17 @@ def process_person_table(params_file: Path, data_dir_: Path = None):
         # Build date columns
         tmp_table = per.build_date_columns(tmp_table)
 
-        # Rename columns
-        col_map = {**column_name_map[f], "start_date": "birth_datetime"}
-        tmp_table = gen.rename_table_columns(tmp_table, col_map)
+        # -- Rename columns
+        # First ensure we have a dict even when no options where provided
+        column_name_map = (params_data.get("column_name_map", {}) or {}).get(f, {})
+        column_name_map = {**column_name_map, "start_date": "birth_datetime"}
+        tmp_table = gen.rename_table_columns(tmp_table, column_name_map)
 
-        # Apply the mapping
-        if len(column_values_map[f]) > 0:
-            column_map = column_values_map[f]
-            tmp_table = gen.apply_source_mapping(tmp_table, column_map)
+        # -- Apply values mapping
+        column_values_map = (params_data.get("column_values_map", {}) or {}).get(f, {})
+        tmp_table = gen.apply_source_mapping(tmp_table, column_values_map)
 
+        # Format the table
         tmp_table = create_person_table(tmp_table, omop_schemas["PERSON"])
 
         # Append to list
