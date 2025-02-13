@@ -1,4 +1,4 @@
-"""Module providing pyarrow scheme options"""
+"""Module providing pyarrow scheme options for an OMOP-CDM instance"""
 
 from pyarrow import date32, float64, int64, schema, string, timestamp
 
