@@ -615,8 +615,7 @@ def fill_omop_table(
         if field.type not in [pa.int64(), pa.string(), pa.float64()]:
             print(
                 f"Unhandled field type {field.type} for field {field.name}. "
-                f"Defaulting to string type.",
-                UserWarning,
+                f"Defaulting to string type."
             )
             field = field.with_type(pa.string())
 
