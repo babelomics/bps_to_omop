@@ -19,31 +19,6 @@ import bps_to_omop.person as per
 from bps_to_omop.omop_schemas import omop_schemas
 
 
-def create_person_table(table: pa.Table, schema: pa.Schema) -> pa.Table:
-    """Creates the PERSON table following the OMOP-CDM schema.
-
-    Parameters
-    ----------
-    df : pa.Table
-        Input table to be formatted
-    schema : dict
-        Schema information
-
-    Returns
-    -------
-    pa.Table
-        Table containing the PERSON table
-    """
-    # -- Finishing up
-    # Fill other fields
-    table = gen.fill_omop_table(table, schema)
-    table = gen.reorder_omop_table(table, schema)
-    # Cast to schema
-    table = table.cast(schema)
-
-    return table
-
-
 def process_person_table(params_file: Path, data_dir_: Path = None):
 
     # -- Load parameters --------------------------------------------------
@@ -80,7 +55,7 @@ def process_person_table(params_file: Path, data_dir_: Path = None):
         tmp_table = gen.apply_source_mapping(tmp_table, column_values_map)
 
         # Format the table
-        tmp_table = create_person_table(tmp_table, omop_schemas["PERSON"])
+        tmp_table = gen.format_table(tmp_table, omop_schemas["PERSON"])
 
         # Append to list
         table_person.append(tmp_table)

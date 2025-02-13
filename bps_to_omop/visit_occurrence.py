@@ -373,10 +373,6 @@ def format_to_omop(table: pa.Table, verbose: int = 0) -> pa.Table:
     table = table.add_column(0, "visit_occurrence_id", visit_occurrence_id)
 
     # Fill all other columns required by the OMOP schema
-    table = gen.fill_omop_table(table, omop_schema, verbose)
-
-    # Reorder columns and cast to OMOP schema
-    table = gen.reorder_omop_table(table, omop_schema)
-    table = table.cast(omop_schema)
+    table = gen.format_table(table, omop_schema)
 
     return table

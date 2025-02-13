@@ -307,9 +307,7 @@ def create_measurement_table(df: pd.DataFrame, schema: dict) -> pa.Table:
     )
 
     # Fill, reorder and cast to schema
-    table = gen.fill_omop_table(table, schema)
-    table = gen.reorder_omop_table(table, schema)
-    table = table.cast(schema)
+    table = gen.format_table(table, schema)
 
     return table
 

@@ -69,9 +69,7 @@ print("Formatting to OMOP...")
 provider_table = pa.Table.from_pylist(provider, schema=omop_schemas["PROVIDER"])
 
 # Fill, reorder and cast to schema
-provider_table = gen.fill_omop_table(provider_table, omop_schemas["PROVIDER"])
-provider_table = gen.reorder_omop_table(provider_table, omop_schemas["PROVIDER"])
-provider_table = provider_table.cast(omop_schemas["PROVIDER"])
+provider_table = gen.format_table(provider_table, omop_schemas["PROVIDER"])
 
 # == Save to parquet ==============================================================================
 print("Saving to parquet...")

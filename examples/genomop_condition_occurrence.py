@@ -119,10 +119,8 @@ visit_end_date = pc.cast(
 table = table.add_column(1, "condition_start_date", visit_start_date)
 table = table.add_column(2, "condition_end_date", visit_end_date)
 
-# Fill, reorder and cast to schema
-table = gen.fill_omop_table(table, omop_schemas["CONDITION_OCCURRENCE"])
-table = gen.reorder_omop_table(table, omop_schemas["CONDITION_OCCURRENCE"])
-table = table.cast(omop_schemas["CONDITION_OCCURRENCE"])
+# Format to schema
+table_cdm_source = gen.format_table(table, omop_schemas["CONDITION_OCCURRENCE"])
 
 # == Save to parquet ==================================================
 print("Saving to parquet...")

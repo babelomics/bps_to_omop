@@ -19,31 +19,6 @@ import bps_to_omop.general as gen
 from bps_to_omop.omop_schemas import omop_schemas
 
 
-def create_death_table(table: pa.Table, schema: pa.Schema) -> pa.Table:
-    """Creates the DEATH table following the OMOP-CDM schema.
-
-    Parameters
-    ----------
-    df : pa.Table
-        Input table to be formatted
-    schema : dict
-        Schema information
-
-    Returns
-    -------
-    pa.Table
-        Table containing the DEATH table
-    """
-    # -- Finishing up
-    # Fill other fields
-    table = gen.fill_omop_table(table, schema)
-    table = gen.reorder_omop_table(table, schema)
-    # Cast to schema
-    table = table.cast(schema)
-
-    return table
-
-
 def process_death_table(params_file: Path, data_dir_: Path = None):
 
     # -- Load parameters --------------------------------------------------
@@ -82,7 +57,7 @@ def process_death_table(params_file: Path, data_dir_: Path = None):
         # Death table should not have nulls, remove them
         mask = pc.is_valid(pc.cast(tmp_table["death_date"], pa.string()))
         tmp_table = tmp_table.filter(mask)
-        tmp_table = create_death_table(tmp_table, omop_schemas["DEATH"])
+        tmp_table = gen.format_table(tmp_table, omop_schemas["DEATH"])
 
         # Append to list
         table_death.append(tmp_table)

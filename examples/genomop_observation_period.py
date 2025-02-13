@@ -104,9 +104,7 @@ table = gen.rename_table_columns(
 )
 
 # Fill, reorder and cast to schema
-table = gen.fill_omop_table(table, omop_schemas["OBSERVATION_PERIOD"])
-table = gen.reorder_omop_table(table, omop_schemas["OBSERVATION_PERIOD"])
-table = table.cast(omop_schemas["OBSERVATION_PERIOD"])
+table = gen.format_table(table, omop_schemas["OBSERVATION_PERIOD"])
 print("Done!")
 
 # %%

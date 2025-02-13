@@ -33,10 +33,8 @@ table_cdm_source = pa.Table.from_pylist(
     cdm_source_row, schema=omop_schemas["CDM_SOURCE"]
 )
 
-# Fill extra fields
-table_cdm_source = gen.fill_omop_table(table_cdm_source, omop_schemas["CDM_SOURCE"])
-table_cdm_source = gen.reorder_omop_table(table_cdm_source, omop_schemas["CDM_SOURCE"])
-# Cast to schema
-table_cdm_source = table_cdm_source.cast(omop_schemas["CDM_SOURCE"])
+# Format to schema
+table_cdm_source = gen.format_table(table_cdm_source, omop_schemas["CDM_SOURCE"])
+
 # Save
 parquet.write_table(table_cdm_source, output_dir / "CDM_SOURCE.parquet")
