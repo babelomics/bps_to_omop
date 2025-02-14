@@ -3,4 +3,6 @@ output_dir: preomop/04_omop_intermediate/DEATH/
 input_files:
   - 01_sociodemo.parquet
 column_name_map:
+  01_sociodemo.parquet:
+    end_date: death_date
 column_values_map:

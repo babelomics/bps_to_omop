@@ -42,13 +42,13 @@ def process_death_table(params_file: Path, data_dir_: Path = None):
         # -- Rename columns
         # First ensure we have a dict even when no options where provided
         column_name_map = (params_data.get("column_name_map", {}) or {}).get(f, {})
-        # ensure we always change the end_date
+
         column_name_map = {
             **column_name_map,
-            "end_date": "death_date",
             "type_concept": "death_type_concept_id",
         }
         tmp_table = gen.rename_table_columns(tmp_table, column_name_map)
+        assert "death_date" in tmp_table.columns
 
         # -- Apply values mapping
         column_values_map = (params_data.get("column_values_map", {}) or {}).get(f, {})
