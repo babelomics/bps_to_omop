@@ -465,8 +465,8 @@ def find_visit_occurence_id(
     # Check for required columns in visits_df
     required_visit_columns = [
         "person_id",
-        "visit_start_date",
-        "visit_end_date",
+        "visit_start_datetime",
+        "visit_end_datetime",
         "visit_occurrence_id",
     ]
     missing_visit_columns = set(required_visit_columns) - set(visits_df.columns)
@@ -481,20 +481,22 @@ def find_visit_occurence_id(
     if verbose > 0:
         print(" Sorting dataframes...")
     events_df[event_columns[1]] = events_df[event_columns[1]].astype("datetime64[ms]")
-    visits_df["visit_start_date"] = visits_df["visit_start_date"].astype(
+    visits_df["visit_start_datetime"] = visits_df["visit_start_datetime"].astype(
         "datetime64[ms]"
     )
-    visits_df["visit_end_date"] = visits_df["visit_end_date"].astype("datetime64[ms]")
+    visits_df["visit_end_datetime"] = visits_df["visit_end_datetime"].astype(
+        "datetime64[ms]"
+    )
 
     # Drop all duplicates, if visits are not unique we cannot assign them
     visits_df = visits_df.drop_duplicates(
-        subset=["person_id", "visit_start_date", "visit_end_date"], keep=False
+        subset=["person_id", "visit_start_datetime", "visit_end_datetime"], keep=False
     )
 
     # Sort the neccesary columns of dataframes
     events_df = events_df.sort_values([event_columns[0], event_columns[1]])
     visits_df = visits_df.sort_values(
-        [event_columns[0], "visit_start_date", "visit_end_date"]
+        [event_columns[0], "visit_start_datetime", "visit_end_datetime"]
     )
 
     # == Merging ======================================================
@@ -520,9 +522,9 @@ def find_visit_occurence_id(
     if verbose > 0:
         print(" Filtering valid ranges...")
     # Create mask for dates within range
-    date_range_mask = (merged_df[event_columns[1]] >= merged_df["visit_start_date"]) & (
-        merged_df[event_columns[1]] <= merged_df["visit_end_date"]
-    )
+    date_range_mask = (
+        merged_df[event_columns[1]] >= merged_df["visit_start_datetime"]
+    ) & (merged_df[event_columns[1]] <= merged_df["visit_end_datetime"])
     # Filter only valid ranges
     valid_ranges = merged_df[date_range_mask]
 
@@ -534,8 +536,8 @@ def find_visit_occurence_id(
                 event_columns[0],
                 event_columns[2],
                 "visit_occurrence_id",
-                "visit_start_date",
-                "visit_end_date",
+                "visit_start_datetime",
+                "visit_end_datetime",
             ]
         ],
         on=[event_columns[0], event_columns[2]],

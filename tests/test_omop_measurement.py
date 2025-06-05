@@ -107,8 +107,8 @@ def sample_visit_table(test_data_dir):
         {
             "visit_occurrence_id": [1, 2],
             "person_id": [1, 2],
-            "visit_start_date": ["2020-01-01", "2020-01-01"],
-            "visit_end_date": ["2020-01-01", "2020-01-01"],
+            "visit_start_datetime": ["2020-01-01", "2020-01-01"],
+            "visit_end_datetime": ["2020-01-01", "2020-01-01"],
             "visit_type_concept_id": ["1", "1"],
         }
     )
