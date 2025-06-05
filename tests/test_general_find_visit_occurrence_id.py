@@ -31,12 +31,14 @@ def test_simple_visit():
         {
             "visit_occurrence_id": [0, 1],
             "person_id": [1, 2],
-            "visit_start_date": ["2024-01-01", "2024-03-01"],
-            "visit_end_date": ["2024-01-01", "2024-03-01"],
+            "visit_start_datetime": ["2024-01-01", "2024-03-01"],
+            "visit_end_datetime": ["2024-01-01", "2024-03-01"],
         }
     ).assign(
-        visit_start_date=lambda x: x["visit_start_date"].astype("datetime64[ms]"),
-        visit_end_date=lambda x: x["visit_end_date"].astype("datetime64[ms]"),
+        visit_start_datetime=lambda x: x["visit_start_datetime"].astype(
+            "datetime64[ms]"
+        ),
+        visit_end_datetime=lambda x: x["visit_end_datetime"].astype("datetime64[ms]"),
     )
     # -- Prepare output
     out = pd.DataFrame(
@@ -47,14 +49,16 @@ def test_simple_visit():
             "end_date": ["2024-01-01", "2024-01-05", "2024-03-01"],
             "visit_type": ["A", "B", "C"],
             "visit_occurrence_id": [0, np.nan, 1],
-            "visit_start_date": ["2024-01-01", pd.NaT, "2024-03-01"],
-            "visit_end_date": ["2024-01-01", pd.NaT, "2024-03-01"],
+            "visit_start_datetime": ["2024-01-01", pd.NaT, "2024-03-01"],
+            "visit_end_datetime": ["2024-01-01", pd.NaT, "2024-03-01"],
         }
     ).assign(
         start_date=lambda x: x["start_date"].astype("datetime64[ms]"),
         end_date=lambda x: x["end_date"].astype("datetime64[ms]"),
-        visit_start_date=lambda x: x["visit_start_date"].astype("datetime64[ms]"),
-        visit_end_date=lambda x: x["visit_end_date"].astype("datetime64[ms]"),
+        visit_start_datetime=lambda x: x["visit_start_datetime"].astype(
+            "datetime64[ms]"
+        ),
+        visit_end_datetime=lambda x: x["visit_end_datetime"].astype("datetime64[ms]"),
     )
 
     result = find_visit_occurence_id(events, event_columns, visits)
@@ -81,12 +85,14 @@ def test_same_date_different_person():
         {
             "visit_occurrence_id": [0, 1],
             "person_id": [1, 3],
-            "visit_start_date": ["2024-01-01", "2024-01-01"],
-            "visit_end_date": ["2024-01-01", "2024-01-01"],
+            "visit_start_datetime": ["2024-01-01", "2024-01-01"],
+            "visit_end_datetime": ["2024-01-01", "2024-01-01"],
         }
     ).assign(
-        visit_start_date=lambda x: x["visit_start_date"].astype("datetime64[ms]"),
-        visit_end_date=lambda x: x["visit_end_date"].astype("datetime64[ms]"),
+        visit_start_datetime=lambda x: x["visit_start_datetime"].astype(
+            "datetime64[ms]"
+        ),
+        visit_end_datetime=lambda x: x["visit_end_datetime"].astype("datetime64[ms]"),
     )
     # -- Prepare output
     out = pd.DataFrame(
@@ -97,14 +103,16 @@ def test_same_date_different_person():
             "end_date": ["2024-01-01", "2024-01-01"],
             "visit_type": ["A", "C"],
             "visit_occurrence_id": [0, np.nan],
-            "visit_start_date": ["2024-01-01", pd.NaT],
-            "visit_end_date": ["2024-01-01", pd.NaT],
+            "visit_start_datetime": ["2024-01-01", pd.NaT],
+            "visit_end_datetime": ["2024-01-01", pd.NaT],
         }
     ).assign(
         start_date=lambda x: x["start_date"].astype("datetime64[ms]"),
         end_date=lambda x: x["end_date"].astype("datetime64[ms]"),
-        visit_start_date=lambda x: x["visit_start_date"].astype("datetime64[ms]"),
-        visit_end_date=lambda x: x["visit_end_date"].astype("datetime64[ms]"),
+        visit_start_datetime=lambda x: x["visit_start_datetime"].astype(
+            "datetime64[ms]"
+        ),
+        visit_end_datetime=lambda x: x["visit_end_datetime"].astype("datetime64[ms]"),
     )
 
     result = find_visit_occurence_id(events, event_columns, visits)
@@ -131,12 +139,14 @@ def test_no_valid_visits():
         {
             "visit_occurrence_id": [0, 1],
             "person_id": [1, 1],
-            "visit_start_date": ["2024-02-01", "2024-02-01"],
-            "visit_end_date": ["2024-02-01", "2024-02-01"],
+            "visit_start_datetime": ["2024-02-01", "2024-02-01"],
+            "visit_end_datetime": ["2024-02-01", "2024-02-01"],
         }
     ).assign(
-        visit_start_date=lambda x: x["visit_start_date"].astype("datetime64[ms]"),
-        visit_end_date=lambda x: x["visit_end_date"].astype("datetime64[ms]"),
+        visit_start_datetime=lambda x: x["visit_start_datetime"].astype(
+            "datetime64[ms]"
+        ),
+        visit_end_datetime=lambda x: x["visit_end_datetime"].astype("datetime64[ms]"),
     )
 
     with pytest.raises(ValueError):
