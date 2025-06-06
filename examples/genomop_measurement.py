@@ -8,21 +8,19 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as parquet
+from src.utils import read_params
 
-try:
-    from package.datasets import data_dir
-except ModuleNotFoundError:
-    warnings.warn("No 'data_dir' variable provided.")
-
-sys.path.append("./external/bps_to_omop")
-import bps_to_omop.extract as ext
-import bps_to_omop.general as gen
-import bps_to_omop.measurement as mea
-from bps_to_omop.omop_schemas import omop_schemas
+sys.path.append(
+    "./external/bps_to_omop"
+)  # This is needed or else some other functions in bps_to_omop wont work
+import external.bps_to_omop.bps_to_omop.extract as ext
+import external.bps_to_omop.bps_to_omop.general as gen
+import external.bps_to_omop.bps_to_omop.measurement as mea
+from external.bps_to_omop.bps_to_omop.omop_schemas import omop_schemas
 
 
 def preprocess_files(
-    params_data: dict, concept_df: pd.DataFrame, data_dir_: Path
+    params_data: dict, concept_df: pd.DataFrame, data_dir: Path
 ) -> pd.DataFrame:
     """Preprocess all files to create an unique dataframe
 
@@ -32,7 +30,7 @@ def preprocess_files(
         dictionary with the parameters for the preprocessing
     concept_df : pd.DataFrame
         CONCEPT table
-    data_dir_ : Path
+    data_dir : Path
         Path to the upstream location of the data files
 
     Returns
@@ -51,7 +49,7 @@ def preprocess_files(
     df_complete = []
     for f in input_files:
         print(f" Processing {f}: ")
-        tmp_df = pd.read_parquet(data_dir_ / input_dir / f)
+        tmp_df = pd.read_parquet(data_dir / input_dir / f)
         # assign new vocabulary column if needed
         if params_data.get("append_vocabulary", False):
             if params_data["append_vocabulary"].get(f, False):
@@ -69,7 +67,12 @@ def preprocess_files(
             "measurement_source_concept_id",
         )
         if value_map[f] == "numeric":
-            tmp_df["value_as_number"] = pd.to_numeric(tmp_df["value_source_value"])
+            try:
+                tmp_df["value_as_number"] = pd.to_numeric(tmp_df["value_source_value"])
+            except ValueError as e:
+                raise ValueError(
+                    f"Some values in {f} could not be converted to numeric. Check columns assigned to 'value_source_value' and preprocess if necessary."
+                ) from e
         elif value_map[f] == "concept":
             tmp_df = gen.map_source_value(
                 tmp_df,
@@ -278,15 +281,15 @@ def retrieve_visit_occurrence_id(df: pd.DataFrame, table_dir: Path) -> pd.DataFr
 
 # %%
 # == Final touches ====================================================
-def create_measurement_table(df: pd.DataFrame, schema: dict) -> pa.Table:
+def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
     """Creates the MEASUREMENT table following the OMOP-CDM schema.
 
     Parameters
     ----------
     df : pd.DataFrame
         Preprocessed dataframe with measurement data
-    schemas : dict
-        dict containing the schema information
+    schema : pa.Schema
+        Schema information
 
     Returns
     -------
@@ -312,32 +315,35 @@ def create_measurement_table(df: pd.DataFrame, schema: dict) -> pa.Table:
     return table
 
 
-def process_measurement_table(params_file: str, data_dir_: Path = None) -> pa.Table:
+def process_measurement_table(params_file: str, data_dir: Path = None):
 
     # -- Load parameters ----------------------------------------------
     print("Reading parameters...")
 
     # -- Load yaml file and related info
-    params_data = ext.read_yaml_params(params_file)
+    params_gen = read_params("./params.yaml")
+    params_data = read_params(params_file)
+
+    data_dir = Path(params_gen["repo_data_dir"])
     output_dir = params_data["output_dir"]
     vocab_dir = params_data["vocab_dir"]
     visit_dir = params_data["visit_dir"]
 
-    os.makedirs(data_dir_ / output_dir, exist_ok=True)
+    os.makedirs(data_dir / output_dir, exist_ok=True)
 
     # -- Load vocabularies --------------------------------------------
     print("Loading vocabularies...")
     concept_df = pd.read_parquet(
-        data_dir_ / vocab_dir / "CONCEPT.parquet"
+        data_dir / vocab_dir / "CONCEPT.parquet"
     ).infer_objects()
     concept_rel_df = pd.read_parquet(
-        data_dir_ / vocab_dir / "CONCEPT_RELATIONSHIP.parquet"
+        data_dir / vocab_dir / "CONCEPT_RELATIONSHIP.parquet"
     ).infer_objects()
     # Load CLC database
-    clc_df = pd.read_parquet(data_dir_ / vocab_dir / "CLC.parquet")
+    clc_df = pd.read_parquet(data_dir / vocab_dir / "CLC.parquet")
 
     # -- Load each file and prepare it --------------------------------
-    df = preprocess_files(params_data, concept_df, data_dir_)
+    df = preprocess_files(params_data, concept_df, data_dir)
 
     # -- Map units ----------------------------------------------------
     df = map_units(df, clc_df, concept_df)
@@ -350,14 +356,14 @@ def process_measurement_table(params_file: str, data_dir_: Path = None) -> pa.Ta
     df = check_unmapped_values(df, params_data, test_list)
 
     # -- Retrieve visit_occurrence_id ---------------------------------
-    df = retrieve_visit_occurrence_id(df, data_dir_ / visit_dir)
+    df = retrieve_visit_occurrence_id(df, data_dir / visit_dir)
 
     # -- Standardize contents -----------------------------------------
     table = create_measurement_table(df, omop_schemas["MEASUREMENT"])
 
     # -- Save ---------------------------------------------------------
     print("Saving to parquet...")
-    parquet.write_table(table, data_dir_ / output_dir / "MEASUREMENT.parquet")
+    parquet.write_table(table, data_dir / output_dir / "MEASUREMENT.parquet")
     print("Done.")
 
 
@@ -369,13 +375,7 @@ if __name__ == "__main__":
         "--parameters_file",
         type=str,
         help="Parameters file. See guide.",
-        default="./hepapred/preomop/genomop_measurement_params.yaml",
-    )
-    parser.add_argument(
-        "--data_dir",
-        type=str,
-        help="Common path to all data files",
-        default=data_dir,
+        default="./src/genomop_measurement_params.yaml",
     )
     args = parser.parse_args()
-    process_measurement_table(args.parameters_file, args.data_dir)
+    process_measurement_table(args.parameters_file)
