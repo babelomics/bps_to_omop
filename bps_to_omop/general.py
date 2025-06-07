@@ -1268,7 +1268,6 @@ def update_concept_mappings(
 ) -> pd.DataFrame:
     """
     Update concept mappings in a DataFrame using provided new mappings.
-    Only proceeds if there are unmapped values in the DataFrame.
 
     Parameters
     ----------
