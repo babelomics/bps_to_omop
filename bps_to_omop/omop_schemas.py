@@ -197,7 +197,7 @@ omop_schemas = {
     ),
     "COHORT": schema(
         [
-            ("cohort_id", int64(), False),
+            ("cohort_definition_id", int64(), False),
             ("subject_id", int64(), False),
             ("cohort_start_date", date32(), False),
             ("cohort_end_date", date32(), False),
