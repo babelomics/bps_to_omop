@@ -1,4 +1,8 @@
-"""Module providing pyarrow scheme options for an OMOP-CDM instance"""
+"""
+Module providing pyarrow scheme options for an OMOP-CDM instance
+
+The structure is (field_name, field_datatype, is_nullable)
+"""
 
 from pyarrow import date32, float64, int64, schema, string, timestamp
 
@@ -189,6 +193,25 @@ omop_schemas = {
             ("cause_concept_id", int64(), True),
             ("cause_source_value", string(), True),
             ("cause_source_concept_id", int64(), True),
+        ]
+    ),
+    "COHORT": schema(
+        [
+            ("cohort_id", int64(), False),
+            ("subject_id", int64(), False),
+            ("cohort_start_date", date32(), False),
+            ("cohort_end_date", date32(), False),
+        ]
+    ),
+    "COHORT_DEFINITION": schema(
+        [
+            ("cohort_definition_id", int64(), False),
+            ("cohort_definition_name", string(), False),
+            ("cohort_definition_description", string(), True),
+            ("definition_type_concept_id", int64(), False),
+            ("cohort_definition_syntax", string(), True),
+            ("subject_concept_id", int64(), False),
+            ("cohort_initiation_date", date32(), True),
         ]
     ),
 }
