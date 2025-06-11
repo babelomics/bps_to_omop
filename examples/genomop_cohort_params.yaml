@@ -1,0 +1,28 @@
+input_dir: rare/03_omop_initial/
+output_dir: rare/04_omop_intermediate/COHORT/
+cohorts:
+  diagnosed: 
+    sociodemo_file: Hepatitis_Diag_Sociodemo.parquet
+    cohort_definition_id: 1
+    cohort_definition_name: Patients with a positive test for hepatitis-C
+    subject_concept_id: 1147314 # OMOP code for person
+    definition_type_concept_id: 32882 # OMOP code for Standard algorithm from EHR
+    cohort_start_date: "2017-01-01"
+    cohort_end_date: "2023-12-01"
+  control: 
+    sociodemo_file: Hepatitis_Control_Sociodemo.parquet
+    cohort_definition_name: Patients with a negative test for hepatitis-C
+    subject_concept_id: 1147314 # OMOP code for person
+    definition_type_concept_id: 32882 # OMOP code for Standard algorithm from EHR
+    cohort_definition_id: 2
+    cohort_start_date: "2017-01-01"
+    cohort_end_date: "2023-12-01"
+  aleatorio: 
+    sociodemo_file: Hepatitis_Aleatorio_Sociodemo.parquet
+    cohort_definition_name: Random sample from the general population
+    subject_concept_id: 1147314 # OMOP code for person
+    definition_type_concept_id: 32882 # OMOP code for Standard algorithm from EHR
+    cohort_definition_id: 3
+    cohort_start_date: "2017-01-01"
+    cohort_end_date: "2023-12-01"
+  
