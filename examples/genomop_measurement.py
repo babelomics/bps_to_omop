@@ -8,15 +8,11 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as parquet
-from src.utils import read_params
 
-sys.path.append(
-    "./external/bps_to_omop"
-)  # This is needed or else some other functions in bps_to_omop wont work
-import external.bps_to_omop.bps_to_omop.extract as ext
-import external.bps_to_omop.bps_to_omop.general as gen
-import external.bps_to_omop.bps_to_omop.measurement as mea
-from external.bps_to_omop.bps_to_omop.omop_schemas import omop_schemas
+import bps_to_omop.extract as ext
+import bps_to_omop.general as gen
+import bps_to_omop.measurement as mea
+from bps_to_omop.omop_schemas import omop_schemas
 
 
 def preprocess_files(
@@ -321,8 +317,8 @@ def process_measurement_table(params_file: str, data_dir: Path = None):
     print("Reading parameters...")
 
     # -- Load yaml file and related info
-    params_gen = read_params("./params.yaml")
-    params_data = read_params(params_file)
+    params_gen = ext.read_yaml_params(params_file)
+    params_data = ext.read_yaml_params(params_file)
 
     data_dir = Path(params_gen["repo_data_dir"])
     output_dir = params_data["output_dir"]
