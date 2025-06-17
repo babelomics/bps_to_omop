@@ -41,6 +41,7 @@ notebook = "*"
 pyyaml = "*"
 quarto = "*"
 dask = "*"
+polars = "*"
 
 [tool.pixi.pypi-dependencies]
 bps_to_omop = { path = ".", editable = true }
