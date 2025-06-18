@@ -314,6 +314,37 @@ def check_unmapped_values(
     return df
 
 
+def retrieve_visit_occurrence_id(df: pd.DataFrame, table_dir: Path) -> pd.DataFrame:
+    """Retrieve the visit_occurrence_id foreign key fro the VISIT_OCCURRENCE table.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input dataframe
+    visit_dir : Path
+        Location of the VISIT_OCCURRENCE.parquet file.
+
+    Returns
+    -------
+    pd.DataFrame
+        Input dataframe with additional columns for visit_occurrence_id,
+        visit_start_date and visit_end_date, if found.
+    """
+    print("Looking for visit_occurrence_id...")
+    # Create the primary key
+    df["measurement_id"] = pa.array(range(len(df)))
+
+    # Look for visit_occurrence_id
+    df_visit_occurrence = pd.read_parquet(table_dir / "VISIT_OCCURRENCE.parquet")
+    df = gen.find_visit_occurence_id(
+        df,
+        ["person_id", "start_date", "measurement_id"],
+        df_visit_occurrence,
+        verbose=2,
+    )
+    return df
+
+
 def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
     """Creates the MEASUREMENT table following the OMOP-CDM schema.
 
