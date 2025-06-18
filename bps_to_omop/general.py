@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+import polars as pl
 import pyarrow as pa
 import pyarrow.compute as pc
 import scipy.stats as st
@@ -447,7 +448,10 @@ def find_visit_occurence_id(
     ValueError
         If required columns are missing in input DataFrames.
     """
-    pd.options.mode.copy_on_write = True
+    # Transform to polars dataframes
+    events_df = pl.from_pandas(events_df)
+    visits_df = pl.from_pandas(visits_df)
+
     # == Initial message ==============================================
     if verbose > 0:
         print("Looking for visit_occurrence_id matches:")
@@ -474,43 +478,36 @@ def find_visit_occurence_id(
         raise ValueError(
             f"Missing required columns in visits_df: {missing_visit_columns}"
         )
-    visits_df = visits_df[required_visit_columns]
+    visits_df = visits_df.select(required_visit_columns)
 
     # == Force dtypes and sort ========================================
     # Ensure start_date and visit dates are datetime
     if verbose > 0:
         print(" Sorting dataframes...")
-    events_df[event_columns[1]] = events_df[event_columns[1]].astype("datetime64[ms]")
-    visits_df["visit_start_datetime"] = visits_df["visit_start_datetime"].astype(
-        "datetime64[ms]"
-    )
-    visits_df["visit_end_datetime"] = visits_df["visit_end_datetime"].astype(
-        "datetime64[ms]"
+    events_df = events_df.with_columns(pl.col(event_columns[1]).cast(pl.Datetime("ms")))
+    visits_df = visits_df.with_columns(
+        pl.col("visit_start_datetime").cast(pl.Datetime("ms")),
+        pl.col("visit_end_datetime").cast(pl.Datetime("ms")),
     )
 
     # Drop all duplicates, if visits are not unique we cannot assign them
-    visits_df = visits_df.drop_duplicates(
-        subset=["person_id", "visit_start_datetime", "visit_end_datetime"], keep=False
+    visits_df = visits_df.unique(
+        subset=["person_id", "visit_start_datetime", "visit_end_datetime"], keep="none"
     )
 
     # Sort the neccesary columns of dataframes
-    events_df = events_df.sort_values([event_columns[0], event_columns[1]])
-    visits_df = visits_df.sort_values(
+    events_df = events_df.sort([event_columns[0], event_columns[1]])
+    visits_df = visits_df.sort(
         [event_columns[0], "visit_start_datetime", "visit_end_datetime"]
     )
 
     # == Merging ======================================================
     if verbose > 0:
         print(" Combining results...")
-    merged_df = pd.merge(
-        events_df.reset_index(drop=True),
-        visits_df.reset_index(drop=True),
-        on=event_columns[0],
-        how="left",
-    )
+    merged_df = visits_df.join(events_df, on=event_columns[0], how="left")
 
     # Check if merge resulted in any matches
-    if merged_df["visit_occurrence_id"].isna().all():
+    if merged_df["visit_occurrence_id"].is_null().all():
         raise ValueError(
             (
                 "No matching records found after merging."
@@ -521,36 +518,37 @@ def find_visit_occurence_id(
     # == Filter for valid ranges ======================================
     if verbose > 0:
         print(" Filtering valid ranges...")
-    # Create mask for dates within range
-    date_range_mask = (
-        merged_df[event_columns[1]] >= merged_df["visit_start_datetime"]
-    ) & (merged_df[event_columns[1]] <= merged_df["visit_end_datetime"])
-    # Filter only valid ranges
-    valid_ranges = merged_df[date_range_mask]
+    # Filter only valid ranges within range
+    valid_ranges = merged_df.filter(
+        pl.col(event_columns[1]).is_between(
+            pl.col("visit_start_datetime"), pl.col("visit_end_datetime"), closed="both"
+        )
+    )
+    valid_ranges = valid_ranges[
+        [
+            event_columns[0],
+            event_columns[2],
+            "visit_occurrence_id",
+            "visit_start_datetime",
+            "visit_end_datetime",
+        ]
+    ]
 
     # Merge with original to retrieve events without visit_occurrence_id
-    final_df = pd.merge(
-        events_df,
-        valid_ranges[
-            [
-                event_columns[0],
-                event_columns[2],
-                "visit_occurrence_id",
-                "visit_start_datetime",
-                "visit_end_datetime",
-            ]
-        ],
+    final_df = events_df.join(
+        valid_ranges,
         on=[event_columns[0], event_columns[2]],
         how="left",
     )
+
     # Sometimes, there might be events that land in visits that share a day.
     # Those would be duplicated on the event_id. Let's drop those duplicates
     # Since they're ordered, we will only lose the second visit, the one
     # that starts with the event
-    final_df = final_df.drop_duplicates([event_columns[0], event_columns[2]])
+    final_df = final_df.unique(subset=[event_columns[0], event_columns[2]])
 
     if verbose > 1:
-        if valid_ranges.empty:
+        if valid_ranges.is_empty():
             print(
                 (
                     " Warning: No valid date ranges found."
@@ -566,7 +564,7 @@ def find_visit_occurence_id(
     if verbose > 0:
         print(" Done.")
 
-    return final_df
+    return final_df.to_pandas()
 
 
 def fill_omop_table(
