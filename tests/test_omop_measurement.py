@@ -274,20 +274,41 @@ def test_full_processing(
     value_as_concept_id = pd.Series([np.nan, np.nan, 9189, np.nan, 9191])
     unit_concept_id = pd.Series([8713, 8848, np.nan, 8713, np.nan])
 
+    out = pd.DataFrame(
+        {
+            "person_id": person_id,
+            "measurement_concept_id": measurement_concept_id,
+            "value_as_number": value_as_number,
+            "value_as_concept_id": value_as_concept_id,
+            "unit_concept_id": unit_concept_id,
+        }
+    )
+
+    measurement_table = measurement_table.sort_values(
+        ["person_id", "measurement_concept_id"]
+    ).reset_index(drop=True)
+    out = out.sort_values(["person_id", "measurement_concept_id"]).reset_index(
+        drop=True
+    )
+
     # General verifications
     assert measurement_table is not None
     assert len(measurement_table) > 0
 
     # Check columns
     assert len(measurement_table["measurement_id"].unique()) == len(measurement_table)
-    assert np.all(measurement_table["person_id"] == person_id)
-    assert np.all(measurement_table["measurement_concept_id"] == measurement_concept_id)
-    assert np.allclose(
-        measurement_table["value_as_number"], value_as_number, equal_nan=True
+    assert np.all(measurement_table["person_id"] == out["person_id"])
+    assert np.all(
+        measurement_table["measurement_concept_id"] == out["measurement_concept_id"]
     )
     assert np.allclose(
-        measurement_table["value_as_concept_id"], value_as_concept_id, equal_nan=True
+        measurement_table["value_as_number"], out["value_as_number"], equal_nan=True
     )
     assert np.allclose(
-        measurement_table["unit_concept_id"], unit_concept_id, equal_nan=True
+        measurement_table["value_as_concept_id"],
+        out["value_as_concept_id"],
+        equal_nan=True,
+    )
+    assert np.allclose(
+        measurement_table["unit_concept_id"], out["unit_concept_id"], equal_nan=True
     )

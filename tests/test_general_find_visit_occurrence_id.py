@@ -62,6 +62,12 @@ def test_simple_visit():
     )
 
     result = find_visit_occurence_id(events, event_columns, visits)
+    result = result.sort_values(["person_id", "start_date", "event_id"]).reset_index(
+        drop=True
+    )
+    out = out.sort_values(["person_id", "start_date", "event_id"]).reset_index(
+        drop=True
+    )
     pd.testing.assert_frame_equal(result, out)
 
 
@@ -116,6 +122,12 @@ def test_same_date_different_person():
     )
 
     result = find_visit_occurence_id(events, event_columns, visits)
+    result = result.sort_values(["person_id", "start_date", "event_id"]).reset_index(
+        drop=True
+    )
+    out = out.sort_values(["person_id", "start_date", "event_id"]).reset_index(
+        drop=True
+    )
     pd.testing.assert_frame_equal(result, out)
 
 
@@ -205,4 +217,10 @@ def test_same_day_different_hour():
     )
 
     result = find_visit_occurence_id(events, event_columns, visits)
+    result = result.sort_values(["person_id", "start_date", "event_id"]).reset_index(
+        drop=True
+    )
+    out = out.sort_values(["person_id", "start_date", "event_id"]).reset_index(
+        drop=True
+    )
     pd.testing.assert_frame_equal(result, out)
