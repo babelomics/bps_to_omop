@@ -7,6 +7,8 @@
 #
 # http://omop-erd.surge.sh/omop_cdm/tables/MEASUREMENT.html
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 
@@ -189,3 +191,49 @@ def map_standard_concepts(
     df.loc[non_unit_rows, "unit_concept_id"] = np.nan
 
     return df
+
+
+def process_measurement_table(data_dir: Path, params_measurement: dict):
+
+    # -- Unwrap some params for clarity ------------------------------
+    output_dir = params_measurement["output_dir"]
+    vocab_dir = params_measurement["vocab_dir"]
+    visit_dir = params_measurement["visit_dir"]
+
+    # Convert to Path
+    data_dir = Path(data_dir)
+
+    # -- Load vocabularies --------------------------------------------
+    print("Loading vocabularies...")
+    concept_df = pd.read_parquet(
+        data_dir / vocab_dir / "CONCEPT.parquet"
+    ).infer_objects()
+    concept_rel_df = pd.read_parquet(
+        data_dir / vocab_dir / "CONCEPT_RELATIONSHIP.parquet"
+    ).infer_objects()
+    # Load CLC database
+    clc_df = pd.read_parquet(data_dir / vocab_dir / "CLC.parquet")
+
+    # -- Load each file and prepare it --------------------------------
+    df = preprocess_files(params_data, concept_df, data_dir)
+
+    # -- Map units ----------------------------------------------------
+    df = map_units(df, clc_df, concept_df)
+
+    # -- Map to standard concepts -------------------------------------
+    df = map_standard_concepts(df, concept_rel_df)
+
+    # -- Check for codes that were not mapped -------------------------
+    test_list = ["measurement", "unit"]
+    df = check_unmapped_values(df, params_data, test_list)
+
+    # -- Retrieve visit_occurrence_id ---------------------------------
+    df = retrieve_visit_occurrence_id(df, data_dir / visit_dir)
+
+    # -- Standardize contents -----------------------------------------
+    table = create_measurement_table(df, omop_schemas["MEASUREMENT"])
+
+    # -- Save ---------------------------------------------------------
+    print("Saving to parquet...")
+    parquet.write_table(table, data_dir / output_dir / "MEASUREMENT.parquet")
+    print("Done.")

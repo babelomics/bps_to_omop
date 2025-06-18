@@ -200,58 +200,6 @@ def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
     return table
 
 
-def process_measurement_table(params_file: str, data_dir: Path = None):
-
-    # -- Load parameters ----------------------------------------------
-    print("Reading parameters...")
-
-    # -- Load yaml file and related info
-    params_gen = ext.read_yaml_params(params_file)
-    params_data = ext.read_yaml_params(params_file)
-
-    data_dir = Path(params_gen["repo_data_dir"])
-    output_dir = params_data["output_dir"]
-    vocab_dir = params_data["vocab_dir"]
-    visit_dir = params_data["visit_dir"]
-
-    os.makedirs(data_dir / output_dir, exist_ok=True)
-
-    # -- Load vocabularies --------------------------------------------
-    print("Loading vocabularies...")
-    concept_df = pd.read_parquet(
-        data_dir / vocab_dir / "CONCEPT.parquet"
-    ).infer_objects()
-    concept_rel_df = pd.read_parquet(
-        data_dir / vocab_dir / "CONCEPT_RELATIONSHIP.parquet"
-    ).infer_objects()
-    # Load CLC database
-    clc_df = pd.read_parquet(data_dir / vocab_dir / "CLC.parquet")
-
-    # -- Load each file and prepare it --------------------------------
-    df = preprocess_files(params_data, concept_df, data_dir)
-
-    # -- Map units ----------------------------------------------------
-    df = mea.map_units(df, clc_df, concept_df)
-
-    # -- Map to standard concepts -------------------------------------
-    df = mea.map_standard_concepts(df, concept_rel_df)
-
-    # -- Check for codes that were not mapped -------------------------
-    test_list = ["measurement", "unit"]
-    df = check_unmapped_values(df, params_data, test_list)
-
-    # -- Retrieve visit_occurrence_id ---------------------------------
-    df = retrieve_visit_occurrence_id(df, data_dir / visit_dir)
-
-    # -- Standardize contents -----------------------------------------
-    table = create_measurement_table(df, omop_schemas["MEASUREMENT"])
-
-    # -- Save ---------------------------------------------------------
-    print("Saving to parquet...")
-    parquet.write_table(table, data_dir / output_dir / "MEASUREMENT.parquet")
-    print("Done.")
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Generates the OMOP-CDM MEASUREMENT table from BPS data."
