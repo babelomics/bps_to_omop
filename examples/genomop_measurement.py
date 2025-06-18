@@ -48,38 +48,6 @@ def retrieve_visit_occurrence_id(df: pd.DataFrame, table_dir: Path) -> pd.DataFr
 
 # %%
 # == Final touches ====================================================
-def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
-    """Creates the MEASUREMENT table following the OMOP-CDM schema.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Preprocessed dataframe with measurement data
-    schema : pa.Schema
-        Schema information
-
-    Returns
-    -------
-    pa.Table
-        Table containing the MEASUREMENT table
-    """
-    print("Formatting to OMOP...")
-    # Convert to pyarrow table, value_source_value is mixed dtype so we force str
-    df["value_source_value"] = df["value_source_value"].astype(str)
-    table = pa.Table.from_pandas(df, preserve_index=False)
-    # Rename existing columns
-    table = gen.rename_table_columns(
-        table,
-        {
-            "start_date": "measurement_date",
-            "type_concept": "measurement_type_concept_id",
-        },
-    )
-
-    # Fill, reorder and cast to schema
-    table = gen.format_table(table, schema)
-
-    return table
 
 
 if __name__ == "__main__":
