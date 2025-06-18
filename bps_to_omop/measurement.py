@@ -7,6 +7,7 @@
 #
 # http://omop-erd.surge.sh/omop_cdm/tables/MEASUREMENT.html
 
+from os import makedirs
 from pathlib import Path
 
 import numpy as np
@@ -388,6 +389,8 @@ def process_measurement_table(data_dir: Path, params_measurement: dict):
 
     # Convert to Path
     data_dir = Path(data_dir)
+    # Create directory
+    makedirs(data_dir / output_dir, exist_ok=True)
 
     # -- Load vocabularies --------------------------------------------
     print("Loading vocabularies...")
