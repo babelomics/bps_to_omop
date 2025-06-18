@@ -15,6 +15,76 @@ import pandas as pd
 from bps_to_omop import general as gen
 
 
+def preprocess_files(
+    params_data: dict, concept_df: pd.DataFrame, data_dir: Path
+) -> pd.DataFrame:
+    """Preprocess all files to create an unique dataframe
+
+    Parameters
+    ----------
+    params_data : dict
+        dictionary with the parameters for the preprocessing
+    concept_df : pd.DataFrame
+        CONCEPT table
+    data_dir : Path
+        Path to the upstream location of the data files
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe with all information joined together
+    """
+
+    print("Preprocessing files...")
+    input_dir = params_data["input_dir"]
+    input_files = params_data["input_files"]
+    column_map = params_data["column_map"]
+    vocabulary_config = params_data["vocabulary_config"]
+    value_map = params_data["value_map"]
+
+    df_complete = []
+    for f in input_files:
+        print(f" Processing {f}: ")
+        tmp_df = pd.read_parquet(data_dir / input_dir / f)
+        # assign new vocabulary column if needed
+        if params_data.get("append_vocabulary", False):
+            if params_data["append_vocabulary"].get(f, False):
+                tmp_df["vocabulary_id"] = params_data["append_vocabulary"][f]
+        # Apply renaming
+        if column_map.get(f, False):
+            tmp_df = tmp_df.rename(column_map[f], axis=1)
+        # Perform the mapping
+        tmp_df = gen.map_source_value(
+            tmp_df,
+            vocabulary_config[f],
+            concept_df,
+            "measurement_source_value",
+            "vocabulary_id",
+            "measurement_source_concept_id",
+        )
+        if value_map[f] == "numeric":
+            try:
+                tmp_df["value_as_number"] = pd.to_numeric(tmp_df["value_source_value"])
+            except ValueError as e:
+                raise ValueError(
+                    f"Some values in {f} could not be converted to numeric. Check columns assigned to 'value_source_value' and preprocess if necessary."
+                ) from e
+        elif value_map[f] == "concept":
+            tmp_df = gen.map_source_value(
+                tmp_df,
+                vocabulary_config[f],
+                concept_df,
+                "value_source_value",
+                "value_vocabulary_id",
+                "value_source_concept_id",
+            )
+        # Add to final dataframe
+        df_complete.append(tmp_df)
+
+    # -- Finish off joint dataframe -----------------------------------
+    return pd.concat(df_complete, axis=0)
+
+
 def map_units(
     df: pd.DataFrame, clc_df: pd.DataFrame, concept_df: pd.DataFrame
 ) -> pd.DataFrame:
@@ -215,7 +285,7 @@ def process_measurement_table(data_dir: Path, params_measurement: dict):
     clc_df = pd.read_parquet(data_dir / vocab_dir / "CLC.parquet")
 
     # -- Load each file and prepare it --------------------------------
-    df = preprocess_files(params_data, concept_df, data_dir)
+    df = preprocess_files(params_measurement, concept_df, data_dir)
 
     # -- Map units ----------------------------------------------------
     df = map_units(df, clc_df, concept_df)
