@@ -15,54 +15,6 @@ import bps_to_omop.measurement as mea
 from bps_to_omop.omop_schemas import omop_schemas
 
 
-def check_unmapped_values(
-    df: pd.DataFrame, params_data: dict, test_list: list
-) -> pd.DataFrame:
-    """Check and handle unmapped values in the groups of columns specified by
-    test_list.
-
-    Unmapped values will be remapped using the "unmapped_{col}" parameter in the
-    params_data dict.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Input dataframe
-    params_data : dict
-        dictionary with the parameters for the preprocessing
-    test_list : list
-        Header of the columns to be checked.
-
-    Returns
-    -------
-    pd.DataFrame
-        Input dataframe with unmapped values
-    """
-
-    for col in test_list:
-        # Check for unmapped values
-        unmapped_values = gen.find_unmapped_values(
-            df, f"{col}_source_value", f"{col}_concept_id"
-        )
-        # Apply mapping if needed
-        if len(unmapped_values) > 0:
-            print(f" No concept ID found for {col} source values: {[*unmapped_values]}")
-            print("  Applying custom concepts...")
-            df = gen.update_concept_mappings(
-                df,
-                f"{col}_source_value",
-                f"{col}_source_concept_id",
-                f"{col}_concept_id",
-                params_data[f"unmapped_{col}"],
-            )
-
-            unmapped_values = gen.find_unmapped_values(
-                df, f"{col}_source_value", f"{col}_concept_id"
-            )
-
-    return df
-
-
 def retrieve_visit_occurrence_id(df: pd.DataFrame, table_dir: Path) -> pd.DataFrame:
     """Retrieve the visit_occurrence_id foreign key fro the VISIT_OCCURRENCE table.
 

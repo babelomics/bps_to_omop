@@ -263,6 +263,54 @@ def map_standard_concepts(
     return df
 
 
+def check_unmapped_values(
+    df: pd.DataFrame, params_data: dict, test_list: list
+) -> pd.DataFrame:
+    """Check and handle unmapped values in the groups of columns specified by
+    test_list.
+
+    Unmapped values will be remapped using the "unmapped_{col}" parameter in the
+    params_data dict.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input dataframe
+    params_data : dict
+        dictionary with the parameters for the preprocessing
+    test_list : list
+        Header of the columns to be checked.
+
+    Returns
+    -------
+    pd.DataFrame
+        Input dataframe with unmapped values
+    """
+
+    for col in test_list:
+        # Check for unmapped values
+        unmapped_values = gen.find_unmapped_values(
+            df, f"{col}_source_value", f"{col}_concept_id"
+        )
+        # Apply mapping if needed
+        if len(unmapped_values) > 0:
+            print(f" No concept ID found for {col} source values: {[*unmapped_values]}")
+            print("  Applying custom concepts...")
+            df = gen.update_concept_mappings(
+                df,
+                f"{col}_source_value",
+                f"{col}_source_concept_id",
+                f"{col}_concept_id",
+                params_data[f"unmapped_{col}"],
+            )
+
+            unmapped_values = gen.find_unmapped_values(
+                df, f"{col}_source_value", f"{col}_concept_id"
+            )
+
+    return df
+
+
 def process_measurement_table(data_dir: Path, params_measurement: dict):
 
     # -- Unwrap some params for clarity ------------------------------
@@ -295,7 +343,7 @@ def process_measurement_table(data_dir: Path, params_measurement: dict):
 
     # -- Check for codes that were not mapped -------------------------
     test_list = ["measurement", "unit"]
-    df = check_unmapped_values(df, params_data, test_list)
+    df = check_unmapped_values(df, params_measurement, test_list)
 
     # -- Retrieve visit_occurrence_id ---------------------------------
     df = retrieve_visit_occurrence_id(df, data_dir / visit_dir)
