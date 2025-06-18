@@ -69,6 +69,8 @@ def preprocess_files(
         if value_map[f] == "numeric":
             try:
                 tmp_df["value_as_number"] = pd.to_numeric(tmp_df["value_source_value"])
+                # Assign concept columns as nan
+                tmp_df["value_source_concept_id"] = np.nan
             except ValueError as e:
                 raise ValueError(
                     f"Some values in {f} could not be converted to numeric. Check columns assigned to 'value_source_value' and preprocess if necessary."
@@ -82,6 +84,8 @@ def preprocess_files(
                 "value_vocabulary_id",
                 "value_source_concept_id",
             )
+            # Assign numeric columns as nan
+            tmp_df["value_as_number"] = np.nan
         # Add to final dataframe
         df_complete.append(tmp_df)
 
