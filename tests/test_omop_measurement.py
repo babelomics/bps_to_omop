@@ -6,8 +6,9 @@ import pandas as pd
 import pytest
 import yaml
 
+import bps_to_omop.extract as ext
+import bps_to_omop.measurement as mea
 from bps_to_omop.omop_schemas import omop_schemas
-from examples.genomop_measurement import process_measurement_table
 
 
 @pytest.fixture
@@ -256,8 +257,12 @@ def test_full_processing(
     sample_clc_table,
 ):
     """Test a 'simple' run of process_measurement_table."""
+    # Create params
+    data_dir = test_data_dir
+    params_measurement = ext.read_yaml_params(sample_params)
+
     # Create output
-    process_measurement_table(sample_params, test_data_dir)
+    mea.process_measurement_table(data_dir, params_measurement)
     measurement_table = pd.read_parquet(
         test_data_dir / "output" / "MEASUREMENT.parquet"
     )
