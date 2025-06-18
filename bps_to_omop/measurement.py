@@ -86,7 +86,13 @@ def preprocess_files(
         df_complete.append(tmp_df)
 
     # -- Finish off joint dataframe -----------------------------------
-    return pd.concat(df_complete, axis=0)
+    df_complete = pd.concat(df_complete, axis=0)
+
+    # -- Make sure dates are correct ----------------------------------
+    df_complete["start_date"] = pd.to_datetime(df_complete["start_date"])
+    df_complete["end_date"] = pd.to_datetime(df_complete["end_date"])
+
+    return df_complete
 
 
 def map_units(
@@ -337,6 +343,14 @@ def retrieve_visit_occurrence_id(df: pd.DataFrame, table_dir: Path) -> pd.DataFr
 
     # Look for visit_occurrence_id
     df_visit_occurrence = pd.read_parquet(table_dir / "VISIT_OCCURRENCE.parquet")
+    # Make sure dates are datetime
+    df_visit_occurrence["visit_start_datetime"] = pd.to_datetime(
+        df_visit_occurrence["visit_start_datetime"]
+    )
+    df_visit_occurrence["visit_end_datetime"] = pd.to_datetime(
+        df_visit_occurrence["visit_end_datetime"]
+    )
+
     df = gen.find_visit_occurence_id(
         df,
         ["person_id", "start_date", "measurement_id"],
