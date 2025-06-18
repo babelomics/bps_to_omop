@@ -363,6 +363,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zlib-1.3.1-hb9d3cd8_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstandard-0.23.0-py313h536fd9c_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.7-hb8e6e7a_2.conda
+      - pypi: https://files.pythonhosted.org/packages/e3/c9/77b05caa2ef6a91b1d9169d356f73c2d1bd8fc6d1a81a117623d38cd9ddf/fireducks-1.3.0-cp313-cp313-manylinux_2_28_x86_64.whl
+      - pypi: https://files.pythonhosted.org/packages/2e/8b/280a1538541114e6c566a4105996da2c63d4b230d0c3b43ea22bb999c379/firefw-1.3.0-py3-none-any.whl
       - pypi: .
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_libgcc_mutex-0.1-conda_forge.tar.bz2
@@ -861,7 +863,7 @@ packages:
 - pypi: .
   name: bps-to-omop
   version: 0.2.0
-  sha256: 6c168c240241f8203e7d830f7e17f69a88660df83e53eb63c132fe078e39819f
+  sha256: 764beb04f56bd3871391847256c198907a42051e5439138f30114bacfb05e92f
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/linux-64/brotli-1.1.0-hb9d3cd8_2.conda
   sha256: fcb0b5b28ba7492093e54f3184435144e074dfceab27ac8e6a9457e736565b0b
@@ -1366,6 +1368,20 @@ packages:
   - pkg:pypi/filelock?source=hash-mapping
   size: 17887
   timestamp: 1741969612334
+- pypi: https://files.pythonhosted.org/packages/e3/c9/77b05caa2ef6a91b1d9169d356f73c2d1bd8fc6d1a81a117623d38cd9ddf/fireducks-1.3.0-cp313-cp313-manylinux_2_28_x86_64.whl
+  name: fireducks
+  version: 1.3.0
+  sha256: 13fe52ee886362abbf689df5d87ca8e7a8d4b30c50499ecc74a2cb0efa06e586
+  requires_dist:
+  - firefw==1.3.0
+  - pandas>=1.5.3,<2.3.0
+  - pyarrow>=20.0,<20.1
+  requires_python: '>=3.9,<3.14'
+- pypi: https://files.pythonhosted.org/packages/2e/8b/280a1538541114e6c566a4105996da2c63d4b230d0c3b43ea22bb999c379/firefw-1.3.0-py3-none-any.whl
+  name: firefw
+  version: 1.3.0
+  sha256: 820f3038030403f61c6676308c8fe75d7c34b746a765e8a63f8c53582ded6ca8
+  requires_python: '>=3.7,<4.0'
 - conda: https://conda.anaconda.org/conda-forge/noarch/font-ttf-dejavu-sans-mono-2.37-hab24e00_0.tar.bz2
   sha256: 58d7f40d2940dd0a8aa28651239adbf5613254df0f75789919c4e6762054403b
   md5: 0c96522c6bdaed4b1566d11387caaf45
@@ -3802,8 +3818,6 @@ packages:
   md5: 19698b29e8544d2dd615699826037039
   depends:
   - polars-default ==1.30.0 py39hfac2b71_0
-  arch: x86_64
-  platform: linux
   license: MIT
   license_family: MIT
   purls: []
@@ -3824,8 +3838,6 @@ packages:
   - cpython >=3.9
   constrains:
   - __glibc >=2.17
-  arch: x86_64
-  platform: linux
   license: MIT
   license_family: MIT
   purls:

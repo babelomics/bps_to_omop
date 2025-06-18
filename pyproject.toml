@@ -44,4 +44,5 @@ dask = "*"
 polars = "*"
 
 [tool.pixi.pypi-dependencies]
+fireducks = "*"
 bps_to_omop = { path = ".", editable = true }
