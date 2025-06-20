@@ -326,7 +326,7 @@ def check_unmapped_values(
 
 
 def retrieve_visit_occurrence_id(df: pd.DataFrame, table_dir: Path) -> pd.DataFrame:
-    """Retrieve the visit_occurrence_id foreign key fro the VISIT_OCCURRENCE table.
+    """Retrieve the visit_occurrence_id foreign key from the VISIT_OCCURRENCE table.
 
     Parameters
     ----------
