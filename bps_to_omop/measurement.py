@@ -325,7 +325,9 @@ def check_unmapped_values(
     return df
 
 
-def retrieve_visit_occurrence_id(df: pd.DataFrame, table_dir: Path) -> pd.DataFrame:
+def retrieve_visit_occurrence_id(
+    df: pd.DataFrame, table_dir: Path, batch_size: int = 10000
+) -> pd.DataFrame:
     """Retrieve the visit_occurrence_id foreign key from the VISIT_OCCURRENCE table.
 
     Parameters
@@ -334,6 +336,8 @@ def retrieve_visit_occurrence_id(df: pd.DataFrame, table_dir: Path) -> pd.DataFr
         Input dataframe
     visit_dir : Path
         Location of the VISIT_OCCURRENCE.parquet file.
+    batch_size : int, default 10000
+        Number of ppl to process
 
     Returns
     -------
@@ -342,10 +346,10 @@ def retrieve_visit_occurrence_id(df: pd.DataFrame, table_dir: Path) -> pd.DataFr
         visit_start_date and visit_end_date, if found.
     """
     print("Looking for visit_occurrence_id...")
-    # Create the primary key
+    # -- Create the primary key
     df["measurement_id"] = pa.array(range(len(df)))
 
-    # Look for visit_occurrence_id
+    # ---Get for visit_occurrence table
     df_visit_occurrence = pd.read_parquet(table_dir / "VISIT_OCCURRENCE.parquet")
     # Make sure dates are datetime
     df_visit_occurrence["visit_start_datetime"] = pd.to_datetime(
@@ -355,13 +359,30 @@ def retrieve_visit_occurrence_id(df: pd.DataFrame, table_dir: Path) -> pd.DataFr
         df_visit_occurrence["visit_end_datetime"]
     )
 
-    df = gen.find_visit_occurence_id(
-        df,
-        ["person_id", "start_date", "measurement_id"],
-        df_visit_occurrence,
-        verbose=2,
-    )
-    return df
+    # -- Iterate over unique ppl
+    # Get list of unique ppl
+    list_ppl = df["person_id"].unique()
+
+    # Process serially in batches
+    df_out = []
+    for i_init in list(range(0, len(list_ppl), batch_size)):
+        # Retrieve only ppl_batch number of ppl
+        try:
+            list_ppl_tmp = list_ppl[i_init : i_init + batch_size]
+        except IndexError:
+            list_ppl_tmp = list_ppl[i_init:]
+        # Restrict dataframes to those ppl
+        df_tmp = df[df["person_id"].isin(list_ppl_tmp)]
+        visit_tmp = df_visit_occurrence[
+            df_visit_occurrence["person_id"].isin(list_ppl_tmp)
+        ]
+        out_tmp = gen.find_visit_occurence_id(
+            df_tmp, ["person_id", "start_date", "measurement_id"], visit_tmp, verbose=2
+        )
+        df_out.append(out_tmp)
+
+    # Concatenate and return
+    return pd.concat(df_out)
 
 
 def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
