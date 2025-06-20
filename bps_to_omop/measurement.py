@@ -16,6 +16,7 @@ import pyarrow as pa
 from pyarrow import parquet
 
 from bps_to_omop import general as gen
+from bps_to_omop import mapping as mpp
 from bps_to_omop.omop_schemas import omop_schemas
 
 
@@ -58,7 +59,7 @@ def preprocess_files(
         if column_map.get(f, False):
             tmp_df = tmp_df.rename(column_map[f], axis=1)
         # Perform the mapping
-        tmp_df = gen.map_source_value(
+        tmp_df = mpp.map_source_value(
             tmp_df,
             vocabulary_config[f],
             concept_df,
@@ -76,7 +77,7 @@ def preprocess_files(
                     f"Some values in {f} could not be converted to numeric. Check columns assigned to 'value_source_value' and preprocess if necessary."
                 ) from e
         elif value_map[f] == "concept":
-            tmp_df = gen.map_source_value(
+            tmp_df = mpp.map_source_value(
                 tmp_df,
                 vocabulary_config[f],
                 concept_df,
@@ -134,12 +135,12 @@ def map_units(
 
     See Also
     --------
-    gen.create_vocabulary_mapping : Creates the mapping dictionary from CLC vocabulary
+    mpp.create_vocabulary_mapping : Creates the mapping dictionary from CLC vocabulary
     mea.map_measurement_units : Maps units to UCUM and SNOMED
     """
     print("Mapping units...")
     # Retrieve unit_source_value from clc_df vocabulary
-    map_dict = gen.create_vocabulary_mapping(
+    map_dict = mpp.create_vocabulary_mapping(
         df, clc_df, "measurement_source_value", "NombreConvCLC", "UnidadConv"
     )
     df["unit_source_value"] = df["measurement_source_value"].map(map_dict)
@@ -176,7 +177,7 @@ def map_measurement_units(df: pd.DataFrame, concept_df: pd.DataFrame) -> pd.Data
 
     See Also
     --------
-    gen.map_source_value : Helper function that performs the actual mapping
+    mpp.map_source_value : Helper function that performs the actual mapping
     """
     result_df = df.copy()
 
@@ -188,7 +189,7 @@ def map_measurement_units(df: pd.DataFrame, concept_df: pd.DataFrame) -> pd.Data
 
     # First attempt: Map to UCUM vocabulary
     result_df.loc[:, "unit_vocabulary_id"] = "UCUM"
-    result_df = gen.map_source_value(
+    result_df = mpp.map_source_value(
         result_df,
         {"UCUM": "concept_code"},
         concept_units,
@@ -202,7 +203,7 @@ def map_measurement_units(df: pd.DataFrame, concept_df: pd.DataFrame) -> pd.Data
         result_df.loc[
             result_df["unit_source_concept_id"].isna(), "unit_vocabulary_id"
         ] = "SNOMED"
-        result_df = gen.map_source_value(
+        result_df = mpp.map_source_value(
             result_df,
             {"SNOMED": "concept_name", "UCUM": "concept_code"},
             concept_units,
@@ -255,16 +256,16 @@ def map_standard_concepts(
 
     See Also
     --------
-    gen.map_source_concept_id : Maps individual source concepts to standard concepts
+    mpp.map_source_concept_id : Maps individual source concepts to standard concepts
     """
     print("Mapping to standard concepts...")
-    df = gen.map_source_concept_id(
+    df = mpp.map_source_concept_id(
         df, concept_rel_df, "measurement_source_concept_id", "measurement_concept_id"
     )
-    df = gen.map_source_concept_id(
+    df = mpp.map_source_concept_id(
         df, concept_rel_df, "unit_source_concept_id", "unit_concept_id"
     )
-    df = gen.map_source_concept_id(
+    df = mpp.map_source_concept_id(
         df, concept_rel_df, "value_source_concept_id", "value_as_concept_id"
     )
     # -- check value_as_concept_id and unit_concept_id
@@ -303,14 +304,14 @@ def check_unmapped_values(
 
     for col in test_list:
         # Check for unmapped values
-        unmapped_values = gen.find_unmapped_values(
+        unmapped_values = mpp.find_unmapped_values(
             df, f"{col}_source_value", f"{col}_concept_id"
         )
         # Apply mapping if needed
         if len(unmapped_values) > 0:
             print(f" No concept ID found for {col} source values: {[*unmapped_values]}")
             print("  Applying custom concepts...")
-            df = gen.update_concept_mappings(
+            df = mpp.update_concept_mappings(
                 df,
                 f"{col}_source_value",
                 f"{col}_source_concept_id",
@@ -318,7 +319,7 @@ def check_unmapped_values(
                 params_data[f"unmapped_{col}"],
             )
 
-            unmapped_values = gen.find_unmapped_values(
+            unmapped_values = mpp.find_unmapped_values(
                 df, f"{col}_source_value", f"{col}_concept_id"
             )
 

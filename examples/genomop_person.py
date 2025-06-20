@@ -15,6 +15,7 @@ except ModuleNotFoundError:
 sys.path.append("./external/bps_to_omop/")
 import bps_to_omop.extract as ext
 import bps_to_omop.general as gen
+import bps_to_omop.mapping as mpp
 import bps_to_omop.person as per
 from bps_to_omop.omop_schemas import omop_schemas
 
@@ -52,7 +53,7 @@ def process_person_table(params_file: Path, data_dir_: Path = None):
 
         # -- Apply values mapping
         column_values_map = (params_data.get("column_values_map", {}) or {}).get(f, {})
-        tmp_table = gen.apply_source_mapping(tmp_table, column_values_map)
+        tmp_table = mpp.apply_source_mapping(tmp_table, column_values_map)
 
         # Format the table
         tmp_table = gen.format_table(tmp_table, omop_schemas["PERSON"])

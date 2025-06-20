@@ -9,6 +9,7 @@ from pyarrow import parquet
 sys.path.append("external/bps_to_omop/")
 import bps_to_omop.extract as ext
 import bps_to_omop.general as gen
+from bps_to_omop import mapping as mpp
 from bps_to_omop.omop_schemas import omop_schemas
 
 # == Parameters =======================================================
@@ -56,7 +57,7 @@ test_list = ["specialty"]
 
 for col in test_list:
     # Check for unmapped values
-    unmapped_values = gen.find_unmapped_values(
+    unmapped_values = mpp.find_unmapped_values(
         df, f"{col}_source_value", f"{col}_concept_id"
     )
     # Apply mapping if needed

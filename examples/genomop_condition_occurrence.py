@@ -10,6 +10,7 @@ from package.datasets import data_dir
 sys.path.append("./external/bps_to_omop")
 import bps_to_omop.extract as ext
 import bps_to_omop.general as gen
+from bps_to_omop import mapping as mpp
 from bps_to_omop.omop_schemas import omop_schemas
 
 # %%
@@ -53,7 +54,7 @@ for f in input_files:
     # Apply renaming
     df = df.rename(column_map[f], axis=1)
     # Perform the mapping
-    df = gen.map_source_value(df, vocabulary_config[f], concept_df)
+    df = mpp.map_source_value(df, vocabulary_config[f], concept_df)
 # Add to final dataframe
 df_complete.append(df)
 
@@ -62,7 +63,7 @@ df = pd.concat(df_complete, axis=0)
 
 # == Mapping to standard concept_id ===================================
 print("Mapping to standard concepts...")
-df = gen.map_source_concept_id(df, concept_rel_df)
+df = mpp.map_source_concept_id(df, concept_rel_df)
 df = df.rename(
     {
         "concept_id": "condition_concept_id",
