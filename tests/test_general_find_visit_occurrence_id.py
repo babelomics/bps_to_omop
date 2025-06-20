@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from bps_to_omop.general import find_visit_occurence_id
+from bps_to_omop.general import find_visit_occurrence_id
 
 sys.path.append("../bps_to_omop/")
 
@@ -61,7 +61,7 @@ def test_simple_visit():
         visit_end_datetime=lambda x: x["visit_end_datetime"].astype("datetime64[ms]"),
     )
 
-    result = find_visit_occurence_id(events, event_columns, visits)
+    result = find_visit_occurrence_id(events, event_columns, visits)
     result = result.sort_values(["person_id", "start_date", "event_id"]).reset_index(
         drop=True
     )
@@ -121,7 +121,7 @@ def test_same_date_different_person():
         visit_end_datetime=lambda x: x["visit_end_datetime"].astype("datetime64[ms]"),
     )
 
-    result = find_visit_occurence_id(events, event_columns, visits)
+    result = find_visit_occurrence_id(events, event_columns, visits)
     result = result.sort_values(["person_id", "start_date", "event_id"]).reset_index(
         drop=True
     )
@@ -162,7 +162,7 @@ def test_no_valid_visits():
     )
 
     with pytest.raises(ValueError):
-        find_visit_occurence_id(events, event_columns, visits)
+        find_visit_occurrence_id(events, event_columns, visits)
 
 
 def test_same_day_different_hour():
@@ -216,7 +216,7 @@ def test_same_day_different_hour():
         visit_end_datetime=lambda x: x["visit_end_datetime"].astype("datetime64[ms]"),
     )
 
-    result = find_visit_occurence_id(events, event_columns, visits)
+    result = find_visit_occurrence_id(events, event_columns, visits)
     result = result.sort_values(["person_id", "start_date", "event_id"]).reset_index(
         drop=True
     )

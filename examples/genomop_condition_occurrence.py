@@ -78,7 +78,7 @@ df["condition_occurrence_id"] = pa.array(range(len(df)))
 print("Finding visit_occurrence_id...")
 df_visit_occurrence = pd.read_parquet(data_dir / visit_dir / "VISIT_OCCURRENCE.parquet")
 # Primero asignamos el conditi
-df = gen.find_visit_occurence_id(
+df = gen.find_visit_occurrence_id(
     df,
     ["person_id", "start_date", "condition_occurrence_id"],
     df_visit_occurrence,

@@ -404,7 +404,7 @@ def group_dates(df: pd.DataFrame, n_days: int, verbose: int = 0) -> pd.DataFrame
     return df_done
 
 
-def find_visit_occurence_id(
+def find_visit_occurrence_id(
     events_df: pd.DataFrame,
     event_columns: list,
     visits_df: pd.DataFrame,
