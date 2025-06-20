@@ -377,7 +377,7 @@ def retrieve_visit_occurrence_id(
             df_visit_occurrence["person_id"].isin(list_ppl_tmp)
         ]
         out_tmp = gen.find_visit_occurence_id(
-            df_tmp, ["person_id", "start_date", "measurement_id"], visit_tmp, verbose=2
+            df_tmp, ["person_id", "start_date", "measurement_id"], visit_tmp, verbose=0
         )
         df_out.append(out_tmp)
 
