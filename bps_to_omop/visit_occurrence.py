@@ -268,7 +268,7 @@ def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa
         - 1 Show number of iterations
         - 2 Show an example of the first row being removed and
             the row that contains it.
-        Will be passes to remove_overlap. Check definition to see output.
+        Will be passed to remove_overlap. Check definition to see output.
 
     Returns
     -------
