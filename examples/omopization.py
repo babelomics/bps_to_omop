@@ -7,8 +7,8 @@ from package.datasets import data_dir
 
 sys.path.append("external/bps_to_omop/")
 import bps_to_omop.extract as ext
-import bps_to_omop.general as gen
 import bps_to_omop.person as per
+import bps_to_omop.pyarrow_utils as pa_utils
 
 # %%
 # -- Define parameters ------------------------------------------------
@@ -59,7 +59,7 @@ for f in input_files:
     # -- type_concept -----------------------------------------------------------------------------
     # Create a columns with the code
     type_concept_code = type_concept_mapping[f]
-    type_concept = gen.create_uniform_int_array(len(table), type_concept_code)
+    type_concept = pa_utils.create_uniform_int_array(len(table), type_concept_code)
 
     # -- Final steps ------------------------------------------------------------------------------
     # Append to old table
