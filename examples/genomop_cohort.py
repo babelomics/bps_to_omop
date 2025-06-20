@@ -22,6 +22,8 @@ sys.path.append(
 import external.bps_to_omop.bps_to_omop.general as gen
 from external.bps_to_omop.bps_to_omop.omop_schemas import omop_schemas
 
+from bps_to_omop import format_omop
+
 
 def process_cohort_table(params_file: str):
 
@@ -79,7 +81,7 @@ def process_cohort_table(params_file: str):
         )
 
         # Format to schema
-        cohort_tables[table] = gen.format_table(
+        cohort_tables[table] = format_omop.format_table(
             cohort_tables[table], omop_schemas[table]
         )
 

@@ -18,6 +18,7 @@ import pyarrow.compute as pc
 from pyarrow import parquet
 
 from bps_to_omop import extract as ext
+from bps_to_omop import format_omop
 from bps_to_omop import general as gen
 from bps_to_omop.omop_schemas import omop_schemas
 
@@ -153,7 +154,7 @@ def ad_hoc_read(
         raise FileNotFoundError(f"The file {filename} does not exist.")
 
     read_transformations_dict = {
-        "rename_table_columns": gen.rename_table_columns,
+        "rename_table_columns": format_omop.rename_table_columns,
         "filter_table_by_column_value": filter_table_by_column_value,
     }
 
@@ -451,10 +452,10 @@ def format_to_omop(table: pa.Table, verbose: int = 0) -> pa.Table:
     table = table.add_column(0, "visit_occurrence_id", visit_occurrence_id)
 
     # Fill all other columns required by the OMOP schema
-    table = gen.fill_omop_table(table, omop_schema, verbose)
+    table = format_omop.fill_omop_table(table, omop_schema, verbose)
 
     # Reorder columns and cast to OMOP schema
-    table = gen.reorder_omop_table(table, omop_schema)
+    table = format_omop.reorder_omop_table(table, omop_schema)
     table = table.cast(omop_schema)
 
     return table

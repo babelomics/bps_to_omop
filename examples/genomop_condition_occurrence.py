@@ -10,6 +10,7 @@ from package.datasets import data_dir
 sys.path.append("./external/bps_to_omop")
 import bps_to_omop.extract as ext
 import bps_to_omop.general as gen
+from bps_to_omop import format_omop
 from bps_to_omop import mapping as mpp
 from bps_to_omop.omop_schemas import omop_schemas
 
@@ -94,7 +95,7 @@ df = df.drop_duplicates()
 table = pa.Table.from_pandas(df, preserve_index=False)
 
 # Rename columns
-table = gen.rename_table_columns(
+table = format_omop.rename_table_columns(
     table,
     {
         "start_date": "condition_start_datetime",
@@ -121,7 +122,7 @@ table = table.add_column(1, "condition_start_date", visit_start_date)
 table = table.add_column(2, "condition_end_date", visit_end_date)
 
 # Format to schema
-table_cdm_source = gen.format_table(table, omop_schemas["CONDITION_OCCURRENCE"])
+table_cdm_source = format_omop.format_table(table, omop_schemas["CONDITION_OCCURRENCE"])
 
 # == Save to parquet ==================================================
 print("Saving to parquet...")

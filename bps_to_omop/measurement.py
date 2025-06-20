@@ -15,6 +15,7 @@ import pandas as pd
 import pyarrow as pa
 from pyarrow import parquet
 
+from bps_to_omop import format_omop
 from bps_to_omop import general as gen
 from bps_to_omop import mapping as mpp
 from bps_to_omop.omop_schemas import omop_schemas
@@ -406,7 +407,7 @@ def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
     df["value_source_value"] = df["value_source_value"].astype(str)
     table = pa.Table.from_pandas(df, preserve_index=False)
     # Rename existing columns
-    table = gen.rename_table_columns(
+    table = format_omop.rename_table_columns(
         table,
         {
             "start_date": "measurement_date",
@@ -415,7 +416,7 @@ def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
     )
 
     # Fill, reorder and cast to schema
-    table = gen.format_table(table, schema)
+    table = format_omop.format_table(table, schema)
 
     return table
 

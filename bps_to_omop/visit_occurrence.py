@@ -17,6 +17,7 @@ import pyarrow as pa
 import pyarrow.compute as pc
 from pyarrow import parquet
 
+from bps_to_omop import format_omop
 from bps_to_omop import general as gen
 from bps_to_omop import table_transformer as ttr
 from bps_to_omop.omop_schemas import omop_schemas
@@ -343,7 +344,7 @@ def format_to_omop(table: pa.Table, verbose: int = 0) -> pa.Table:
         print("Formatting to OMOP...")
 
     # Rename columns
-    table = gen.rename_table_columns(
+    table = format_omop.rename_table_columns(
         table,
         {
             "start_date": "visit_start_datetime",
@@ -373,6 +374,6 @@ def format_to_omop(table: pa.Table, verbose: int = 0) -> pa.Table:
     table = table.add_column(0, "visit_occurrence_id", visit_occurrence_id)
 
     # Fill all other columns required by the OMOP schema
-    table = gen.format_table(table, omop_schema)
+    table = format_omop.format_table(table, omop_schema)
 
     return table

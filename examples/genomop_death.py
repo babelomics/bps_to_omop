@@ -17,6 +17,7 @@ sys.path.append("./external/bps_to_omop/")
 import bps_to_omop.extract as ext
 import bps_to_omop.general as gen
 import bps_to_omop.mapping as mpp
+from bps_to_omop import format_omop
 from bps_to_omop.omop_schemas import omop_schemas
 
 
@@ -48,7 +49,7 @@ def process_death_table(params_file: Path, data_dir_: Path = None):
             **column_name_map,
             "type_concept": "death_type_concept_id",
         }
-        tmp_table = gen.rename_table_columns(tmp_table, column_name_map)
+        tmp_table = format_omop.rename_table_columns(tmp_table, column_name_map)
         assert "death_date" in tmp_table.columns
 
         # -- Apply values mapping
@@ -58,7 +59,7 @@ def process_death_table(params_file: Path, data_dir_: Path = None):
         # Death table should not have nulls, remove them
         mask = pc.is_valid(pc.cast(tmp_table["death_date"], pa.string()))
         tmp_table = tmp_table.filter(mask)
-        tmp_table = gen.format_table(tmp_table, omop_schemas["DEATH"])
+        tmp_table = format_omop.format_table(tmp_table, omop_schemas["DEATH"])
 
         # Append to list
         table_death.append(tmp_table)
