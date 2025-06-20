@@ -31,6 +31,8 @@
 
 # Big changes
 
+- Seems like serializing had a good effect on measurement processing, could we do it always like that?
+
 - Use polars
 
 - Refactor functions of each table in a class
