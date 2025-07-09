@@ -35,6 +35,11 @@ def map_source_value(
         target column in CONCEPT table as values. Values can be:
             - 'concept_name' to map to concept names in concept_df table.
             - 'concept_code' to map to concept codes in concept_df table.
+        Example:
+            {'CLC':'concept_name', 'ICD10':'concept_code}
+            Will map CLC vocabulary entries to the 'concept_name' column
+            in the CONCEPT table and ICD10 vocabulary entries to the
+            'concept_code' column in the CONCEPT table.
     concept_df : pd.DataFrame
         Reference DataFrame containing the concept mappings.
         Must contain columns:
