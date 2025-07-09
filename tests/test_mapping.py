@@ -7,7 +7,11 @@ import pytest
 import yaml
 
 import bps_to_omop.extract as ext
-from bps_to_omop.mapping import map_source_concept_id, map_source_value
+from bps_to_omop.mapping import (
+    map_source_concept_id,
+    map_source_value,
+    update_concept_mappings,
+)
 
 
 def test_map_source_value_by_concept_code():
@@ -192,3 +196,73 @@ def test_map_source_concept_id():
     df_out = map_source_concept_id(df_input, concept_rel_df)
 
     pd.testing.assert_frame_equal(df_output, df_out)
+
+
+def test_update_concept_mappings_no_update():
+    """
+    Test function leave everything as is if no update mappings are provided.
+    """
+
+    # Define the table that hold the values to be mapped
+    df_input = pd.DataFrame(
+        {
+            "vocabulary_id": ["SNOMED", "test_is_a", "test_no_rel"],
+            "source_value": ["187033005", "AA00", "AA01"],
+            "source_concept_id": [4092846, 2000000000, 2000000010],
+            "concept_id": [4092846, 0, 0],
+        }
+    ).astype({"source_concept_id": pd.Int64Dtype(), "concept_id": pd.Int64Dtype()})
+
+    # # Define what should be the output
+    # df_output = pd.DataFrame(
+    #     {
+    #         "vocabulary_id": ["SNOMED", "test_is_a", "test_no_rel"],
+    #         "source_value": ["187033005", "AA00", "AA01"],
+    #         "source_concept_id": [4092846, 2000000000, 2000000010],
+    #         "concept_id": [4092846, 0, 0],
+    #     }
+    # ).astype({"source_concept_id": pd.Int64Dtype(), "concept_id": pd.Int64Dtype()})
+
+    df_out = update_concept_mappings(
+        df_input,
+        "source_value",
+        "concept_id",
+        {},
+    ).astype({"concept_id": pd.Int64Dtype()})
+
+    pd.testing.assert_frame_equal(df_input, df_out)
+
+
+def test_update_concept_mappings_duplicate_mappings():
+    """
+    Test function works fine if there are duplicated entries.
+    """
+
+    # Define the table that hold the values to be mapped
+    df_input = pd.DataFrame(
+        {
+            "vocabulary_id": ["SNOMED", "test_is_a", "test_is_a", "test_no_rel"],
+            "source_value": ["187033005", "AA00", "AA00", "AA01"],
+            "source_concept_id": [4092846, 2000000000, 2000000000, 2000000010],
+            "concept_id": [4092846, 0, 0, 0],
+        }
+    ).astype({"source_concept_id": pd.Int64Dtype(), "concept_id": pd.Int64Dtype()})
+
+    # # Define what should be the output
+    # df_output = pd.DataFrame(
+    #     {
+    #         "vocabulary_id": ["SNOMED", "test_is_a", "test_no_rel"],
+    #         "source_value": ["187033005", "AA00", "AA01"],
+    #         "source_concept_id": [4092846, 2000000000, 2000000010],
+    #         "concept_id": [4092846, 0, 0],
+    #     }
+    # ).astype({"source_concept_id": pd.Int64Dtype(), "concept_id": pd.Int64Dtype()})
+
+    df_out = update_concept_mappings(
+        df_input,
+        "source_value",
+        "concept_id",
+        {},
+    ).astype({"concept_id": pd.Int64Dtype()})
+
+    pd.testing.assert_frame_equal(df_input, df_out)
