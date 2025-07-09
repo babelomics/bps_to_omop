@@ -127,7 +127,7 @@ def map_source_concept_id(
         Must have columns: 'relationship_id', 'concept_id_1', 'concept_id_2'.
     source_column : str, optional, default "source_concept_id"
         Name of the column in df containing the source concept IDs to be mapped.
-    target_column : str, optional, default is "concept_id"
+    concept_id_column : str, optional, default is "concept_id"
         Name of the output column that will contain the mapped standard concept IDs.
 
     Returns
