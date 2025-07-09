@@ -104,3 +104,50 @@ def test_map_source_value_by_concept_name():
     df_out = map_source_value(df_input, target_vocab, concept_df)
 
     pd.testing.assert_frame_equal(df_output, df_out)
+
+
+def test_map_source_value_multiple_target_vocab():
+    """
+    Test using different target vocabs works.
+    The first one should map by concept_name, and the
+    second one by concept_code
+    """
+
+    # Define the table that hold the values to be mapped
+    df_input = pd.DataFrame(
+        {
+            "vocabulary_id": ["CLC", "SNOMED"],
+            "source_value": ["Hemoglobina", "187033005"],
+        }
+    )
+
+    # Define the columns to which each vocabulary should be mapped to
+    target_vocab = {
+        "CLC": "concept_name",
+        "SNOMED": "concept_code",
+    }
+
+    # Define the concept table
+    concept_df = pd.DataFrame(
+        {
+            "concept_id": [2000001144, 4092846],
+            "concept_name": ["Hemoglobina", "Hepatitis C virus measurement"],
+            "domain_id": ["Measurement", "Measurement"],
+            "vocabulary_id": ["CLC", "SNOMED"],
+            "standard_code": [None, "S"],
+            "concept_code": ["CLC00229", "187033005"],
+        }
+    )
+
+    # Define what should be the output
+    df_output = pd.DataFrame(
+        {
+            "vocabulary_id": ["CLC", "SNOMED"],
+            "source_value": ["Hemoglobina", "187033005"],
+            "source_concept_id": [2000001144, 4092846],
+        }
+    ).astype({"source_concept_id": pd.Int64Dtype()})
+
+    df_out = map_source_value(df_input, target_vocab, concept_df)
+
+    pd.testing.assert_frame_equal(df_output, df_out)
