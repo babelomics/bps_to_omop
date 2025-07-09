@@ -11,7 +11,10 @@ from bps_to_omop.mapping import map_source_value
 
 
 def test_map_source_value_by_concept_code():
-    """Test if mapping by concept_code works."""
+    """
+    Test if mapping by concept_code works.
+    Firt entry should map correctly, second is not valid, should map to none.
+    """
 
     # Define the table that hold the values to be mapped
     df_input = pd.DataFrame(
@@ -53,7 +56,10 @@ def test_map_source_value_by_concept_code():
 
 
 def test_map_source_value_by_concept_name():
-    """Test if mapping by concept_code works."""
+    """
+    Test if mapping by concept_name works.
+    Firt entry should map correctly, second is not valid, should map to none.
+    """
 
     # Define the table that hold the values to be mapped
     df_input = pd.DataFrame(
