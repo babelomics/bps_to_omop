@@ -385,7 +385,12 @@ def clean_tables(
     )
 
     # Remove overlap
-    df_done = gen.remove_overlap(df_raw, verbose=verbose)
+    df_done = gen.remove_overlap(
+        df_raw,
+        sorting_columns=["person_id", "start_date", "end_date", "type_concept"],
+        ascending_order=[True, True, False, True],
+        verbose=verbose,
+    )
 
     # Convert back to PyArrow Table
     return pa.Table.from_pandas(df_done, preserve_index=False)
