@@ -7,7 +7,7 @@ import pytest
 import yaml
 
 import bps_to_omop.extract as ext
-from bps_to_omop.mapping import map_source_value
+from bps_to_omop.mapping import map_source_concept_id, map_source_value
 
 
 def test_map_source_value_by_concept_code():
@@ -149,5 +149,46 @@ def test_map_source_value_multiple_target_vocab():
     ).astype({"source_concept_id": pd.Int64Dtype()})
 
     df_out = map_source_value(df_input, target_vocab, concept_df)
+
+    pd.testing.assert_frame_equal(df_output, df_out)
+
+
+def test_map_source_concept_id():
+    """
+    Test map_source_concept_id.
+    The first one should map because it has a 'Maps to' relationship.
+    The second one should map to 0 because it is a 'Is a' relationship, not a 'Maps to'.
+    The third one should map to 0 because it has no relationship.
+    """
+
+    # Define the table that hold the values to be mapped
+    df_input = pd.DataFrame(
+        {
+            "vocabulary_id": ["SNOMED", "test_is_a", "test_no_rel"],
+            "source_value": ["187033005", "AA00", "AA01"],
+            "source_concept_id": [4092846, 2000000000, 2000000010],
+        }
+    ).astype({"source_concept_id": pd.Int64Dtype()})
+
+    # Define the concept table
+    concept_rel_df = pd.DataFrame(
+        {
+            "concept_id_1": [4092846, 2000000000],
+            "relationship_id": ["Maps to", "Is a"],
+            "concept_id_2": [4092846, 2000000001],
+        }
+    )
+
+    # Define what should be the output
+    df_output = pd.DataFrame(
+        {
+            "vocabulary_id": ["SNOMED", "test_is_a", "test_no_rel"],
+            "source_value": ["187033005", "AA00", "AA01"],
+            "source_concept_id": [4092846, 2000000000, 2000000010],
+            "concept_id": [4092846, 0, 0],
+        }
+    ).astype({"source_concept_id": pd.Int64Dtype(), "concept_id": pd.Int64Dtype()})
+
+    df_out = map_source_concept_id(df_input, concept_rel_df)
 
     pd.testing.assert_frame_equal(df_output, df_out)
