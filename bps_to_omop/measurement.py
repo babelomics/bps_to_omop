@@ -315,7 +315,6 @@ def check_unmapped_values(
             df = mpp.update_concept_mappings(
                 df,
                 f"{col}_source_value",
-                f"{col}_source_concept_id",
                 f"{col}_concept_id",
                 params_data[f"unmapped_{col}"],
             )

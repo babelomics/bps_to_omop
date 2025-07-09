@@ -339,9 +339,8 @@ def find_unmapped_values(
 
 def update_concept_mappings(
     df: pd.DataFrame,
-    source_value_column: str,
-    source_concept_id_column: str,
-    target_concept_id_column: str,
+    source_column: str,
+    target_column: str,
     new_concept_mappings: dict,
 ) -> pd.DataFrame:
     """
@@ -351,11 +350,9 @@ def update_concept_mappings(
     ----------
     df : pandas.DataFrame
         Input DataFrame containing source values and concept IDs
-    source_value_column : str
+    source_column : str
         Name of column containing original source values/codes
-    source_concept_id_column : str
-        Name of column containing existing concept ID mappings
-    target_concept_id_column : str
+    target_column : str
         Name of column where updated concept IDs will be stored
     new_concept_mappings : dict
         Dictionary of {source_value: concept_id} pairs to update existing mappings
@@ -379,20 +376,14 @@ def update_concept_mappings(
     ... )
     """
     result_df = df.copy()
-    existing_mappings = (
-        result_df.set_index(source_value_column)[source_concept_id_column]
-        .drop_duplicates()
-        .to_dict()
-    )
+    existing_mappings = result_df.set_index(source_column)[target_column].to_dict()
 
     try:
         # Update existing mappings with new ones
         existing_mappings.update(new_concept_mappings)
 
         # Apply updated mappings to create new concept ID column
-        result_df[target_concept_id_column] = result_df[source_value_column].map(
-            existing_mappings
-        )
+        result_df[target_column] = result_df[source_column].map(existing_mappings)
     except KeyError as e:
         print(f"Error: No concept ID found for source value '{e.args[0]}'")
 
