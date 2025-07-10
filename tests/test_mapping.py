@@ -321,3 +321,27 @@ def test_update_concept_mappings_duplicate_mappings():
     ).astype({"concept_id": pd.Int64Dtype()})
 
     pd.testing.assert_frame_equal(df_output, df_out)
+
+
+def test_update_concept_mappings_partial_mapping():
+    """Test function with mappings that don't cover all unmapped values."""
+    df_input = pd.DataFrame(
+        {
+            "source_value": ["A1", "B2", "C3", "D4"],
+            "concept_id": [123, 0, 0, 0],
+        }
+    )
+
+    new_mappings = {"B2": 456}  # Only map one value
+
+    df_expected = pd.DataFrame(
+        {
+            "source_value": ["A1", "B2", "C3", "D4"],
+            "concept_id": [123, 456, 0, 0],  # C3 and D4 remain unmapped
+        }
+    )
+
+    result = update_concept_mappings(
+        df_input, "source_value", "concept_id", new_mappings
+    )
+    pd.testing.assert_frame_equal(result, df_expected)
