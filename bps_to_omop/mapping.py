@@ -405,6 +405,7 @@ def update_concept_mappings(
         result_df[target_column].isna()
         | (result_df[target_column] == 0)
         | result_df[target_column].isnull()
+        | (result_df[target_column] == "")
     )
 
     # Update only the unmapped rows
