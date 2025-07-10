@@ -251,7 +251,7 @@ def test_update_concept_mappings_with_nan():
 
     new_mappings = {"B2": 456, "C3": 789}
 
-    df_expected = pd.DataFrame(
+    df_out = pd.DataFrame(
         {
             "source_value": ["A1", "B2", "C3"],
             "concept_id": [123, 456, 789],
@@ -261,7 +261,7 @@ def test_update_concept_mappings_with_nan():
     result = update_concept_mappings(
         df_input, "source_value", "concept_id", new_mappings
     )
-    pd.testing.assert_frame_equal(result, df_expected)
+    pd.testing.assert_frame_equal(result, df_out)
 
 
 def test_update_concept_mappings_with_none():
@@ -275,7 +275,7 @@ def test_update_concept_mappings_with_none():
 
     new_mappings = {"B2": 456, "C3": 789}
 
-    df_expected = pd.DataFrame(
+    df_out = pd.DataFrame(
         {
             "source_value": ["A1", "B2", "C3"],
             "concept_id": [123, 456, 789],
@@ -285,7 +285,7 @@ def test_update_concept_mappings_with_none():
     result = update_concept_mappings(
         df_input, "source_value", "concept_id", new_mappings
     )
-    pd.testing.assert_frame_equal(result, df_expected)
+    pd.testing.assert_frame_equal(result, df_out)
 
 
 def test_update_concept_mappings_duplicate_mappings():
@@ -334,7 +334,7 @@ def test_update_concept_mappings_partial_mapping():
 
     new_mappings = {"B2": 456}  # Only map one value
 
-    df_expected = pd.DataFrame(
+    df_out = pd.DataFrame(
         {
             "source_value": ["A1", "B2", "C3", "D4"],
             "concept_id": [123, 456, 0, 0],  # C3 and D4 remain unmapped
@@ -344,7 +344,7 @@ def test_update_concept_mappings_partial_mapping():
     result = update_concept_mappings(
         df_input, "source_value", "concept_id", new_mappings
     )
-    pd.testing.assert_frame_equal(result, df_expected)
+    pd.testing.assert_frame_equal(result, df_out)
 
 
 def test_update_concept_mappings_no_matching_values():
@@ -358,9 +358,33 @@ def test_update_concept_mappings_no_matching_values():
 
     new_mappings = {"X1": 999, "Y2": 888}  # No matching source values
 
-    df_expected = df_input.copy()  # Should remain unchanged
+    df_out = df_input.copy()  # Should remain unchanged
 
     result = update_concept_mappings(
         df_input, "source_value", "concept_id", new_mappings
     )
-    pd.testing.assert_frame_equal(result, df_expected)
+    pd.testing.assert_frame_equal(result, df_out)
+
+
+def test_update_concept_mappings_different_data_types():
+    """Test function with different data types."""
+    df_input = pd.DataFrame(
+        {
+            "source_value": [1, 2, 3],
+            "concept_id": ["A", None, 0],
+        }
+    )
+
+    new_mappings = {2: "B", 3: "C"}
+
+    df_out = pd.DataFrame(
+        {
+            "source_value": [1, 2, 3],
+            "concept_id": ["A", "B", "C"],
+        }
+    )
+
+    result = update_concept_mappings(
+        df_input, "source_value", "concept_id", new_mappings
+    )
+    pd.testing.assert_frame_equal(result, df_out)
