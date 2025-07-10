@@ -199,9 +199,7 @@ def test_map_source_concept_id():
 
 
 def test_update_concept_mappings_no_update():
-    """
-    Test function leave everything as is if no update mappings are provided.
-    """
+    """Test function returns unchanged copy when no mappings provided."""
 
     # Define the table that hold the values to be mapped
     df_input = pd.DataFrame(
@@ -212,16 +210,6 @@ def test_update_concept_mappings_no_update():
             "concept_id": [4092846, 0, 0],
         }
     ).astype({"source_concept_id": pd.Int64Dtype(), "concept_id": pd.Int64Dtype()})
-
-    # # Define what should be the output
-    # df_output = pd.DataFrame(
-    #     {
-    #         "vocabulary_id": ["SNOMED", "test_is_a", "test_no_rel"],
-    #         "source_value": ["187033005", "AA00", "AA01"],
-    #         "source_concept_id": [4092846, 2000000000, 2000000010],
-    #         "concept_id": [4092846, 0, 0],
-    #     }
-    # ).astype({"source_concept_id": pd.Int64Dtype(), "concept_id": pd.Int64Dtype()})
 
     df_out = update_concept_mappings(
         df_input,
