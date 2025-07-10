@@ -346,9 +346,12 @@ def update_concept_mappings(
     """
     Update concept mappings in a DataFrame using provided new mappings.
 
+    Only updates rows where the target column is null/NaN/0. Existing non-zero
+    values in the target column are preserved.
+
     Parameters
     ----------
-    df : pandas.DataFrame
+    df : pd.DataFrame
         Input DataFrame containing source values and concept IDs
     source_column : str
         Name of column containing original source values/codes
@@ -359,33 +362,55 @@ def update_concept_mappings(
 
     Returns
     -------
-    pandas.DataFrame
-        Copy of input DataFrame with updated concept ID mappings if unmapped values
-        exist, otherwise returns original DataFrame unchanged
+    pd.DataFrame
+        Copy of input DataFrame with updated concept ID mappings for unmapped values.
+        Existing non-zero mappings are preserved.
+
+    Raises
+    ------
+    KeyError
+        If source_column or target_column don't exist in the DataFrame
+    ValueError
+        If DataFrame is empty or columns contain incompatible data types
 
     Examples
     --------
     >>> df = pd.DataFrame({
     ...     'source_code': ['A1', 'B2', 'C3'],
-    ...     'source_concept_id': [123, np.nan, 789],
-    ...     'concept_id': [None, None, None]
+    ...     'concept_id': [123, 0, 789]
     ... })
     >>> new_mappings = {'B2': 456}
-    >>> result = update_concept_mappings(
-    ...     df, 'source_code', 'source_concept_id', 'concept_id', new_mappings
-    ... )
+    >>> result = update_concept_mappings(df, 'source_code', 'concept_id', new_mappings)
+    >>> result['concept_id'].tolist()
+    [123, 456, 789]
     """
+    # Input validation
+    if df.empty:
+        raise ValueError("DataFrame cannot be empty")
+
+    if source_column not in df.columns:
+        raise KeyError(f"Source column '{source_column}' not found in DataFrame")
+
+    if target_column not in df.columns:
+        raise KeyError(f"Target column '{target_column}' not found in DataFrame")
+
+    if not new_concept_mappings:
+        return df.copy()
+
+    # Create a copy to avoid modifying the original
     result_df = df.copy()
-    existing_mappings = result_df.set_index(source_column)[target_column].to_dict()
 
-    try:
-        # Update existing mappings with new ones
-        existing_mappings.update(new_concept_mappings)
+    # Identify rows that need updating (null, NaN, or 0 values)
+    unmapped_mask = (
+        result_df[target_column].isna()
+        | (result_df[target_column] == 0)
+        | result_df[target_column].isnull()
+    )
 
-        # Apply updated mappings to create new concept ID column
-        result_df[target_column] = result_df[source_column].map(existing_mappings)
-    except KeyError as e:
-        print(f"Error: No concept ID found for source value '{e.args[0]}'")
+    # Update only the unmapped rows
+    for source_value, concept_id in new_concept_mappings.items():
+        mask = (result_df[source_column] == source_value) & unmapped_mask
+        result_df.loc[mask, target_column] = concept_id
 
     return result_df
 
