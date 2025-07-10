@@ -1,12 +1,5 @@
-import os
-import pathlib
-
-import numpy as np
 import pandas as pd
-import pytest
-import yaml
 
-import bps_to_omop.extract as ext
 from bps_to_omop.mapping import (
     map_source_concept_id,
     map_source_value,
