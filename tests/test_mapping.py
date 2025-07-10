@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from bps_to_omop.mapping import (
@@ -237,6 +238,30 @@ def test_update_concept_mappings_basic_update():
         df_input, "source_value", "concept_id", new_mappings
     )
     pd.testing.assert_frame_equal(result, df_out)
+
+
+def test_update_concept_mappings_with_nan():
+    """Test function handles NaN values correctly."""
+    df_input = pd.DataFrame(
+        {
+            "source_value": ["A1", "B2", "C3"],
+            "concept_id": [123, np.nan, 0],
+        }
+    ).astype({"concept_id": pd.Int64Dtype()})
+
+    new_mappings = {"B2": 456, "C3": 789}
+
+    df_expected = pd.DataFrame(
+        {
+            "source_value": ["A1", "B2", "C3"],
+            "concept_id": [123, 456, 789],
+        }
+    ).astype({"concept_id": pd.Int64Dtype()})
+
+    result = update_concept_mappings(
+        df_input, "source_value", "concept_id", new_mappings
+    )
+    pd.testing.assert_frame_equal(result, df_expected)
 
 
 def test_update_concept_mappings_duplicate_mappings():
