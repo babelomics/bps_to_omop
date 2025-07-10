@@ -202,6 +202,7 @@ def sample_concept_relationship_table(test_data_dir):
                 40627284,
                 9189,
                 9191,
+                8713,
             ],
             "concept_id_2": [
                 3000963,
@@ -211,8 +212,10 @@ def sample_concept_relationship_table(test_data_dir):
                 4092846,
                 9189,
                 9191,
+                8713,
             ],
             "relationship_id": [
+                "Maps to",
                 "Maps to",
                 "Maps to",
                 "Maps to",
