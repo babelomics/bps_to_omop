@@ -235,7 +235,8 @@ def test_update_concept_mappings_no_update():
 
 def test_update_concept_mappings_duplicate_mappings():
     """
-    Test function works fine if there are duplicated entries.
+    Test function works fine if there are duplicated source values
+    that map to different concept_id.
     """
 
     # Define the table that hold the values to be mapped
@@ -243,7 +244,7 @@ def test_update_concept_mappings_duplicate_mappings():
         {
             "vocabulary_id": ["SNOMED", "test_is_a", "test_is_a", "test_no_rel"],
             "source_value": ["187033005", "AA00", "AA00", "AA01"],
-            "source_concept_id": [4092846, 2000000000, 2000000000, 2000000010],
+            "source_concept_id": [4092846, 2000000000, 20000000010, 2000000010],
             "concept_id": [4092846, 0, 0, 0],
         }
     ).astype({"source_concept_id": pd.Int64Dtype(), "concept_id": pd.Int64Dtype()})
