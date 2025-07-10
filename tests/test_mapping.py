@@ -345,3 +345,22 @@ def test_update_concept_mappings_partial_mapping():
         df_input, "source_value", "concept_id", new_mappings
     )
     pd.testing.assert_frame_equal(result, df_expected)
+
+
+def test_update_concept_mappings_no_matching_values():
+    """Test function when new mappings don't match any source values."""
+    df_input = pd.DataFrame(
+        {
+            "source_value": ["A1", "B2", "C3"],
+            "concept_id": [123, 0, 0],
+        }
+    )
+
+    new_mappings = {"X1": 999, "Y2": 888}  # No matching source values
+
+    df_expected = df_input.copy()  # Should remain unchanged
+
+    result = update_concept_mappings(
+        df_input, "source_value", "concept_id", new_mappings
+    )
+    pd.testing.assert_frame_equal(result, df_expected)
