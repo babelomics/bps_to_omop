@@ -222,6 +222,30 @@ def test_update_concept_mappings_no_update():
     assert df_input is not df_out  # Ensure it's a copy
 
 
+def test_update_concept_mappings_basic_update():
+    """Test basic functionality with simple mappings."""
+    df_input = pd.DataFrame(
+        {
+            "source_value": ["A1", "B2", "C3"],
+            "concept_id": [123, 0, 0],
+        }
+    )
+
+    new_mappings = {"B2": 456, "C3": 789}
+
+    df_out = pd.DataFrame(
+        {
+            "source_value": ["A1", "B2", "C3"],
+            "concept_id": [123, 456, 789],
+        }
+    )
+
+    result = update_concept_mappings(
+        df_input, "source_value", "concept_id", new_mappings
+    )
+    pd.testing.assert_frame_equal(result, df_out)
+
+
 def test_update_concept_mappings_duplicate_mappings():
     """
     Test function works fine if there are duplicated source values
