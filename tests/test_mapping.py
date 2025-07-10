@@ -219,6 +219,7 @@ def test_update_concept_mappings_no_update():
     ).astype({"concept_id": pd.Int64Dtype()})
 
     pd.testing.assert_frame_equal(df_input, df_out)
+    assert df_input is not df_out  # Ensure it's a copy
 
 
 def test_update_concept_mappings_duplicate_mappings():
