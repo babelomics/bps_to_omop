@@ -273,8 +273,7 @@ def map_standard_concepts(
     # These fields must be null if value is not a concept / is a number
     numeric_rows = ~pd.to_numeric(df["value_source_value"], errors="coerce").isna()
     df.loc[numeric_rows, "value_as_concept_id"] = np.nan
-    non_unit_rows = df["unit_source_value"].isna()
-    df.loc[non_unit_rows, "unit_concept_id"] = np.nan
+    df.loc[~numeric_rows, "unit_concept_id"] = np.nan
 
     return df
 
