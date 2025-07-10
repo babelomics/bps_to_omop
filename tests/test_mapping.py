@@ -299,26 +299,25 @@ def test_update_concept_mappings_duplicate_mappings():
         {
             "vocabulary_id": ["SNOMED", "test_is_a", "test_is_a", "test_no_rel"],
             "source_value": ["187033005", "AA00", "AA00", "AA01"],
-            "source_concept_id": [4092846, 2000000000, 20000000010, 2000000010],
             "concept_id": [4092846, 0, 0, 0],
         }
-    ).astype({"source_concept_id": pd.Int64Dtype(), "concept_id": pd.Int64Dtype()})
+    ).astype({"concept_id": pd.Int64Dtype()})
 
-    # # Define what should be the output
-    # df_output = pd.DataFrame(
-    #     {
-    #         "vocabulary_id": ["SNOMED", "test_is_a", "test_no_rel"],
-    #         "source_value": ["187033005", "AA00", "AA01"],
-    #         "source_concept_id": [4092846, 2000000000, 2000000010],
-    #         "concept_id": [4092846, 0, 0],
-    #     }
-    # ).astype({"source_concept_id": pd.Int64Dtype(), "concept_id": pd.Int64Dtype()})
+    new_mappings = {"AA00": 999, "AA01": 111}
+
+    df_output = pd.DataFrame(
+        {
+            "vocabulary_id": ["SNOMED", "test_is_a", "test_is_a", "test_no_rel"],
+            "source_value": ["187033005", "AA00", "AA00", "AA01"],
+            "concept_id": [4092846, 999, 999, 111],  # Both AA00 rows updated
+        }
+    ).astype({"concept_id": pd.Int64Dtype()})
 
     df_out = update_concept_mappings(
         df_input,
         "source_value",
         "concept_id",
-        {},
+        new_mappings,
     ).astype({"concept_id": pd.Int64Dtype()})
 
-    pd.testing.assert_frame_equal(df_input, df_out)
+    pd.testing.assert_frame_equal(df_output, df_out)
