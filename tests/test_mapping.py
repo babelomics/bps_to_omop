@@ -288,6 +288,30 @@ def test_update_concept_mappings_with_none():
     pd.testing.assert_frame_equal(result, df_out)
 
 
+def test_update_concept_mappings_empty_strings():
+    """Test function treats empty strings as unmapped."""
+    df_input = pd.DataFrame(
+        {
+            "source_value": ["A1", "B2", "C3"],
+            "concept_id": [123, "", 0],
+        }
+    )
+
+    new_mappings = {"B2": 456, "C3": 789}
+
+    df_out = pd.DataFrame(
+        {
+            "source_value": ["A1", "B2", "C3"],
+            "concept_id": [123, 456, 789],
+        }
+    ).astype({"concept_id": pd.Int64Dtype()})
+
+    result = update_concept_mappings(
+        df_input, "source_value", "concept_id", new_mappings
+    ).astype({"concept_id": pd.Int64Dtype()})
+    pd.testing.assert_frame_equal(result, df_out)
+
+
 def test_update_concept_mappings_duplicate_mappings():
     """
     Test function works fine if there are duplicated source values
