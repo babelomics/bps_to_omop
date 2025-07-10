@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from bps_to_omop.mapping import (
     map_source_concept_id,
@@ -412,3 +413,42 @@ def test_update_concept_mappings_different_data_types():
         df_input, "source_value", "concept_id", new_mappings
     )
     pd.testing.assert_frame_equal(result, df_out)
+
+
+# ============================================================================
+# ERROR HANDLING TESTS
+# ============================================================================
+
+
+def test_update_concept_mappings_missing_source_column():
+    """Test function raises KeyError for missing source column."""
+    df_input = pd.DataFrame(
+        {
+            "source_value": ["A1", "B2"],
+            "concept_id": [123, 0],
+        }
+    )
+
+    with pytest.raises(KeyError, match="Source column 'missing_col' not found"):
+        update_concept_mappings(df_input, "missing_col", "concept_id", {"A1": 999})
+
+
+def test_update_concept_mappings_missing_target_column():
+    """Test function raises KeyError for missing target column."""
+    df_input = pd.DataFrame(
+        {
+            "source_value": ["A1", "B2"],
+            "concept_id": [123, 0],
+        }
+    )
+
+    with pytest.raises(KeyError, match="Target column 'missing_col' not found"):
+        update_concept_mappings(df_input, "source_value", "missing_col", {"A1": 999})
+
+
+def test_update_concept_mappings_empty_dataframe():
+    """Test function raises ValueError for empty DataFrame."""
+    df_input = pd.DataFrame()
+
+    with pytest.raises(ValueError, match="DataFrame cannot be empty"):
+        update_concept_mappings(df_input, "source_value", "concept_id", {"A1": 999})
