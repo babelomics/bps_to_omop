@@ -8,7 +8,7 @@ from hypothesis import assume, given
 from hypothesis import strategies as st
 
 sys.path.append("../bps_to_omop/")
-from bps_to_omop.pyarrow_utils import create_uniform_int_array
+from bps_to_omop.utils.pyarrow_utils import create_uniform_int_array
 
 
 @given(

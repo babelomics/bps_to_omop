@@ -4,7 +4,7 @@ General utilities to format tables into OMOP-CDM.
 
 import pyarrow as pa
 
-import bps_to_omop.pyarrow_utils as pa_utils
+import bps_to_omop.utils.pyarrow_utils as pa_utils
 
 
 def fill_omop_table(
