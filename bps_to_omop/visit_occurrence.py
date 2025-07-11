@@ -19,7 +19,13 @@ import pyarrow.compute as pc
 from pyarrow import parquet
 
 from bps_to_omop.omop_schemas import omop_schemas
-from bps_to_omop.utils import common, format_to_omop, transform_table
+from bps_to_omop.utils import (
+    common,
+    format_to_omop,
+    process_dates,
+    pyarrow_utils,
+    transform_table,
+)
 
 
 def get_visit_concept_id(
@@ -224,7 +230,7 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
                 provider_id = provider_id.map(provider_map)
             except KeyError:
                 # Create an array of nuls
-                provider_id = common.create_null_int_array(len(table))
+                provider_id = pyarrow_utils.create_null_int_array(len(table))
             # Append a new column with the provider_id
             table = table.append_column("provider_id", [provider_id])
             final_columns.append("provider_id")
@@ -303,7 +309,7 @@ def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa
     )
 
     # -- Remove overlap
-    df_done = common.remove_overlap(
+    df_done = process_dates.remove_overlap(
         df_raw, sorting_columns, ascending_order, verbose=verbose
     )
 
