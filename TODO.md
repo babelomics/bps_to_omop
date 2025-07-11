@@ -1,15 +1,10 @@
 
 # TO DO
 
-- Move genomop_example functions to measurement.py
-- Refactor process_measurement_table so it does not need to read params.
-  - data_dir and params_data enter, measurement table gets out.
 - In most scripts there's a gather up stage. This could be refactored.
   - It will need a list of necessary columns for the rest of the script to work, which will be retrieved from each file or created with nans as needed.
-- Corregir C5 (De qué, past-isi? D:)
 - group_dates()
 	- Indicar filas iniciales y finales
-- Relanzar C3
 - Modificar computación type_concept
   - Assign id to groups
     - use the already calculated index
@@ -17,7 +12,7 @@
   - compute mode on groupby
 - AÑADIR TESTS!!
   - Test generales
-    - All clinical event_start_dates must be populted
+    - All clinical event_start_dates must be populated
     - Start dates must be <= death_date
     - end dates must be <= death_date +60 days
     - if end_date, all event_start_dates must be <= event_end_dates
