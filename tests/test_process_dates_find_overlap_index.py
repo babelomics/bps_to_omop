@@ -1,12 +1,9 @@
 import sys
-from datetime import datetime, timedelta
 
-import numpy as np
 import pandas as pd
-import pytest
 
 sys.path.append("../bps_to_omop/")
-from utils.common import find_overlap_index
+from utils.process_dates import find_overlap_index
 
 
 # == TESTS ==============================================================================
