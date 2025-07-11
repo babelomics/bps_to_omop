@@ -6,7 +6,7 @@ from pandas import to_datetime
 from pandas.testing import assert_frame_equal
 
 sys.path.append("../bps_to_omop/")
-from bps_to_omop.format_omop import fill_omop_table, format_table, reorder_omop_table
+from format_to_omop import fill_omop_table, format_table, reorder_omop_table
 
 
 # == Fixtures =========================================================

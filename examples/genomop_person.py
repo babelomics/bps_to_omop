@@ -13,12 +13,14 @@ except ModuleNotFoundError:
     warnings.warn("No 'data_dir' variable provided.")
 
 sys.path.append("./external/bps_to_omop/")
+import map_to_omop as mpp
+
 import bps_to_omop.extract as ext
 import bps_to_omop.general as gen
-import bps_to_omop.mapping as mpp
 import bps_to_omop.person as per
-from bps_to_omop import format_omop
 from bps_to_omop.omop_schemas import omop_schemas
+
+from . import format_to_omop
 
 
 def process_person_table(params_file: Path, data_dir_: Path = None):
@@ -50,14 +52,14 @@ def process_person_table(params_file: Path, data_dir_: Path = None):
         # First ensure we have a dict even when no options where provided
         column_name_map = (params_data.get("column_name_map", {}) or {}).get(f, {})
         column_name_map = {**column_name_map, "start_date": "birth_datetime"}
-        tmp_table = format_omop.rename_table_columns(tmp_table, column_name_map)
+        tmp_table = format_to_omop.rename_table_columns(tmp_table, column_name_map)
 
         # -- Apply values mapping
         column_values_map = (params_data.get("column_values_map", {}) or {}).get(f, {})
         tmp_table = mpp.apply_source_mapping(tmp_table, column_values_map)
 
         # Format the table
-        tmp_table = format_omop.format_table(tmp_table, omop_schemas["PERSON"])
+        tmp_table = format_to_omop.format_table(tmp_table, omop_schemas["PERSON"])
 
         # Append to list
         table_person.append(tmp_table)

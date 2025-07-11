@@ -9,8 +9,9 @@ from pyarrow import parquet
 sys.path.append("./external/bps_to_omop/")
 import bps_to_omop.extract as ext
 import bps_to_omop.general as gen
-from bps_to_omop import format_omop
 from bps_to_omop.omop_schemas import omop_schemas
+
+from . import format_to_omop
 
 # %%
 # == Parameters =======================================================
@@ -35,7 +36,7 @@ table_cdm_source = pa.Table.from_pylist(
 )
 
 # Format to schema
-table_cdm_source = format_omop.format_table(
+table_cdm_source = format_to_omop.format_table(
     table_cdm_source, omop_schemas["CDM_SOURCE"]
 )
 

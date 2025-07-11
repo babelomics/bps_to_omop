@@ -10,8 +10,9 @@ sys.path.append("./external/bps_to_omop")
 import bps_to_omop.extract as ext
 import bps_to_omop.general as gen
 import bps_to_omop.table_transformer as ftr
-from bps_to_omop import format_omop
 from bps_to_omop.omop_schemas import omop_schemas
+
+from . import format_to_omop
 
 # %%
 # -- PARAMETERS -------------------------------------------------------
@@ -94,7 +95,7 @@ observation_period_id = pa.array(range(len(table)))
 table = table.add_column(0, "observation_period_id", observation_period_id)
 
 # Rename to omop columns
-table = format_omop.rename_table_columns(
+table = format_to_omop.rename_table_columns(
     table,
     {
         "start_date": "observation_period_start_date",
@@ -104,7 +105,7 @@ table = format_omop.rename_table_columns(
 )
 
 # Fill, reorder and cast to schema
-table = format_omop.format_table(table, omop_schemas["OBSERVATION_PERIOD"])
+table = format_to_omop.format_table(table, omop_schemas["OBSERVATION_PERIOD"])
 print("Done!")
 
 # %%

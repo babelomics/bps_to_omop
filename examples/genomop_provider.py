@@ -9,9 +9,10 @@ from pyarrow import parquet
 sys.path.append("external/bps_to_omop/")
 import bps_to_omop.extract as ext
 import bps_to_omop.general as gen
-from bps_to_omop import format_omop
-from bps_to_omop import mapping as mpp
 from bps_to_omop.omop_schemas import omop_schemas
+
+from . import format_to_omop
+from . import map_to_omop as mpp
 
 # == Parameters =======================================================
 params_file = "./package/preomop/genomop_provider_params.yaml"
@@ -71,7 +72,7 @@ print("Formatting to OMOP...")
 provider_table = pa.Table.from_pylist(provider, schema=omop_schemas["PROVIDER"])
 
 # Fill, reorder and cast to schema
-provider_table = format_omop.format_table(provider_table, omop_schemas["PROVIDER"])
+provider_table = format_to_omop.format_table(provider_table, omop_schemas["PROVIDER"])
 
 # == Save to parquet ==============================================================================
 print("Saving to parquet...")
