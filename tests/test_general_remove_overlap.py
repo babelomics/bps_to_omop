@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 sys.path.append("../bps_to_omop/")
-from bps_to_omop.general import remove_overlap
+from utils.common import remove_overlap
 
 
 # == TESTS =============================================================================

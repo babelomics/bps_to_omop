@@ -4,8 +4,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 import pytest
-
-from bps_to_omop.general import find_visit_occurrence_id
+from utils.common import find_visit_occurrence_id
 
 sys.path.append("../bps_to_omop/")
 

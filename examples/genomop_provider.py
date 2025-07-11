@@ -7,9 +7,9 @@ from package.datasets import data_dir
 from pyarrow import parquet
 
 sys.path.append("external/bps_to_omop/")
+import utils.common as gen
 import utils.extract as ext
 
-import bps_to_omop.general as gen
 from bps_to_omop.omop_schemas import omop_schemas
 
 from . import format_to_omop

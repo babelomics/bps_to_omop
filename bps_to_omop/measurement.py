@@ -14,8 +14,8 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 from pyarrow import parquet
+from utils import common as gen
 
-from bps_to_omop import general as gen
 from bps_to_omop.omop_schemas import omop_schemas
 
 from .utils import format_to_omop
