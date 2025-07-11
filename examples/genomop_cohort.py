@@ -1,28 +1,18 @@
 import argparse
 import os
 import sys
-import warnings
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as parquet
 from src.utils import read_params
 
-# -- TO REMOVE --
-os.chdir("..")
-print(os.getcwd())
-params_file = "./src/genomop_cohort_params.yaml"
-# ---------------
-
 sys.path.append(
     "./external/bps_to_omop"
 )  # This is needed or else some other functions in bps_to_omop wont work
-import external.bps_to_omop.bps_to_omop.general as gen
-from external.bps_to_omop.bps_to_omop.omop_schemas import omop_schemas
-
-from . import format_to_omop
+from bps_to_omop.omop_schemas import omop_schemas
+from bps_to_omop.utils import common, extract, format_to_omop
 
 
 def process_cohort_table(params_file: str):

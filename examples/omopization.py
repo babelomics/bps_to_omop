@@ -1,15 +1,18 @@
 # %%
 import os
 import sys
+import warnings
 
 import pyarrow.parquet as parquet
-from package.datasets import data_dir
 
-sys.path.append("external/bps_to_omop/")
-import utils.extract as ext
+try:
+    from package.datasets import data_dir
+except ModuleNotFoundError:
+    warnings.warn("No 'data_dir' variable provided.")
 
-import bps_to_omop.person as per
-import bps_to_omop.pyarrow_utils as pa_utils
+sys.path.append("./external/bps_to_omop/")
+from bps_to_omop import person
+from bps_to_omop.utils import extract, pyarrow_utils
 
 # %%
 # -- Define parameters ------------------------------------------------
@@ -19,7 +22,7 @@ params_file = "./package/preomop/omopization_params.yaml"
 print("Reading parameters...")
 
 # -- Load yaml file and related info
-params_data = ext.read_yaml_params(params_file)
+params_data = extract.read_yaml_params(params_file)
 input_dir = params_data["input_dir"]
 output_dir = params_data["output_dir"]
 input_files = params_data["input_files"]
@@ -41,14 +44,16 @@ for f in input_files:
 
     # -- person_id --------------------------------------------------------------------------------
     # Get the person_id
-    person_id, person_source_value = per.transform_person_id(table, person_columns[f])
+    person_id, person_source_value = person.transform_person_id(
+        table, person_columns[f]
+    )
     # Remove column from list to keep
     cols_to_remove += [person_columns[f]]
 
     # -- start_date and end_date ------------------------------------------------------------------
     # Ensure they are ordered, i.e. end_date is after start_date
     try:
-        start_date, end_date = ext.find_start_end_dates(
+        start_date, end_date = extract.find_start_end_dates(
             table, date_columns[f], verbose=0
         )
     except (ValueError, TypeError) as inst:
@@ -60,7 +65,7 @@ for f in input_files:
     # -- type_concept -----------------------------------------------------------------------------
     # Create a columns with the code
     type_concept_code = type_concept_mapping[f]
-    type_concept = pa_utils.create_uniform_int_array(len(table), type_concept_code)
+    type_concept = pyarrow_utils.create_uniform_int_array(len(table), type_concept_code)
 
     # -- Final steps ------------------------------------------------------------------------------
     # Append to old table

@@ -1,18 +1,19 @@
 # %%
 import os
 import sys
+import warnings
 
 import pyarrow as pa
-from package.datasets import data_dir
 from pyarrow import parquet
 
+try:
+    from package.datasets import data_dir
+except ModuleNotFoundError:
+    warnings.warn("No 'data_dir' variable provided.")
+
 sys.path.append("./external/bps_to_omop/")
-import utils.common as gen
-import utils.extract as ext
-
 from bps_to_omop.omop_schemas import omop_schemas
-
-from . import format_to_omop
+from bps_to_omop.utils import common, extract, format_to_omop
 
 # %%
 # == Parameters =======================================================
@@ -21,7 +22,7 @@ params_file = "./package/preomop/genomop_cdm_source_params.yaml"
 # -- Load parameters --------------------------------------------------
 print("Reading parameters...")
 # -- Load yaml file and related info
-params_data = ext.read_yaml_params(params_file)
+params_data = extract.read_yaml_params(params_file)
 output_dir = params_data["output_dir"]
 cdm_source_fields = params_data["cdm_source_fields"]
 

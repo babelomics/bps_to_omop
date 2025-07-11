@@ -13,14 +13,9 @@ except ModuleNotFoundError:
     warnings.warn("No 'data_dir' variable provided.")
 
 sys.path.append("./external/bps_to_omop/")
-import utils.common as gen
-import utils.extract as ext
-import utils.map_to_omop as mpp
-
-import bps_to_omop.person as per
+from bps_to_omop import person
 from bps_to_omop.omop_schemas import omop_schemas
-
-from . import format_to_omop
+from bps_to_omop.utils import extract, format_to_omop, map_to_omop
 
 
 def process_person_table(params_file: Path, data_dir_: Path = None):
@@ -29,7 +24,7 @@ def process_person_table(params_file: Path, data_dir_: Path = None):
     print("Reading parameters...")
 
     # -- Load yaml file and related info
-    params_data = ext.read_yaml_params(params_file)
+    params_data = extract.read_yaml_params(params_file)
     input_dir = params_data["input_dir"]
     output_dir = params_data["output_dir"]
     input_files = params_data["input_files"]
@@ -46,7 +41,7 @@ def process_person_table(params_file: Path, data_dir_: Path = None):
         tmp_table = parquet.read_table(data_dir_ / input_dir / f)
 
         # Build date columns
-        tmp_table = per.build_date_columns(tmp_table)
+        tmp_table = person.build_date_columns(tmp_table)
 
         # -- Rename columns
         # First ensure we have a dict even when no options where provided
@@ -56,7 +51,7 @@ def process_person_table(params_file: Path, data_dir_: Path = None):
 
         # -- Apply values mapping
         column_values_map = (params_data.get("column_values_map", {}) or {}).get(f, {})
-        tmp_table = mpp.apply_source_mapping(tmp_table, column_values_map)
+        tmp_table = map_to_omop.apply_source_mapping(tmp_table, column_values_map)
 
         # Format the table
         tmp_table = format_to_omop.format_table(tmp_table, omop_schemas["PERSON"])

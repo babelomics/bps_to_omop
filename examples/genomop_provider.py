@@ -1,19 +1,19 @@
 import os
 import sys
+import warnings
 
 import pandas as pd
 import pyarrow as pa
-from package.datasets import data_dir
 from pyarrow import parquet
 
-sys.path.append("external/bps_to_omop/")
-import utils.common as gen
-import utils.extract as ext
+try:
+    from package.datasets import data_dir
+except ModuleNotFoundError:
+    warnings.warn("No 'data_dir' variable provided.")
 
+sys.path.append("./external/bps_to_omop/")
 from bps_to_omop.omop_schemas import omop_schemas
-
-from . import format_to_omop
-from . import map_to_omop as mpp
+from bps_to_omop.utils import extract, format_to_omop, map_to_omop
 
 # == Parameters =======================================================
 params_file = "./package/preomop/genomop_provider_params.yaml"
@@ -21,7 +21,7 @@ params_file = "./package/preomop/genomop_provider_params.yaml"
 # -- Load parameters --------------------------------------------------
 print("Reading parameters...")
 # -- Load yaml file and related info
-params_data = ext.read_yaml_params(params_file)
+params_data = extract.read_yaml_params(params_file)
 input_dir = params_data["input_dir"]
 output_dir = params_data["output_dir"]
 input_files = params_data["input_files"]
@@ -60,7 +60,7 @@ test_list = ["specialty"]
 
 for col in test_list:
     # Check for unmapped values
-    unmapped_values = mpp.find_unmapped_values(
+    unmapped_values = map_to_omop.find_unmapped_values(
         df, f"{col}_source_value", f"{col}_concept_id"
     )
     # Apply mapping if needed

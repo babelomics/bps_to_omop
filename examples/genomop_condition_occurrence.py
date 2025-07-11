@@ -5,16 +5,15 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as parquet
-from package.datasets import data_dir
 
-sys.path.append("./external/bps_to_omop")
-import utils.common as gen
-import utils.extract as ext
+try:
+    from package.datasets import data_dir
+except ModuleNotFoundError:
+    warnings.warn("No 'data_dir' variable provided.")
 
+sys.path.append("./external/bps_to_omop/")
 from bps_to_omop.omop_schemas import omop_schemas
-
-from . import format_to_omop
-from . import map_to_omop as mpp
+from bps_to_omop.utils import common, extract, format_to_omop, map_to_omop
 
 # %%
 # == Parameters =======================================================
@@ -25,7 +24,7 @@ params_file = "./package/preomop/genomop_condition_occurrence_params.yaml"
 print("Reading parameters...")
 
 # -- Load yaml file and related info
-params_data = ext.read_yaml_params(params_file)
+params_data = extract.read_yaml_params(params_file)
 input_dir = params_data["input_dir"]
 output_dir = params_data["output_dir"]
 input_files = params_data["input_files"]
@@ -57,7 +56,7 @@ for f in input_files:
     # Apply renaming
     df = df.rename(column_map[f], axis=1)
     # Perform the mapping
-    df = mpp.map_source_value(df, vocabulary_config[f], concept_df)
+    df = map_to_omop.map_source_value(df, vocabulary_config[f], concept_df)
 # Add to final dataframe
 df_complete.append(df)
 
@@ -66,7 +65,7 @@ df = pd.concat(df_complete, axis=0)
 
 # == Mapping to standard concept_id ===================================
 print("Mapping to standard concepts...")
-df = mpp.map_source_concept_id(df, concept_rel_df)
+df = map_to_omop.map_source_concept_id(df, concept_rel_df)
 df = df.rename(
     {
         "concept_id": "condition_concept_id",
@@ -82,7 +81,7 @@ df["condition_occurrence_id"] = pa.array(range(len(df)))
 print("Finding visit_occurrence_id...")
 df_visit_occurrence = pd.read_parquet(data_dir / visit_dir / "VISIT_OCCURRENCE.parquet")
 # Primero asignamos el conditi
-df = gen.find_visit_occurrence_id(
+df = common.find_visit_occurrence_id(
     df,
     ["person_id", "start_date", "condition_occurrence_id"],
     df_visit_occurrence,

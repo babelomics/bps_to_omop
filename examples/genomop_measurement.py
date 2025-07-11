@@ -1,8 +1,9 @@
 import argparse
+import sys
 
-import utils.extract as ext
-
-import bps_to_omop.measurement as mea
+sys.path.append("./external/bps_to_omop/")
+from bps_to_omop import measurement
+from bps_to_omop.utils import extract
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
@@ -26,10 +27,10 @@ if __name__ == "__main__":
     print("Reading parameters...")
 
     # -- Load yaml file and related info
-    params_gen = ext.read_yaml_params(args.general_parameters_file)
-    params_measurement = ext.read_yaml_params(args.measurement_parameters_file)
+    params_gen = extract.read_yaml_params(args.general_parameters_file)
+    params_measurement = extract.read_yaml_params(args.measurement_parameters_file)
 
     data_dir = params_gen["repo_data_dir"]
 
     # Create output
-    mea.process_measurement_table(data_dir, params_measurement)
+    measurement.process_measurement_table(data_dir, params_measurement)

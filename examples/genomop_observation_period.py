@@ -1,19 +1,19 @@
 # %%
 import os
 import sys
+import warnings
 
 import pyarrow as pa
-from package.datasets import data_dir
 from pyarrow import parquet
 
-sys.path.append("./external/bps_to_omop")
-import utils.common as gen
-import utils.extract as ext
-import utils.transform_table as ftr
+try:
+    from package.datasets import data_dir
+except ModuleNotFoundError:
+    warnings.warn("No 'data_dir' variable provided.")
 
+sys.path.append("./external/bps_to_omop/")
 from bps_to_omop.omop_schemas import omop_schemas
-
-from . import format_to_omop
+from bps_to_omop.utils import extract, format_to_omop, process_dates, transform_table
 
 # %%
 # -- PARAMETERS -------------------------------------------------------
@@ -23,7 +23,7 @@ params_file = "./package/preomop/genomop_observation_period_params.yaml"
 print("Reading parameters... ", end="")
 
 # -- Load yaml file and related info
-params_data = ext.read_yaml_params(params_file)
+params_data = extract.read_yaml_params(params_file)
 input_dir = params_data["input_dir"]
 output_dir = params_data["output_dir"]
 input_files = params_data["input_files"]
@@ -53,7 +53,7 @@ for f in input_files:
     # If transformations have to be done, do them
     else:
         for func in params_data["transformations"][f]:
-            func = ftr.transformations[params_data["transformations"][f]]
+            func = transform_table.transformations[params_data["transformations"][f]]
             table_raw = func(table_raw)
         table.append(table_raw)
 # Join them all
@@ -74,13 +74,13 @@ print("Done!")
 # Group the dates. First we remove dates contained one inside
 # other and then we group periods that are not more than n_days apart
 # days between them
-df_rare = gen.remove_overlap(
+df_rare = process_dates.remove_overlap(
     df_rare,
     sorting_columns=["person_id", "start_date", "end_date", "type_concept"],
     ascending_order=[True, True, False, True],
     verbose=2,
 )
-df_rare = gen.group_dates(df_rare, n_days, verbose=2)
+df_rare = process_dates.group_dates(df_rare, n_days, verbose=2)
 
 # %%
 # -- Final treatment -----------------------------------------------------
