@@ -16,9 +16,9 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
 from pyarrow import parquet
+from utils import transform_table as ttr
 
 from bps_to_omop import general as gen
-from bps_to_omop import table_transformer as ttr
 from bps_to_omop.omop_schemas import omop_schemas
 
 from .utils import format_to_omop

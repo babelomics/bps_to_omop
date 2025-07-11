@@ -1,6 +1,5 @@
 import pyarrow as pa
-
-from bps_to_omop.table_transformer import apply_transformation
+from utils.transform_table import apply_transformation
 
 
 def test_no_transformations():
