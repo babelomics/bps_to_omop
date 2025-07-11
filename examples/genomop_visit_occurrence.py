@@ -27,7 +27,7 @@ table_VISIT_OCCURRENCE_0 = vso.gather_tables(data_dir, params_data, verbose=1)
 table_VISIT_OCCURRENCE_1 = vso.clean_tables(
     table_VISIT_OCCURRENCE_0, params_data, verbose=2
 )
-table_VISIT_OCCURRENCE_2 = vso.format_to_omop(table_VISIT_OCCURRENCE_1, verbose=1)
+table_VISIT_OCCURRENCE_2 = vso.to_omop(table_VISIT_OCCURRENCE_1, verbose=1)
 
 # == Save to parquet ==================================================
 parquet.write_table(

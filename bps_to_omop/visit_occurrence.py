@@ -312,7 +312,7 @@ def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa
     return pa.Table.from_pandas(df_done, preserve_index=False)
 
 
-def format_to_omop(table: pa.Table, verbose: int = 0) -> pa.Table:
+def to_omop(table: pa.Table, verbose: int = 0) -> pa.Table:
     """
     Format a PyArrow table to conform to the OMOP Common Data Model for visit occurrences.
 
