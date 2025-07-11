@@ -4,7 +4,6 @@ import warnings
 
 import numpy as np
 import pandas as pd
-import polars as pl
 import scipy.stats as st
 
 
