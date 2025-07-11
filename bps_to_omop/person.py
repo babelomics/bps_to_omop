@@ -1,20 +1,18 @@
-# 05/07/2024
-#
-# Este archivo agrupa las transformaciones necesarias para generar
-# la tabla PERSON en una instancia OMOP-CDM.
-#
-# https://ohdsi.github.io/CommonDataModel/cdm54.html#person
-#
-# http://omop-erd.surge.sh/omop_cdm/tables/PERSON.html
-#
+"""
+This file contains usual transformations to generate the PERSON
+table of an OMOP-CDM database instance.
+
+See:
+
+https://ohdsi.github.io/CommonDataModel/cdm54.html#person
+
+http://omop-erd.surge.sh/omop_cdm/tables/PERSON.html
+
+"""
 
 import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
-
-# == person_id ==
-# Esta columna se extrae del campo COD_NUHSA
-# En principio vamos a dejarlo igual, para que sea fácil de transponer en el resto de tablas
 
 
 def transform_person_id(
