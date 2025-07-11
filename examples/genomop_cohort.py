@@ -6,7 +6,6 @@ from pathlib import Path
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as parquet
-from src.utils import read_params
 
 sys.path.append(
     "./external/bps_to_omop"
@@ -21,8 +20,8 @@ def process_cohort_table(params_file: str):
     print("Reading parameters...")
 
     # -- Load yaml file and related info
-    params_gen = read_params("./params.yaml")
-    params_data = read_params(params_file)
+    params_gen = extract.read_yaml_params("./params.yaml")
+    params_data = extract.read_yaml_params(params_file)
 
     data_dir = Path(params_gen["repo_data_dir"])
     input_dir = params_data["input_dir"]
