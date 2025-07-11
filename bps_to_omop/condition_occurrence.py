@@ -1,12 +1,13 @@
-# 07/10/2024
-#
-# Este archivo agrupa las transformaciones necesarias para generar
-# la tabla CONDITION_OCURRENCE en una instancia OMOP-CDM.
-#
-# https://ohdsi.github.io/CommonDataModel/cdm54.html#condition_occurrence
-#
-# http://omop-erd.surge.sh/omop_cdm/tables/CONDITION_OCCURRENCE.html
-#
+"""
+This module contains necessary transformations to generate the 
+table CONDITION_OCCURRENCE from an OMOP-CDM.
+
+See:
+
+https://ohdsi.github.io/CommonDataModel/cdm54.html#condition_occurrence
+
+http://omop-erd.surge.sh/omop_cdm/tables/CONDITION_OCCURRENCE.html
+"""
 
 import os
 from typing import Any, Dict
