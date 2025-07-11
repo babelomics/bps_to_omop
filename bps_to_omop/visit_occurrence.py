@@ -20,8 +20,7 @@ from utils import common as gen
 from utils import transform_table as ttr
 
 from bps_to_omop.omop_schemas import omop_schemas
-
-from .utils import format_to_omop
+from bps_to_omop.utils import format_to_omop
 
 
 def get_visit_concept_id(
