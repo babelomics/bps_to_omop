@@ -3,11 +3,12 @@ This module contains neccesary functions to build the VISIT_OCCURRENCE
 table of an OMOP-CDM instance.
 
 See:
+
 https://ohdsi.github.io/CommonDataModel/cdm54.html#visit_occurrence
+
 http://omop-erd.surge.sh/omop_cdm/tables/VISIT_OCCURRENCE.html
 """
 
-import os
 from pathlib import Path
 from typing import Any
 
@@ -16,11 +17,9 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
 from pyarrow import parquet
-from utils import common as gen
-from utils import transform_table as ttr
 
 from bps_to_omop.omop_schemas import omop_schemas
-from bps_to_omop.utils import format_to_omop
+from bps_to_omop.utils import common, format_to_omop, transform_table
 
 
 def get_visit_concept_id(
@@ -182,7 +181,7 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
 
         # Read and transform the input table
         table = parquet.read_table(data_dir / input_dir / input_file)
-        table = ttr.apply_transformation(table, params, input_file)
+        table = transform_table.apply_transformation(table, params, input_file)
 
         # Assign visit concept ID
         concept_id = get_visit_concept_id(table, concept_id_functions[input_file])
@@ -220,12 +219,12 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
                 # Retrieve provider values
                 provider_id = table.to_pandas()[provider_cols[input_file]]
                 # normalize content
-                provider_id = provider_id.apply(gen.normalize_text)
+                provider_id = provider_id.apply(common.normalize_text)
                 # Apply mapping
                 provider_id = provider_id.map(provider_map)
             except KeyError:
                 # Create an array of nuls
-                provider_id = gen.create_null_int_array(len(table))
+                provider_id = common.create_null_int_array(len(table))
             # Append a new column with the provider_id
             table = table.append_column("provider_id", [provider_id])
             final_columns.append("provider_id")
@@ -304,7 +303,7 @@ def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa
     )
 
     # -- Remove overlap
-    df_done = gen.remove_overlap(
+    df_done = common.remove_overlap(
         df_raw, sorting_columns, ascending_order, verbose=verbose
     )
 
