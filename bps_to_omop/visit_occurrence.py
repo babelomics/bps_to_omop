@@ -21,7 +21,7 @@ from bps_to_omop import general as gen
 from bps_to_omop import table_transformer as ttr
 from bps_to_omop.omop_schemas import omop_schemas
 
-from . import format_to_omop
+from .utils import format_to_omop
 
 
 def get_visit_concept_id(

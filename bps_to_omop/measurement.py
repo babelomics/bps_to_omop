@@ -18,8 +18,8 @@ from pyarrow import parquet
 from bps_to_omop import general as gen
 from bps_to_omop.omop_schemas import omop_schemas
 
-from . import format_to_omop
 from . import map_to_omop as mpp
+from .utils import format_to_omop
 
 
 def preprocess_files(
