@@ -16,11 +16,8 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
 from pyarrow import parquet
-from utils import common as gen
-from utils import extract as ext
 
-from bps_to_omop.omop_schemas import omop_schemas
-from bps_to_omop.utils import format_to_omop
+from bps_to_omop.utils import extract, format_to_omop, process_dates
 
 
 def gather_tables(config_file_path: str, verbose: int = 0) -> pa.Table:
@@ -61,7 +58,7 @@ def gather_tables(config_file_path: str, verbose: int = 0) -> pa.Table:
     if verbose > 0:
         print("Gathering tables...")
     # Load configuration
-    config = ext.read_yaml_params(config_file_path)
+    config = extract.read_yaml_params(config_file_path)
     input_files = config["condition_occurrence"]["files_to_use"]
     read_transformations = config["condition_occurrence"]["read_transformations"]
     concept_id_functions = config["condition_occurrence"]["condition_concept_dict"]
@@ -364,7 +361,7 @@ def clean_tables(
     if verbose > 0:
         print("Cleaning records...")
     # Load configuration
-    config: Dict[str, Any] = ext.read_yaml_params(config_path)
+    config: Dict[str, Any] = extract.read_yaml_params(config_path)
     visit_concept_order = config["visit_occurrence"]["visit_concept_order"]
 
     # Convert to dataframe
@@ -385,7 +382,7 @@ def clean_tables(
     )
 
     # Remove overlap
-    df_done = gen.remove_overlap(
+    df_done = process_dates.remove_overlap(
         df_raw,
         sorting_columns=["person_id", "start_date", "end_date", "type_concept"],
         ascending_order=[True, True, False, True],
