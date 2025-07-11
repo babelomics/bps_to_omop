@@ -1,11 +1,13 @@
-# 29/01/2025
-#
-# This file contains usual transformation to generate the MEASUREMENT
-# table of an OMOP-CDM database instance.
-#
-# https://ohdsi.github.io/CommonDataModel/cdm54.html#measurement
-#
-# http://omop-erd.surge.sh/omop_cdm/tables/MEASUREMENT.html
+"""
+This file contains usual transformations to generate the MEASUREMENT
+table of an OMOP-CDM database instance.
+
+See:
+
+https://ohdsi.github.io/CommonDataModel/cdm54.html#measurement
+
+http://omop-erd.surge.sh/omop_cdm/tables/MEASUREMENT.html
+"""
 
 from os import makedirs
 from pathlib import Path
@@ -14,10 +16,9 @@ import numpy as np
 import pandas as pd
 import pyarrow as pa
 from pyarrow import parquet
-from utils import common as gen
 
 from bps_to_omop.omop_schemas import omop_schemas
-from bps_to_omop.utils import format_to_omop, map_to_omop
+from bps_to_omop.utils import common, format_to_omop, map_to_omop
 
 
 def preprocess_files(
@@ -375,7 +376,7 @@ def retrieve_visit_occurrence_id(
         visit_tmp = df_visit_occurrence[
             df_visit_occurrence["person_id"].isin(list_ppl_tmp)
         ]
-        out_tmp = gen.find_visit_occurrence_id(
+        out_tmp = common.find_visit_occurrence_id(
             df_tmp, ["person_id", "start_date", "measurement_id"], visit_tmp, verbose=0
         )
         df_out.append(out_tmp)
