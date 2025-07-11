@@ -1,5 +1,5 @@
 """
-General utilities to format tables into OMOP-CDM.
+General utilities to format tables into an OMOP-CDM structure.
 """
 
 import pyarrow as pa

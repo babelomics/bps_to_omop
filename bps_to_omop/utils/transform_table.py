@@ -1,5 +1,7 @@
-"""Functions to help with common transformations to tables before
-incorporating them to an OMOP-CDM instance."""
+"""
+Functions to help with common transformations to tables before
+incorporating them to an OMOP-CDM instance.
+"""
 
 import pyarrow as pa
 

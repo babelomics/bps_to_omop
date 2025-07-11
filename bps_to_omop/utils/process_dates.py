@@ -1,4 +1,6 @@
-# General functions to aid in the OMOP-CDM ETL
+"""
+Utilities to process group of dates during an OMOP-CDM ETL process
+"""
 
 import warnings
 

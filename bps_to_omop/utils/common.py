@@ -1,4 +1,6 @@
-# General functions to aid in the OMOP-CDM ETL
+"""
+Common functions to aid in the OMOP-CDM ETL process
+"""
 
 import pandas as pd
 import polars as pl

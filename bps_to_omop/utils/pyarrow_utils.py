@@ -1,4 +1,6 @@
-# Utility functions to manage pyarrow tablese in the OMOP-CDM ETL
+"""
+Utility functions to manage pyarrow tablese along the OMOP-CDM ETL process
+"""
 
 import numpy as np
 import pyarrow as pa

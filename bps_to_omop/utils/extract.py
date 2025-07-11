@@ -1,6 +1,6 @@
-# 14/08/2024
-#
-# General functions to aid in the OMOP-CDM ETL extraction stage
+"""
+Set of utilities to manage file processing and yaml parameters processing
+"""
 
 import os
 import re
