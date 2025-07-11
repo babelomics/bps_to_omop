@@ -5,7 +5,8 @@ import pyarrow.parquet as parquet
 from package.datasets import data_dir
 
 sys.path.append("./external/bps_to_omop")
-import bps_to_omop.extract as ext
+import utils.extract as ext
+
 import bps_to_omop.visit_occurrence as vso
 
 # %%

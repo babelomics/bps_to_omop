@@ -4,9 +4,9 @@ import pathlib
 import numpy as np
 import pandas as pd
 import pytest
+import utils.extract as ext
 import yaml
 
-import bps_to_omop.extract as ext
 import bps_to_omop.measurement as mea
 from bps_to_omop.omop_schemas import omop_schemas
 

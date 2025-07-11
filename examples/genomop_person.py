@@ -14,8 +14,8 @@ except ModuleNotFoundError:
 
 sys.path.append("./external/bps_to_omop/")
 import map_to_omop as mpp
+import utils.extract as ext
 
-import bps_to_omop.extract as ext
 import bps_to_omop.general as gen
 import bps_to_omop.person as per
 from bps_to_omop.omop_schemas import omop_schemas

@@ -1,6 +1,7 @@
 import argparse
 
-import bps_to_omop.extract as ext
+import utils.extract as ext
+
 import bps_to_omop.measurement as mea
 
 if __name__ == "__main__":
