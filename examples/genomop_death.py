@@ -14,8 +14,8 @@ except ModuleNotFoundError:
     warnings.warn("No 'data_dir' variable provided.")
 
 sys.path.append("./external/bps_to_omop/")
-import map_to_omop as mpp
 import utils.extract as ext
+import utils.map_to_omop as mpp
 
 import bps_to_omop.general as gen
 from bps_to_omop.omop_schemas import omop_schemas

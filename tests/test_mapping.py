@@ -1,7 +1,11 @@
 import numpy as np
 import pandas as pd
 import pytest
-from map_to_omop import map_source_concept_id, map_source_value, update_concept_mappings
+from utils.map_to_omop import (
+    map_source_concept_id,
+    map_source_value,
+    update_concept_mappings,
+)
 
 
 def test_map_source_value_by_concept_code():
