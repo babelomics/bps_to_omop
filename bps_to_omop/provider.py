@@ -44,30 +44,36 @@ def preprocess_files(data_dir: Path, params_data: dict) -> pd.DataFrame:
 
     # == Load file and prepare it =====================================================================
     print("Preprocessing files...")
-    provider_id = 0
+    provider = []
     for f in input_files:
         print(f" Processing {f}: ")
-        df = pd.read_parquet(data_dir / input_dir / f)
+        tmp = pd.read_parquet(data_dir / input_dir / f)
 
         # Rename columns
         column_name_map = {**column_name_map[f]}
-        df = df.rename(column_name_map, axis=1)
+        tmp = tmp.rename(column_name_map, axis=1)
 
-        # Retrieve unique specialties
-        unique_spe = df["specialty_source_value"].unique()
-        # Fill a row for each value
-        provider = []
-        for i, spe in enumerate(unique_spe):
-            spe_concept_id = column_values_map[f]["specialty_source_value"][spe]
-            provider_row = {
-                "provider_id": provider_id,
-                "specialty_source_value": spe,
-                "specialty_concept_id": spe_concept_id,
-            }
-            provider.append(provider_row)
-            provider_id += 1
+        # Keep only columns that belong in a PROVIDER table
+        existing_cols = [col for col in omop_schemas["PROVIDER"].names if col in tmp.columns]
+        tmp = tmp.loc[:,existing_cols]
 
-    return pd.DataFrame(provider)
+        # Remove duplicates
+        tmp = tmp.drop_duplicates()
+
+        # Retrieve the concept_id using the supplied parameters
+        map_dict = column_values_map[f]["specialty_source_value"]
+        tmp["specialty_concept_id"] = tmp["specialty_source_value"].map(map_dict)
+
+        # Append to table
+        provider.append(tmp)
+
+    # Create the table
+    provider = pd.concat(provider)
+
+    # Generate the provider_id
+    provider["provider_id"] = pa.array(range(len(provider)))
+
+    return provider
 
 
 def check_unmapped_values(
