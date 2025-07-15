@@ -4,7 +4,8 @@ input_files:
   - 05_Consultas_externas.parquet
 column_name_map:
   05_Consultas_externas.parquet:
-    ESPECIALIDAD: specialty_source_value
+    DESC_ESPECIALIDAD: provider_name
+    COD_ESPECIALIDAD: specialty_source_value
 column_values_map:
   05_Consultas_externas.parquet:
     specialty_source_value:
