@@ -166,8 +166,8 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
     # Prepare possible parameters
     possible_labels = [
         "transformations",
-        "provider_cols",
         "provider_table_path",
+        "col_to_provider_id",
     ]
 
     for lbl in possible_labels:
@@ -211,30 +211,29 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
         )
 
         # -- PROVIDER -------------------------------------------------
-        if params["provider_table_path"]:
-            # Read params
-            provider_cols = params["provider_cols"]
-            provider_table_path = params["provider_table_path"]
+        if params["source_to_provider_id"].get(input_file, False):
             # Read PROVIDER table
-            provider_table = parquet.read_table(provider_table_path).to_pandas()
+            provider_table = parquet.read_table(
+                data_dir / params["provider_table_path"]
+            ).to_pandas()
+            # Retrieve the col that linkg to the provider_id
+            ((source_col, provider_col),) = params["source_to_provider_id"][
+                input_file
+            ].items()
+            # Build the dict that links current table to provider_id
             provider_map = dict(
-                zip(provider_table["provider_name"], provider_table["provider_id"])
+                zip(provider_table[provider_col], provider_table["provider_id"])
             )
-            # Generate the mapping
-            try:
-                # Retrieve provider values
-                provider_id = table.to_pandas()[provider_cols[input_file]]
-                # normalize content
-                provider_id = provider_id.apply(common.normalize_text)
-                # Apply mapping
-                provider_id = provider_id.map(provider_map)
-            except KeyError:
-                # Create an array of nuls
-                provider_id = pyarrow_utils.create_null_int_array(len(table))
-            # Append a new column with the provider_id
-            table = table.append_column("provider_id", [provider_id])
-            final_columns.append("provider_id")
-            tmp_schema = tmp_schema.append(pa.field("provider_id", pa.int64()))
+            # Retrieve provider values and apply mapping
+            provider_id = table.to_pandas()[source_col].map(provider_map)
+
+        else:
+            provider_id = pyarrow_utils.create_null_int_array(len(table))
+
+        # Append a new column with the provider_id
+        table = table.append_column("provider_id", [provider_id])
+        final_columns.append("provider_id")
+        tmp_schema = tmp_schema.append(pa.field("provider_id", pa.int64()))
 
         # Select relevant columns and add visit_concept_id
         processed_table = table.select(final_columns).append_column(
