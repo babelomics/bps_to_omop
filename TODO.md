@@ -30,6 +30,12 @@
 
 - Use polars
 
+- Refactor params so they follow a file first approach
+  - You define a file and every other param needed is grouped under the file
+    - If add a file now, you have to go look for the next section to put its name again and set their params
+    - It would be better to put the name of the file once and every needed operation under it just once.
+  - Normalize parameters names while you are at it
+
 - Refactor functions of each table in a class
   - There should be a parent class that has common operations: 
     - Common checks
