@@ -214,4 +214,20 @@ omop_schemas = {
             ("cohort_initiation_date", date32(), True),
         ]
     ),
+    "LOCATION": schema(
+        [
+            ("location_id", int64(), False),
+            ("address_1", string(), False),
+            ("address_2", string(), False),
+            ("city", string(), True),
+            ("state", string(), True),
+            ("zip", string(), True),
+            ("county", string(), False),
+            ("location_source_value", string(), False),
+            ("country_concept_id", int64(), True),
+            ("country_source_value", string(), True),
+            ("latitude", float64(), True),
+            ("longitude", float64(), True),
+        ]
+    ),
 }
