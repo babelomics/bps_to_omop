@@ -187,7 +187,7 @@ def process_person_table(data_dir: Path, params_person: dict):
     params_location : dict
         Configuration dictionary with keys: 'input_dir', 'output_dir',
         'input_files', and optional 'column_name_map', 'column_values_map',
-        'constant_values'.
+        'constant_values', 'location_table_path', 'source_to_location'.
 
     Returns
     -------
@@ -204,11 +204,17 @@ def process_person_table(data_dir: Path, params_person: dict):
     column_name_map = params_person.get("column_name_map", {})
     column_values_map = params_person.get("column_values_map", {})
     constant_values = params_person.get("constant_values", {})
+    location_table_path = params_person.get("location_table_path", False)
+    source_to_location = params_person.get("source_to_location", {})
 
+    # == Prepare dirs and files
     # Create output_dir
     if not isinstance(data_dir, Path):
         data_dir = Path(data_dir)
     os.makedirs(data_dir / output_dir, exist_ok=True)
+
+    if location_table_path:
+        location_table = parquet.read_table(data_dir / location_table_path)
 
     # == Get the list of all relevant files ====================================
     # Get files
@@ -223,7 +229,7 @@ def process_person_table(data_dir: Path, params_person: dict):
         # -- Rename columns -------------------------------------------
         # First ensure we have a dict with the relevant info
         tmp_colmap = column_name_map.get(f, {})
-        # Add the mapping from start_date to birth_datetime 
+        # Add the mapping from start_date to birth_datetime
         tmp_colmap = {**tmp_colmap, "start_date": "birth_datetime"}
         # Transform the column names
         tmp_table = format_to_omop.rename_table_columns(tmp_table, tmp_colmap)
@@ -248,10 +254,43 @@ def process_person_table(data_dir: Path, params_person: dict):
                     )
                     tmp_table = tmp_table.append_column(col_name, col_values)
 
+        # -- Add link to LOCATION table -------------------------------
+        tmp_location = source_to_location.get(f, {})
+        if tmp_location:
+            # Retrieve the col that link to the location_id
+            ((source_colname, location_colname),) = tmp_location.items()
+
+            # Build the dict that links current table to location_id
+            mapping = dict(
+                zip(
+                    location_table[location_colname].to_numpy(),
+                    location_table["location_id"].to_numpy(),
+                )
+            )
+
+            # Vectorize the mapping function with a default value of None
+            vectorized_map = np.vectorize(lambda x: mapping.get(x, None))
+
+            # Make sure the dtype the location_table is the same as in the source
+            source_col = (
+                tmp_table[source_colname]
+                .cast(location_table[location_colname].type)
+                .to_numpy()
+            )
+
+            # Apply mapping and convert to PyArrow array
+            mapped_values = pa.array(vectorized_map(source_col))
+
+            # -- Append to table 
+            # Delete previous location_id
+            if "location_id" in tmp_table.columns:
+                raise ValueError(f" File {f} already has a location_id column")
+            tmp_table = tmp_table.append_column("location_id", mapped_values)
+
         # -- Format the table -----------------------------------------
         tmp_table = format_to_omop.format_table(tmp_table, omop_schemas["PERSON"])
 
-        # Append to list
+        # -- Append to list -------------------------------------------
         table_person.append(tmp_table)
 
     # Concat and save
