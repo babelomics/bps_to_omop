@@ -19,7 +19,7 @@ import pyarrow.compute as pc
 import pyarrow.parquet as parquet
 
 from bps_to_omop.omop_schemas import omop_schemas
-from bps_to_omop.utils import extract, format_to_omop, map_to_omop
+from bps_to_omop.utils import format_to_omop, map_to_omop, pyarrow_utils
 
 
 def transform_person_id(
@@ -201,8 +201,9 @@ def process_person_table(data_dir: Path, params_person: dict):
     input_dir = params_person["input_dir"]
     output_dir = params_person["output_dir"]
     input_files = params_person["input_files"]
-    column_name_map = params_person["column_name_map"]
-    column_values_map = params_person["column_values_map"]
+    column_name_map = params_person.get("column_name_map", {})
+    column_values_map = params_person.get("column_values_map", {})
+    constant_values = params_person.get("constant_values", {})
 
     # Create output_dir
     if not isinstance(data_dir, Path):
@@ -216,22 +217,38 @@ def process_person_table(data_dir: Path, params_person: dict):
     for f in input_files:
         tmp_table = parquet.read_table(data_dir / input_dir / f)
 
-        # Build date columns
+        # -- Build date columns ---------------------------------------
         tmp_table = build_date_columns(tmp_table)
 
-        # -- Rename columns
-        # First ensure we have a dict even when no options where provided
-        column_name_map = (params_person.get("column_name_map", {}) or {}).get(f, {})
-        column_name_map = {**column_name_map, "start_date": "birth_datetime"}
-        tmp_table = format_to_omop.rename_table_columns(tmp_table, column_name_map)
+        # -- Rename columns -------------------------------------------
+        # First ensure we have a dict with the relevant info
+        tmp_colmap = column_name_map.get(f, {})
+        # Add the mapping from start_date to birth_datetime 
+        tmp_colmap = {**tmp_colmap, "start_date": "birth_datetime"}
+        # Transform the column names
+        tmp_table = format_to_omop.rename_table_columns(tmp_table, tmp_colmap)
 
-        # -- Apply values mapping
-        column_values_map = (params_person.get("column_values_map", {}) or {}).get(
-            f, {}
-        )
-        tmp_table = map_to_omop.apply_source_mapping(tmp_table, column_values_map)
+        # -- Apply values mapping -------------------------------------
+        tmp_valmap = column_values_map.get(f, {})
+        if tmp_valmap:
+            tmp_table = map_to_omop.apply_source_mapping(tmp_table, tmp_valmap)
 
-        # Format the table
+        # -- Add Constant values --------------------------------------
+        tmp_cteval = constant_values.get(f, {})
+        if tmp_cteval:
+            for col_name, col_value in tmp_cteval.items():
+                if isinstance(col_value, (int, float)):
+                    col_values = pyarrow_utils.create_uniform_double_array(
+                        tmp_table.shape[0], col_value
+                    )
+                    tmp_table = tmp_table.append_column(col_name, col_values)
+                else:
+                    col_values = pyarrow_utils.create_uniform_str_array(
+                        tmp_table.shape[0], col_value
+                    )
+                    tmp_table = tmp_table.append_column(col_name, col_values)
+
+        # -- Format the table -----------------------------------------
         tmp_table = format_to_omop.format_table(tmp_table, omop_schemas["PERSON"])
 
         # Append to list
