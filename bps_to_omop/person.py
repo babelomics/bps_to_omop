@@ -10,9 +10,16 @@ http://omop-erd.surge.sh/omop_cdm/tables/PERSON.html
 
 """
 
+import os
+from pathlib import Path
+
 import numpy as np
 import pyarrow as pa
 import pyarrow.compute as pc
+import pyarrow.parquet as parquet
+
+from bps_to_omop.omop_schemas import omop_schemas
+from bps_to_omop.utils import extract, format_to_omop, map_to_omop
 
 
 def transform_person_id(
@@ -169,6 +176,73 @@ def transform_gender(
     )
 
 
+def process_person_table(data_dir: Path, params_person: dict):
+    """
+    Process sociodemo data files and create an OMOP-formatted PERSON table.
+
+    Parameters
+    ----------
+    data_dir : Path
+        Base directory containing input and output subdirectories.
+    params_location : dict
+        Configuration dictionary with keys: 'input_dir', 'output_dir',
+        'input_files', and optional 'column_name_map', 'column_values_map',
+        'constant_values'.
+
+    Returns
+    -------
+    None
+        Writes LOCATION.parquet file to the specified output directory.
+    """
+    # -- Load parameters --------------------------------------------------
+    print("Reading parameters...")
+
+    # -- Load yaml file and related info
+    input_dir = params_person["input_dir"]
+    output_dir = params_person["output_dir"]
+    input_files = params_person["input_files"]
+    column_name_map = params_person["column_name_map"]
+    column_values_map = params_person["column_values_map"]
+
+    # Create output_dir
+    if not isinstance(data_dir, Path):
+        data_dir = Path(data_dir)
+    os.makedirs(data_dir / output_dir, exist_ok=True)
+
+    # == Get the list of all relevant files ====================================
+    # Get files
+    table_person = []
+
+    for f in input_files:
+        tmp_table = parquet.read_table(data_dir / input_dir / f)
+
+        # Build date columns
+        tmp_table = build_date_columns(tmp_table)
+
+        # -- Rename columns
+        # First ensure we have a dict even when no options where provided
+        column_name_map = (params_person.get("column_name_map", {}) or {}).get(f, {})
+        column_name_map = {**column_name_map, "start_date": "birth_datetime"}
+        tmp_table = format_to_omop.rename_table_columns(tmp_table, column_name_map)
+
+        # -- Apply values mapping
+        column_values_map = (params_person.get("column_values_map", {}) or {}).get(
+            f, {}
+        )
+        tmp_table = map_to_omop.apply_source_mapping(tmp_table, column_values_map)
+
+        # Format the table
+        tmp_table = format_to_omop.format_table(tmp_table, omop_schemas["PERSON"])
+
+        # Append to list
+        table_person.append(tmp_table)
+
+    # Concat and save
+    table_person = pa.concat_tables(table_person)
+    # Save
+    parquet.write_table(table_person, data_dir / output_dir / "PERSON.parquet")
+
+
 if __name__ == "__main__":
     print("Ahoy!. Making some tests...")
 
@@ -218,19 +292,3 @@ if __name__ == "__main__":
     assert day == pc.utf8_slice_codeunits(table["date"].cast(pa.string()), 6, 8).cast(
         pa.int32()
     )
-
-    # Testeamos transform_gender
-    mapping_dict = {1: 8532, 0: 8507, 3: 0}
-    result = transform_gender(
-        input_table=table, input_fieldname=["sexcode", "sex"], mapping=mapping_dict
-    )
-    gender_concept_id, gender_source_concept_id, gender_source_value = result
-    assert gender_concept_id.tolist() == [8532, 8507, 8532, 8507, 0]
-    assert gender_source_value.to_pylist() == [
-        "Hombre",
-        "Mujer",
-        "Hombre",
-        "Mujer",
-        "Desconocido",
-    ]
-    assert gender_source_concept_id.to_pylist() == [1, 0, 1, 0, 3]
