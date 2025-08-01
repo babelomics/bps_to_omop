@@ -216,7 +216,7 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
             provider_table = parquet.read_table(
                 data_dir / params["provider_table_path"]
             ).to_pandas()
-            # Retrieve the col that linkg to the provider_id
+            # Retrieve the col that link to the provider_id
             ((source_col, provider_col),) = params["source_to_provider_id"][
                 input_file
             ].items()
