@@ -211,7 +211,8 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
         )
 
         # -- PROVIDER -------------------------------------------------
-        if params["source_to_provider_id"].get(input_file, False):
+        params_provider = params.get("source_to_provider", {})
+        if params_provider.get(input_file, False):
             # Read PROVIDER table
             provider_table = parquet.read_table(
                 data_dir / params["provider_table_path"]
