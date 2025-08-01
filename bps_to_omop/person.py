@@ -195,8 +195,6 @@ def process_person_table(data_dir: Path, params_person: dict):
         Writes LOCATION.parquet file to the specified output directory.
     """
     # -- Load parameters --------------------------------------------------
-    print("Reading parameters...")
-
     # -- Load yaml file and related info
     input_dir = params_person["input_dir"]
     output_dir = params_person["output_dir"]
