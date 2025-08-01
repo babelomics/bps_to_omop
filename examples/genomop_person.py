@@ -67,7 +67,7 @@ def process_person_table(params_file: Path, data_dir_: Path = None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Generates the OMOP-CDM MEASUREMENT table from BPS data."
+        description="Generates the OMOP-CDM PERSON table from BPS data."
     )
     parser.add_argument(
         "--parameters_file",

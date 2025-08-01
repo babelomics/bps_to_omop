@@ -9,7 +9,7 @@ from external.bps_to_omop.bps_to_omop.utils import extract
 # %%
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Generates the OMOP-CDM MEASUREMENT table from BPS data."
+        description="Generates the OMOP-CDM PROVIDER table from BPS data."
     )
     parser.add_argument(
         "--general_parameters_file",
