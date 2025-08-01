@@ -79,7 +79,7 @@ def process_location_table(data_dir: Path, params_location: dict):
                     )
                     tmp_table = tmp_table.append_column(col_name, col_values)
 
-        # Format the table
+        # -- Format the table -----------------------------------------
         tmp_table = format_to_omop.format_table(tmp_table, omop_schemas["LOCATION"])
 
         # Append to list
