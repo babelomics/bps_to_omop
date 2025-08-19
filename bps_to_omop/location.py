@@ -87,5 +87,9 @@ def process_location_table(data_dir: Path, params_location: dict):
 
     # Concat and save
     table_location = pa.concat_tables(table_location)
+
+    # Drop duplicates
+    table_location = pa.Table.from_pandas(table_location.to_pandas().drop_duplicates())
+
     # Save
     parquet.write_table(table_location, data_dir / output_dir / "LOCATION.parquet")
