@@ -329,7 +329,7 @@ def retrieve_visit_occurrence_id(
     df: pd.DataFrame, visit_dir: Path, batch_size: int = 10000
 ) -> pd.DataFrame:
     """Retrieve the visit_occurrence_id foreign key from the VISIT_OCCURRENCE table.
-    
+
     Before generating visit_occurrence_id, it creates the measurement_id field.
 
     Parameters

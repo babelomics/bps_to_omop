@@ -168,10 +168,11 @@ def find_visit_occurrence_id(
 
     return final_df.to_pandas()
 
+
 def retrieve_visit_in_batches(
     input_df: pd.DataFrame, visit_df: pd.DataFrame, batch_size: int = 10000
 ) -> pd.DataFrame:
-    """Serially retrieves a table to match the visit's dates with the dates in the input 
+    """Serially retrieves a table to match the visit's dates with the dates in the input
     dataframe.
 
     Parameters
@@ -201,12 +202,8 @@ def retrieve_visit_in_batches(
         except IndexError:
             list_ppl_tmp = list_ppl[i_init:]
         # Restrict dataframes to those ppl
-        df_tmp = input_df[
-            input_df["person_id"].isin(list_ppl_tmp)
-        ]
-        visit_tmp = visit_df[
-            visit_df["person_id"].isin(list_ppl_tmp)
-        ]
+        df_tmp = input_df[input_df["person_id"].isin(list_ppl_tmp)]
+        visit_tmp = visit_df[visit_df["person_id"].isin(list_ppl_tmp)]
         # Find the visit_occurrence_id for this batch
         out_tmp = find_visit_occurrence_id(
             df_tmp, ["person_id", "start_date", "measurement_id"], visit_tmp, verbose=0
@@ -215,6 +212,7 @@ def retrieve_visit_in_batches(
 
     # Concatenate and return
     return pd.concat(df_out)
+
 
 def normalize_text(text):
     """Normalize a string by converting to lowercase and removing accents.

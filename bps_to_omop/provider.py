@@ -20,6 +20,7 @@ from pyarrow import parquet
 from bps_to_omop.omop_schemas import omop_schemas
 from bps_to_omop.utils import common, format_to_omop, map_to_omop
 
+
 def preprocess_files(data_dir: Path, params_data: dict) -> pd.DataFrame:
     """Preprocess all files to create an unique dataframe
 
@@ -54,8 +55,10 @@ def preprocess_files(data_dir: Path, params_data: dict) -> pd.DataFrame:
         tmp = tmp.rename(column_name_map, axis=1)
 
         # Keep only columns that belong in a PROVIDER table
-        existing_cols = [col for col in omop_schemas["PROVIDER"].names if col in tmp.columns]
-        tmp = tmp.loc[:,existing_cols]
+        existing_cols = [
+            col for col in omop_schemas["PROVIDER"].names if col in tmp.columns
+        ]
+        tmp = tmp.loc[:, existing_cols]
 
         # Remove duplicates
         tmp = tmp.drop_duplicates()

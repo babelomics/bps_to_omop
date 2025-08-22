@@ -20,6 +20,7 @@ from pyarrow import parquet
 from bps_to_omop.omop_schemas import omop_schemas
 from bps_to_omop.utils import common, format_to_omop, map_to_omop
 
+
 def preprocess_files(
     params_data: dict, concept_df: pd.DataFrame, data_dir: Path
 ) -> pd.DataFrame:
@@ -60,12 +61,13 @@ def preprocess_files(
             tmp_df = tmp_df.rename(column_map[f], axis=1)
         # Perform the mapping from source to omop codes
         tmp_df = map_to_omop.map_source_value(
-            tmp_df, 
-            vocabulary_config[f], 
+            tmp_df,
+            vocabulary_config[f],
             concept_df,
             "condition_source_value",
             "vocabulary_id",
-            "condition_source_concept_id",)
+            "condition_source_concept_id",
+        )
         # Add to final dataframe
         df_complete.append(tmp_df)
 
@@ -77,6 +79,7 @@ def preprocess_files(
     df_complete["end_date"] = pd.to_datetime(df_complete["end_date"])
 
     return df_complete
+
 
 def map_standard_concepts(
     df: pd.DataFrame, concept_rel_df: pd.DataFrame
@@ -93,7 +96,7 @@ def map_standard_concepts(
         - condition_source_concept_id: Source concept ID for condition
     concept_rel_df : pd.DataFrame
         Concept relationship dataframe containing mappings between source and
-        standard concepts. 
+        standard concepts.
 
     Returns
     -------
@@ -107,13 +110,11 @@ def map_standard_concepts(
     """
     print("Mapping to standard concepts...")
     df = map_to_omop.map_source_concept_id(
-        df, 
-        concept_rel_df, 
-        "condition_source_concept_id",
-        "condition_concept_id"
-        )
+        df, concept_rel_df, "condition_source_concept_id", "condition_concept_id"
+    )
 
     return df
+
 
 def retrieve_visit_occurrence_id(
     df: pd.DataFrame, visit_dir: Path, batch_size: int = 10000
@@ -136,14 +137,15 @@ def retrieve_visit_occurrence_id(
         visit_start_date and visit_end_date, if found.
     """
 
-    # -- Create the primary key 
+    # -- Create the primary key
     df["condition_occurrence_id"] = pa.array(range(len(df)))
 
-    # -- Find visit_occurence_id 
+    # -- Find visit_occurence_id
     print("Finding visit_occurrence_id...")
     df_visit_occurrence = pd.read_parquet(visit_dir / "VISIT_OCCURRENCE.parquet")
 
     return common.retrieve_visit_in_batches(df, df_visit_occurrence, batch_size)
+
 
 def create_condition_occcurence_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
     """Creates the CONDITION_OCCURRENCE table following the OMOP-CDM schema.
@@ -198,6 +200,7 @@ def create_condition_occcurence_table(df: pd.DataFrame, schema: pa.Schema) -> pa
 
     return table
 
+
 # %%
 def process_condition_occurrence_table(data_dir: Path, params_cond: dict):
 
@@ -214,7 +217,8 @@ def process_condition_occurrence_table(data_dir: Path, params_cond: dict):
     # -- Load vocabularies --------------------------------------------
     print("Loading vocabularies...")
     concept_df = pd.read_parquet(
-        data_dir / vocab_dir / "CONCEPT.parquet").infer_objects()
+        data_dir / vocab_dir / "CONCEPT.parquet"
+    ).infer_objects()
     concept_rel_df = pd.read_parquet(
         data_dir / vocab_dir / "CONCEPT_RELATIONSHIP.parquet"
     ).infer_objects()

@@ -279,7 +279,7 @@ def process_person_table(data_dir: Path, params_person: dict):
             # Apply mapping and convert to PyArrow array
             mapped_values = pa.array(vectorized_map(source_col))
 
-            # -- Append to table 
+            # -- Append to table
             # Delete previous location_id
             if "location_id" in tmp_table.columns:
                 raise ValueError(f" File {f} already has a location_id column")
