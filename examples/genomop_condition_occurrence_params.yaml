@@ -8,7 +8,7 @@ append_vocabulary:
   02_Patologias_BPS.parquet: BPS Pathology
 column_map:
   02_Patologias_BPS.parquet:
-    desc_patologia: source_value
+    desc_patologia: condition_source_value
 vocabulary_config:
   02_Patologias_BPS.parquet: 
     BPS Pathology: concept_name
