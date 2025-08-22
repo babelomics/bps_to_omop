@@ -9,386 +9,229 @@ https://ohdsi.github.io/CommonDataModel/cdm54.html#condition_occurrence
 http://omop-erd.surge.sh/omop_cdm/tables/CONDITION_OCCURRENCE.html
 """
 
-import os
-from typing import Any, Dict
+from os import makedirs
+from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
 from pyarrow import parquet
 
-from bps_to_omop.utils import extract, format_to_omop, process_dates
+from bps_to_omop.omop_schemas import omop_schemas
+from bps_to_omop.utils import common, format_to_omop, map_to_omop
 
-
-def gather_tables(config_file_path: str, verbose: int = 0) -> pa.Table:
-    """Gather and process tables for creating the CONDITION_OCCURRENCE table
-    based on configuration.
-
-    This function reads a YAML configuration file, processes specified input files,
-    and applies initial transformations to files to conform to a common pattern.
+def preprocess_files(
+    params_data: dict, concept_df: pd.DataFrame, data_dir: Path
+) -> pd.DataFrame:
+    """Preprocess all files to create an unique dataframe
 
     Parameters
     ----------
-    config_file_path : str
-        Path to the YAML configuration file.
-    verbose : int, optional
-        Information output, by default 0
-        - 0 No info
-        - 1 Show file being processed
-        - 2 Show an example of the first row being removed and
-            the row that contains it.
+    params_data : dict
+        dictionary with the parameters for the preprocessing
+    concept_df : pd.DataFrame
+        CONCEPT table
+    data_dir : Path
+        Path to the upstream location of the data files
 
     Returns
     -------
-    pa.Table
-        A PyArrow Table containing the processed condition occurrence data.
-
-    Raises
-    ------
-    KeyError
-        If no visit_concept_id is assigned to a file in the configuration.
-
-    Notes
-    -----
-    The configuration file should contain the following sections:
-    - 'condition_occurrence.files_to_use': List of input files to process.
-    - 'condition_occurrence.transformations': Dict of transformations to apply to files
-        that need one.
+    pd.DataFrame
+        Dataframe with all information joined together
     """
-    if verbose > 0:
-        print("Gathering tables...")
-    # Load configuration
-    config = extract.read_yaml_params(config_file_path)
-    input_files = config["condition_occurrence"]["files_to_use"]
-    read_transformations = config["condition_occurrence"]["read_transformations"]
-    concept_id_functions = config["condition_occurrence"]["condition_concept_dict"]
+    # == Load each file and prepare it =====================================
+    print("Preprocessing files...")
+    input_dir = params_data["input_dir"]
+    input_files = params_data["input_files"]
+    column_map = params_data["column_map"]
+    vocabulary_config = params_data["vocabulary_config"]
 
-    processed_tables = []
+    df_complete = []
+    for f in input_files:
+        print(f" Processing {f}: ")
+        tmp_df = pd.read_parquet(data_dir / input_dir / f)
+        # assign new vocabulary column if needed
+        if params_data.get("append_vocabulary", False):
+            if params_data["append_vocabulary"].get(f, False):
+                tmp_df["vocabulary_id"] = params_data["append_vocabulary"][f]
 
-    # Process each input file
-    for input_file in input_files:
-        if verbose > 0:
-            print(f" Processing file: {input_file}")
+        # Apply renaming
+        if column_map.get(f, False):
+            tmp_df = tmp_df.rename(column_map[f], axis=1)
+        # Perform the mapping from source to omop codes
+        tmp_df = map_to_omop.map_source_value(
+            tmp_df, 
+            vocabulary_config[f], 
+            concept_df,
+            "condition_source_value",
+            "vocabulary_id",
+            "condition_source_concept_id",)
+        # Add to final dataframe
+        df_complete.append(tmp_df)
 
-        base_name = os.path.basename(input_file)
-        # Read and transform the input table
-        table_raw = ad_hoc_read(
-            input_file, read_transformations[base_name], verbose=verbose
-        )
+    # -- Finish off joint dataframe ---------------------------------------
+    df_complete = pd.concat(df_complete, axis=0)
 
-        # Assign visit concept ID
-        concept_id = apply_concept_id(table_raw, concept_id_functions[base_name])
+    # -- Make sure dates are correct ----------------------------------
+    df_complete["start_date"] = pd.to_datetime(df_complete["start_date"])
+    df_complete["end_date"] = pd.to_datetime(df_complete["end_date"])
 
-        if concept_id is None:
-            raise KeyError(f"No visit concept ID assigned to file: {base_name}")
+    return df_complete
 
-        # Select relevant columns and add visit_concept_id
-        processed_table = table_raw.select(
-            ["person_id", "start_date", "end_date", "type_concept"]
-        ).add_column(3, "condition_concept_id", [concept_id])
+def map_standard_concepts(
+    df: pd.DataFrame, concept_rel_df: pd.DataFrame
+) -> pd.DataFrame:
+    """Maps source concepts to standard concepts for conditions.
 
-        processed_tables.append(processed_table)
-
-    # Combine all processed tables
-    processed_tables = pa.concat_tables(processed_tables)
-    # Force timestamp datatype
-    # It is quicker and keeps rows with hour information
-    processed_tables = processed_tables.cast(
-        pa.schema(
-            [
-                ("person_id", pa.int64()),
-                ("start_date", pa.timestamp("us")),
-                ("end_date", pa.timestamp("us")),
-                ("visit_concept_id", pa.int64()),
-                ("type_concept", pa.int64()),
-            ]
-        )
-    )
-    return processed_tables
-
-
-def ad_hoc_read(
-    filename: str, read_transformations: list, verbose: int = 0
-) -> pa.Table:
-    """
-    Read a Parquet file and apply custom transformations if needed.
-
-    This function reads a Parquet file and checks if any specific transformations
-    need to be applied based on the filename. If any transformations are defined for
-    the file, they are applied in order before returning the data.
+    This function is a wrapper for map_to_omop.map_source_concept_id applied to the
+    CONDITION_OCCURRENCE table.
 
     Parameters
     ----------
-    filename : str
-        Path to the Parquet file to be read.
-    transformations : list
-        A list of transformations functions and its arguments. The structure should be:
-        [
-            [transformation_function_1, arg1_1, arg2_1, ...],
-            [transformation_function_2, arg1_2, arg2_2, ...],
-        ]
+    df : pd.DataFrame
+        Input dataframe containing conditions data with the following columns:
+        - condition_source_concept_id: Source concept ID for condition
+    concept_rel_df : pd.DataFrame
+        Concept relationship dataframe containing mappings between source and
+        standard concepts. 
 
     Returns
     -------
-    pa.Table
-        A PyArrow table containing the data, with any necessary transformations applied.
+    pd.DataFrame
+        The input dataframe with additional mapped standard concept columns:
+        - condition_concept_id: Standard condition concept
 
-    Raises
-    ------
-    FileNotFoundError
-        If the specified file does not exist.
-
-    Examples
+    See Also
     --------
-    >>> def remove_end_date(filename):
-    ...     table = pq.read_table(filename)
-    ...     table = table.drop('end_date')
-    ...     return table.add_column(2, 'end_date', table['start_date'])
-    >>> transformations = {'example.parquet': [rename_table_columns,]}
-    >>> result = ad_hoc_read('example.parquet', transformations)
+    map_to_omop.map_source_concept_id : Maps individual source concepts to standard concepts
     """
-    if not os.path.exists(filename):
-        raise FileNotFoundError(f"The file {filename} does not exist.")
+    print("Mapping to standard concepts...")
+    df = map_to_omop.map_source_concept_id(
+        df, 
+        concept_rel_df, 
+        "condition_source_concept_id",
+        "condition_concept_id"
+        )
 
-    read_transformations_dict = {
-        "rename_table_columns": format_to_omop.rename_table_columns,
-        "filter_table_by_column_value": filter_table_by_column_value,
-    }
+    return df
 
-    table = parquet.read_table(filename)
-    # Apply the codes
-    for func_str, kwargs in read_transformations:
-        # Pass from string name to actual function
-        func = read_transformations_dict[func_str]
-        # Apply the function and the paramters
-        if verbose > 1:
-            print(f" => Applying {func.__name__}({kwargs})")
-        table = func(table, **kwargs)
+def retrieve_visit_occurrence_id(
+    df: pd.DataFrame, visit_dir: Path, batch_size: int = 10000
+) -> pd.DataFrame:
+    """Retrieve the visit_occurrence_id foreign key from the VISIT_OCCURRENCE table.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input dataframe
+    visit_dir : Path
+        Location of the VISIT_OCCURRENCE.parquet file.
+    batch_size : int, default 10000
+        Number of ppl to process
+
+    Returns
+    -------
+    pd.DataFrame
+        Input dataframe with additional columns for visit_occurrence_id,
+        visit_start_date and visit_end_date, if found.
+    """
+
+    # -- Create the primary key 
+    df["condition_occurrence_id"] = pa.array(range(len(df)))
+
+    # -- Find visit_occurence_id 
+    print("Finding visit_occurrence_id...")
+    df_visit_occurrence = pd.read_parquet(visit_dir / "VISIT_OCCURRENCE.parquet")
+
+    return common.retrieve_visit_in_batches(df, df_visit_occurrence, batch_size)
+
+def create_condition_occcurence_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
+    """Creates the CONDITION_OCCURRENCE table following the OMOP-CDM schema.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Preprocessed dataframe with condition data
+    schema : pa.Schema
+        Schema information
+
+    Returns
+    -------
+    pa.Table
+        Table containing the MEASUREMENT table
+    """
+    print("Formatting to OMOP...")
+
+    # Remove duplicates
+    df = df.drop_duplicates()
+
+    table = pa.Table.from_pandas(df, preserve_index=False)
+
+    # Rename columns
+    table = format_to_omop.rename_table_columns(
+        table,
+        {
+            "start_date": "condition_start_datetime",
+            "end_date": "condition_end_datetime",
+            "type_concept": "condition_type_concept_id",
+        },
+    )
+
+    # Format dates to remove times
+    visit_start_date = pc.cast(
+        pc.floor_temporal(  # pylint: disable=E1101
+            table["condition_start_datetime"], unit="day"
+        ),
+        pa.date32(),
+    )
+    visit_end_date = pc.cast(
+        pc.floor_temporal(  # pylint: disable=E1101
+            table["condition_end_datetime"], unit="day"
+        ),
+        pa.date32(),
+    )
+    table = table.add_column(1, "condition_start_date", visit_start_date)
+    table = table.add_column(2, "condition_end_date", visit_end_date)
+
+    # Fill, reorder and cast to schema
+    table = format_to_omop.format_table(table, schema)
+
     return table
 
+# %%
+def process_condition_occurrence_table(data_dir: Path, params_cond: dict):
 
-def filter_table_by_column_value(
-    table: pa.Table, filter_column: str, filter_value: Any
-) -> pa.Table:
-    """
-    Filter a pyarrow table to retrieve rows matching a specific column value.
+    # -- Unwrap some params for clarity ------------------------------
+    output_dir = params_cond["output_dir"]
+    vocab_dir = params_cond["vocab_dir"]
+    visit_dir = params_cond["visit_dir"]
 
-    This function receives a table and returns a new table containing only
-    the rows where the specified column matches the given value. It's particularly
-    useful for extracting relevant subsets from large datasets.
+    # Convert to Path
+    data_dir = Path(data_dir)
+    # Create directory
+    makedirs(data_dir / output_dir, exist_ok=True)
 
-    Parameters
-    ----------
-    table : pa.Table
-        Table to be processed.
-    filter_column : str
-        Name of the column to filter on. Must be an existing column in the
-        Parquet file.
-    filter_value : Any
-        Value to filter by. Rows will be kept where the specified column
-        equals this value. The type should match the column's data type.
+    # -- Load vocabularies --------------------------------------------
+    print("Loading vocabularies...")
+    concept_df = pd.read_parquet(
+        data_dir / vocab_dir / "CONCEPT.parquet").infer_objects()
+    concept_rel_df = pd.read_parquet(
+        data_dir / vocab_dir / "CONCEPT_RELATIONSHIP.parquet"
+    ).infer_objects()
 
-    Returns
-    -------
-    pa.Table
-        A PyArrow table containing only the rows where filter_column equals
-        filter_value. The table structure (schema) remains unchanged.
+    # -- Load each file and prepare it --------------------------------
+    df = preprocess_files(params_cond, concept_df, data_dir)
 
-    Raises
-    ------
-    FileNotFoundError
-        If the specified parquet_path does not exist.
-    KeyError
-        If filter_column is not present in the Parquet file.
-    TypeError
-        If filter_value's type is incompatible with the column's data type.
+    # -- Map to standard concepts -------------------------------------
+    df = map_standard_concepts(df, concept_rel_df)
 
-    Examples
-    --------
-    >>> # Filter a users table to get only active users
-    >>> active_users = filter_parquet_table_by_column(
-    ...     parquet_path='users.parquet',
-    ...     filter_column='status',
-    ...     filter_value='active'
-    ... )
+    # -- Retrieve visit_occurrence_id ---------------------------------
+    df = retrieve_visit_occurrence_id(df, data_dir / visit_dir)
 
-    >>> # Filter a transactions table to get only successful transactions
-    >>> successful_txns = filter_parquet_table_by_column(
-    ...     parquet_path='transactions.parquet',
-    ...     filter_column='status',
-    ...     filter_value='success'
-    ... )
-    """
-    # Create a boolean mask where the column matches the filter value
-    matching_rows_mask = pc.equal(  # pylint: disable=E1101
-        table[filter_column], filter_value
-    )
+    # -- Standardize contents -----------------------------------------
+    table = create_condition_occcurence_table(df, omop_schemas["CONDITION_OCCURRENCE"])
 
-    # Apply the mask to filter the table
-    filtered_table = table.filter(matching_rows_mask)
-
-    return filtered_table
-
-
-def apply_concept_id(
-    table_raw: pa.Table, functions: list, verbose: int = 0
-) -> pa.Array:
-    """Given a pyarrow table and a list of functions, this function
-    will apply the codification contained within the dict.
-
-    Parameters
-    ----------
-    f : str
-        filename.
-    table_raw : pa.Table
-        pyarrow table with at least person_id, start_date and end_date
-        columns.
-    functions : list
-        contains the function and its parameters in the following order:
-            - str,      name of the function to apply. e.g. 'single_code'
-            - int,      code to apply
-            - dict,     dictionary with parameters necessary for the function.
-    verbose : int, optional
-        Verbosity level for logging. If > 1, prints information about applied
-        transformations. Default is 0 (no verbose output).
-
-        The possible subfunctions are contained within this function for
-        coherence and repeatability.
-
-    Returns
-    -------
-    pa.Array
-        array with the visit_concept_id for table_raw.
-    """
-
-    def single_code(
-        _table: pa.Table, array: np.ndarray, code: int  # pylint: disable=W0613
-    ) -> np.ndarray:
-        """This file only has one visit type,
-        so we assign the same code to every row."""
-        # Get the index of every 0 in array
-        idx = array == 0
-        # Assign code to every True
-        return np.where(idx, code, array)
-
-    def duration_code(
-        table: pa.Table, array: np.ndarray, code: int, time_lims: list[int, int]
-    ) -> np.ndarray:
-        """This file codes depend on the interval between start_date
-        and end_date, ie the duration of the appointment. The arguments
-        relate to the timespan in days that the interval has to be to
-        apply the code."""
-        # Compute the interval
-        interval = pc.days_between(  # pylint: disable=E1101
-            table["start_date"], table["end_date"]
-        ).to_numpy(zero_copy_only=False)
-        # Get the bool index
-        idx = (interval >= time_lims[0]) & (interval <= time_lims[1])
-        # Assign code to every True
-        return np.where(idx, code, array)
-
-    def field_code(
-        table: pa.Table, array: np.ndarray, code: int, colname: str, colvalue: str | int
-    ) -> np.ndarray:
-        """This file codes depend on the values of a field in table.
-        The arguments relate to the name of the column and the value
-        that column has to have to apply the code."""
-        # Get the bool index
-        idx = pc.equal(table[colname], colvalue)  # pylint: disable=E1101
-        # Assign code to every True
-        return np.where(idx, code, array)
-
-    # -- Parameters --------------------------------------------------------------------------
-    func_dict = {
-        "single_code": single_code,
-        "duration_code": duration_code,
-        "field_code": field_code,
-    }
-
-    # -- Function assignment ----------------------------------------------------------------
-    # Create array of zeros (not defined concept by default)
-    visit_concept_id = np.zeros(len(table_raw), dtype=np.int64)
-    # Apply the codes
-    for func_str, code, kwargs in functions:
-        # Pass from string name to actual function
-        func = func_dict[func_str]
-        # Apply the function and the paramters
-        if verbose > 1:
-            print(f"=> Applying {func.__name__}({code}, {kwargs})")
-        visit_concept_id = func(table_raw, visit_concept_id, code, **kwargs)
-    return visit_concept_id
-
-
-def clean_tables(
-    gathered_table: pa.Table, config_path: str, verbose: int = 0
-) -> pa.Table:
-    """
-    Clean and process a table of medical visit records.
-
-    This function loads a configuration file, validates visit concept IDs,
-    converts them to a categorical type based on a specified order, and
-    removes overlapping records.
-
-    Parameters
-    ----------
-    gathered_table : pa.Table
-        A PyArrow Table containing the raw visit records.
-    config_path : str
-        Path to the YAML configuration file.
-    verbose : int, optional
-        Information output, by default 0
-        - 0 No info
-        - 1 Show number of iterations
-        - 2 Show an example of the first row being removed and
-            the row that contains it.
-        Will be passes to remove_overlap. Check definition to see output.
-
-    Returns
-    -------
-    pa.Table
-        A PyArrow Table with cleaned and processed records.
-
-    Raises
-    ------
-    KeyError
-        If a visit_concept_id in the data is not present in the configuration.
-
-    Notes
-    -----
-    The function expects the configuration file to contain a 'visit_occurrence'
-    key with a 'visit_concept_order' subkey specifying the order of visit concepts.
-    """
-    if verbose > 0:
-        print("Cleaning records...")
-    # Load configuration
-    config: Dict[str, Any] = extract.read_yaml_params(config_path)
-    visit_concept_order = config["visit_occurrence"]["visit_concept_order"]
-
-    # Convert to dataframe
-    df_raw = gathered_table.to_pandas()
-
-    # Validate visit concept IDs
-    unique_concept_ids = df_raw["visit_concept_id"].unique()
-    missing_concepts = set(unique_concept_ids) - set(visit_concept_order)
-    if missing_concepts:
-        raise KeyError(
-            f"visit_concept(s) {', '.join(
-            map(str, missing_concepts))} are not in visit_concept_order"
-        )
-
-    # Convert to categorical
-    df_raw["visit_concept_id"] = pd.Categorical(
-        df_raw["visit_concept_id"], categories=visit_concept_order, ordered=True
-    )
-
-    # Remove overlap
-    df_done = process_dates.remove_overlap(
-        df_raw,
-        sorting_columns=["person_id", "start_date", "end_date", "type_concept"],
-        ascending_order=[True, True, False, True],
-        verbose=verbose,
-    )
-
-    # Convert back to PyArrow Table
-    return pa.Table.from_pandas(df_done, preserve_index=False)
+    # -- Save to parquet ----------------------------------------------
+    print("Saving to parquet...")
+    parquet.write_table(table, data_dir / output_dir / "CONDITION_OCCURRENCE.parquet")
+    print("Done.")
