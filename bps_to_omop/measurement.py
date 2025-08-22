@@ -361,30 +361,8 @@ def retrieve_visit_occurrence_id(
         df_visit_occurrence["visit_end_datetime"]
     )
 
-    # -- Iterate over unique ppl
-    # Get list of unique ppl
-    list_ppl = df["person_id"].unique()
-
-    # Process serially in batches
-    df_out = []
-    for i_init in list(range(0, len(list_ppl), batch_size)):
-        # Retrieve only ppl_batch number of ppl
-        try:
-            list_ppl_tmp = list_ppl[i_init : i_init + batch_size]
-        except IndexError:
-            list_ppl_tmp = list_ppl[i_init:]
-        # Restrict dataframes to those ppl
-        df_tmp = df[df["person_id"].isin(list_ppl_tmp)]
-        visit_tmp = df_visit_occurrence[
-            df_visit_occurrence["person_id"].isin(list_ppl_tmp)
-        ]
-        out_tmp = common.find_visit_occurrence_id(
-            df_tmp, ["person_id", "start_date", "measurement_id"], visit_tmp, verbose=0
-        )
-        df_out.append(out_tmp)
-
-    # Concatenate and return
-    return pd.concat(df_out)
+    # Retrieve the visits_occurence_id matches in batches
+    return common.retrieve_visit_in_batches(df, df_visit_occurrence, batch_size)
 
 
 def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:

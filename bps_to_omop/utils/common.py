@@ -13,7 +13,7 @@ def find_visit_occurrence_id(
     verbose: int = 0,
 ) -> pd.DataFrame:
     """
-    Find valid date ranges by merging condition and visit occurrence data.
+    Find valid date ranges by merging an input table with visit occurrence data.
 
     This function merges input_df and visit occurrence dataframes,
     then filters for input_df start dates that fall within visit date ranges.
@@ -168,6 +168,53 @@ def find_visit_occurrence_id(
 
     return final_df.to_pandas()
 
+def retrieve_visit_in_batches(
+    input_df: pd.DataFrame, visit_df: pd.DataFrame, batch_size: int = 10000
+) -> pd.DataFrame:
+    """Serially retrieves a table to match the visit's dates with the dates in the input 
+    dataframe.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        _description_
+    visit_df : pd.DataFrame
+        _description_
+    batch_size : int, optional
+        _description_, by default 10000
+
+    Returns
+    -------
+    pd.DataFrame
+        _description_
+    """
+    # -- Iterate over unique ppl
+    # Get list of unique ppl
+    list_ppl = input_df["person_id"].unique()
+
+    # Process serially in batches
+    df_out = []
+    for i_init in list(range(0, len(list_ppl), batch_size)):
+        # Retrieve only ppl_batch number of ppl
+        try:
+            list_ppl_tmp = list_ppl[i_init : i_init + batch_size]
+        except IndexError:
+            list_ppl_tmp = list_ppl[i_init:]
+        # Restrict dataframes to those ppl
+        df_tmp = input_df[
+            input_df["person_id"].isin(list_ppl_tmp)
+        ]
+        visit_tmp = visit_df[
+            visit_df["person_id"].isin(list_ppl_tmp)
+        ]
+        # Find the visit_occurrence_id for this batch
+        out_tmp = find_visit_occurrence_id(
+            df_tmp, ["person_id", "start_date", "measurement_id"], visit_tmp, verbose=0
+        )
+        df_out.append(out_tmp)
+
+    # Concatenate and return
+    return pd.concat(df_out)
 
 def normalize_text(text):
     """Normalize a string by converting to lowercase and removing accents.
