@@ -326,7 +326,7 @@ def check_unmapped_values(
 
 
 def retrieve_visit_occurrence_id(
-    df: pd.DataFrame, table_dir: Path, batch_size: int = 10000
+    df: pd.DataFrame, visit_dir: Path, batch_size: int = 10000
 ) -> pd.DataFrame:
     """Retrieve the visit_occurrence_id foreign key from the VISIT_OCCURRENCE table.
 
@@ -350,7 +350,7 @@ def retrieve_visit_occurrence_id(
     df["measurement_id"] = pa.array(range(len(df)))
 
     # ---Get for visit_occurrence table
-    df_visit_occurrence = pd.read_parquet(table_dir / "VISIT_OCCURRENCE.parquet")
+    df_visit_occurrence = pd.read_parquet(visit_dir / "VISIT_OCCURRENCE.parquet")
     # Make sure dates are datetime
     df_visit_occurrence["visit_start_datetime"] = pd.to_datetime(
         df_visit_occurrence["visit_start_datetime"]
