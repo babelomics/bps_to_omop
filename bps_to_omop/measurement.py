@@ -1,5 +1,5 @@
 """
-This file contains usual transformations to generate the MEASUREMENT
+This module contains usual transformations to generate the MEASUREMENT
 table of an OMOP-CDM database instance.
 
 See:
