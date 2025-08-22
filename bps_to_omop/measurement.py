@@ -351,15 +351,8 @@ def retrieve_visit_occurrence_id(
     # -- Create the primary key
     df["measurement_id"] = pa.array(range(len(df)))
 
-    # ---Get for visit_occurrence table
+    # -- Get for visit_occurrence table
     df_visit_occurrence = pd.read_parquet(visit_dir / "VISIT_OCCURRENCE.parquet")
-    # Make sure dates are datetime
-    df_visit_occurrence["visit_start_datetime"] = pd.to_datetime(
-        df_visit_occurrence["visit_start_datetime"]
-    )
-    df_visit_occurrence["visit_end_datetime"] = pd.to_datetime(
-        df_visit_occurrence["visit_end_datetime"]
-    )
 
     # Retrieve the visits_occurence_id matches in batches
     return common.retrieve_visit_in_batches(df, df_visit_occurrence, batch_size)
