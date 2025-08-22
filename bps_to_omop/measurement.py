@@ -351,11 +351,16 @@ def retrieve_visit_occurrence_id(
     # -- Create the primary key
     df["measurement_id"] = pa.array(range(len(df)))
 
+    # -- Define the required columns
+    required_df_columns = ["person_id", "start_date", "measurement_id"]
+
     # -- Get for visit_occurrence table
     df_visit_occurrence = pd.read_parquet(visit_dir / "VISIT_OCCURRENCE.parquet")
 
     # Retrieve the visits_occurence_id matches in batches
-    return common.retrieve_visit_in_batches(df, df_visit_occurrence, batch_size)
+    return common.retrieve_visit_in_batches(
+        df, required_df_columns, df_visit_occurrence, batch_size
+    )
 
 
 def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:

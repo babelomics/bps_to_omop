@@ -140,11 +140,16 @@ def retrieve_visit_occurrence_id(
     # -- Create the primary key
     df["condition_occurrence_id"] = pa.array(range(len(df)))
 
+    # -- Define the required columns
+    required_df_columns = ["person_id", "start_date", "condition_occurrence_id"]
+
     # -- Find visit_occurence_id
     print("Finding visit_occurrence_id...")
     df_visit_occurrence = pd.read_parquet(visit_dir / "VISIT_OCCURRENCE.parquet")
 
-    return common.retrieve_visit_in_batches(df, df_visit_occurrence, batch_size)
+    return common.retrieve_visit_in_batches(
+        df, required_df_columns, df_visit_occurrence, batch_size
+    )
 
 
 def create_condition_occcurence_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
