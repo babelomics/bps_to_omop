@@ -170,28 +170,41 @@ def find_visit_occurrence_id(
 
 
 def retrieve_visit_in_batches(
-    input_df: pd.DataFrame, visit_df: pd.DataFrame, batch_size: int = 10000
+    events_df: pd.DataFrame,
+    event_columns: list,
+    visit_df: pd.DataFrame,
+    batch_size: int = 10000,
 ) -> pd.DataFrame:
     """Serially retrieves a table to match the visit's dates with the dates in the input
     dataframe.
 
     Parameters
     ----------
-    df : pd.DataFrame
-        _description_
-    visit_df : pd.DataFrame
-        _description_
+    events_df : pandas.DataFrame
+        Input dataframe for which to assign visit_occurrence_id's
+    event_columns : list
+        Column names that contains, in this order:
+        - 'person_id'   Identifier for each person in the dataframe
+        - 'start_date'  Date to fit between 'visit_start_date' and 'visit_end_date'.
+        - 'events_id'   Unique identifier for each registry of events_df.
+    visits_df : pandas.DataFrame
+        DataFrame containing visit occurrence data.
+        Must include columns: 'person_id', 'visit_start_date',
+        'visit_end_date', 'visit_occurrence_id'.
+        Column names need to be the same. This is to ensure
+        the correct table (VISIT_OCCURRENCE) is being used.
     batch_size : int, optional
         _description_, by default 10000
 
     Returns
     -------
     pd.DataFrame
-        _description_
+        A DataFrame containing the original table event_df plus the value for
+        the visit_occurence_id, visit_start_date and visit_end_date, if found.
     """
     # -- Iterate over unique ppl
     # Get list of unique ppl
-    list_ppl = input_df["person_id"].unique()
+    list_ppl = events_df["person_id"].unique()
 
     # Process serially in batches
     df_out = []
@@ -202,12 +215,10 @@ def retrieve_visit_in_batches(
         except IndexError:
             list_ppl_tmp = list_ppl[i_init:]
         # Restrict dataframes to those ppl
-        df_tmp = input_df[input_df["person_id"].isin(list_ppl_tmp)]
+        df_tmp = events_df[events_df["person_id"].isin(list_ppl_tmp)]
         visit_tmp = visit_df[visit_df["person_id"].isin(list_ppl_tmp)]
         # Find the visit_occurrence_id for this batch
-        out_tmp = find_visit_occurrence_id(
-            df_tmp, ["person_id", "start_date", "measurement_id"], visit_tmp, verbose=0
-        )
+        out_tmp = find_visit_occurrence_id(df_tmp, event_columns, visit_tmp, verbose=0)
         df_out.append(out_tmp)
 
     # Concatenate and return
