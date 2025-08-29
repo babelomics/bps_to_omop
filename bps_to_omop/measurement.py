@@ -31,7 +31,7 @@ def preprocess_files(
     params_data : dict
         dictionary with the parameters for the preprocessing
     concept_df : pd.DataFrame
-        CONCEPT table
+        OMOP CONCEPT table
     data_dir : Path
         Path to the upstream location of the data files
 
@@ -279,7 +279,10 @@ def map_standard_concepts(
 
 
 def check_unmapped_values(
-    df: pd.DataFrame, params_data: dict, test_list: list
+    df: pd.DataFrame,
+    params_data: dict,
+    test_list: list,
+    concept_df: pd.DataFrame,
 ) -> pd.DataFrame:
     """Check and handle unmapped values in the groups of columns specified by
     test_list.
@@ -295,12 +298,18 @@ def check_unmapped_values(
         dictionary with the parameters for the preprocessing
     test_list : list
         Header of the columns to be checked.
+    concept_df : pd.DataFrame
+        OMOP CONCEPT table
 
     Returns
     -------
     pd.DataFrame
         Input dataframe with unmapped values
     """
+    # Get a list of the standard codes
+    std_codes = concept_df.loc[
+        concept_df["standard_concept"] == "S", "concept_id"
+    ].to_list()
 
     for col in test_list:
         # Check for unmapped values
@@ -309,18 +318,25 @@ def check_unmapped_values(
         )
         # Apply mapping if needed
         if len(unmapped_values) > 0:
-            print(f" No concept ID found for {col} source values: {[*unmapped_values]}")
-            print("  Applying custom concepts...")
-            df = map_to_omop.update_concept_mappings(
-                df,
-                f"{col}_source_value",
-                f"{col}_concept_id",
-                params_data[f"unmapped_{col}"],
-            )
+            print(f" No concept ID found for {col}_source_value: {[*unmapped_values]}")
+            if params_data.get(f"unmapped_{col}", False):
+                # Print that we are applying custom concepts and which ones
+                print("  Applying custom concepts...")
+                for k, v in params_data[f"unmapped_{col}"].items():
+                    print(f"  - {k}: {v}")
+                    # Check that the mapping are standard concept_id
+                    assert v in std_codes, f"concept_id {v} is not standard"
 
-            unmapped_values = map_to_omop.find_unmapped_values(
-                df, f"{col}_source_value", f"{col}_concept_id"
-            )
+                # Apply the update mappings to get the source_concept_id
+                df = map_to_omop.update_concept_mappings(
+                    df,
+                    f"{col}_source_value",
+                    f"{col}_concept_id",
+                    params_data[f"unmapped_{col}"],
+                )
+
+            else:
+                print("  No custom concepts provided. Moving on.")
 
     return df
 
