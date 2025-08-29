@@ -31,95 +31,6 @@ from bps_to_omop.utils import (
 )
 
 
-def get_visit_concept_id(
-    table_raw: pa.Table, functions: list[dict], verbose: int = 0
-) -> pa.Array:
-    """Given a pyarrow table and a list of functions, this function
-    will apply the codification contained within the dict.
-
-    Parameters
-    ----------
-    f : str
-        filename.
-    table_raw : pa.Table
-        pyarrow table with at least person_id, start_date and end_date
-        columns.
-    functions : list
-        contains the function and its parameters in the following order:
-            - str,      name of the function to apply. e.g. 'single_code'
-            - int,      code to apply
-            - dict,     dictionary with parameters necessary for the function.
-    verbose : int, optional
-        Verbosity level for logging. If > 1, prints information about applied
-        transformations. Default is 0 (no verbose output).
-
-        The possible subfunctions are contained within this function for
-        coherence and repeatability.
-
-    Returns
-    -------
-    pa.Array
-        array with the visit_concept_id for table_raw.
-    """
-
-    def single_code(
-        _table: pa.Table, array: np.ndarray, code: int  # pylint: disable=W0613
-    ) -> np.ndarray:
-        """This file only has one visit type,
-        so we assign the same code to every row."""
-        # Get the index of every 0 in array
-        idx = array == 0
-        # Assign code to every True
-        return np.where(idx, code, array)
-
-    def duration_code(
-        table: pa.Table, array: np.ndarray, code: int, time_lims: list[int, int]
-    ) -> np.ndarray:
-        """This file codes depend on the interval between start_date
-        and end_date, ie the duration of the appointment. The arguments
-        relate to the timespan in days that the interval has to be to
-        apply the code."""
-        # Compute the interval
-        interval = pc.days_between(  # pylint: disable=E1101
-            table["start_date"], table["end_date"]
-        ).to_numpy(zero_copy_only=False)
-        # Get the bool index
-        idx = (interval >= time_lims[0]) & (interval <= time_lims[1])
-        # Assign code to every True
-        return np.where(idx, code, array)
-
-    def field_code(
-        table: pa.Table, array: np.ndarray, code: int, colname: str, colvalue: Any
-    ) -> np.ndarray:
-        """This file codes depend on the values of a field in table.
-        The arguments relate to the name of the column and the value
-        that column has to have to apply the code."""
-        # Get the bool index
-        idx = pc.equal(table[colname], colvalue)  # pylint: disable=E1101
-        # Assign code to every True
-        return np.where(idx, code, array)
-
-    # -- Parameters --------------------------------------------------------------------------
-    func_dict = {
-        "single_code": single_code,
-        "duration_code": duration_code,
-        "field_code": field_code,
-    }
-
-    # -- Function assignment ----------------------------------------------------------------
-    # Create array of zeros (not defined concept by default)
-    visit_concept_id = np.zeros(len(table_raw), dtype=np.int64)
-    # Apply the codes
-    for func_str, code, kwargs in functions:
-        # Pass from string name to actual function
-        func = func_dict[func_str]
-        # Apply the function and the paramters
-        if verbose > 1:
-            print(f"- Applying {func.__name__}({code}, {kwargs})")
-        visit_concept_id = func(table_raw, visit_concept_id, code, **kwargs)
-    return visit_concept_id
-
-
 def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table:
     """Gather and process tables for creating the VISIT_OCCURRENCE table
     based on configuration.
@@ -346,6 +257,95 @@ def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa
 
     # Convert back to PyArrow Table
     return pa.Table.from_pandas(df_done, preserve_index=False)
+
+
+def get_visit_concept_id(
+    table_raw: pa.Table, functions: list[dict], verbose: int = 0
+) -> pa.Array:
+    """Given a pyarrow table and a list of functions, this function
+    will apply the codification contained within the dict.
+
+    Parameters
+    ----------
+    f : str
+        filename.
+    table_raw : pa.Table
+        pyarrow table with at least person_id, start_date and end_date
+        columns.
+    functions : list
+        contains the function and its parameters in the following order:
+            - str,      name of the function to apply. e.g. 'single_code'
+            - int,      code to apply
+            - dict,     dictionary with parameters necessary for the function.
+    verbose : int, optional
+        Verbosity level for logging. If > 1, prints information about applied
+        transformations. Default is 0 (no verbose output).
+
+        The possible subfunctions are contained within this function for
+        coherence and repeatability.
+
+    Returns
+    -------
+    pa.Array
+        array with the visit_concept_id for table_raw.
+    """
+
+    def single_code(
+        _table: pa.Table, array: np.ndarray, code: int  # pylint: disable=W0613
+    ) -> np.ndarray:
+        """This file only has one visit type,
+        so we assign the same code to every row."""
+        # Get the index of every 0 in array
+        idx = array == 0
+        # Assign code to every True
+        return np.where(idx, code, array)
+
+    def duration_code(
+        table: pa.Table, array: np.ndarray, code: int, time_lims: list[int, int]
+    ) -> np.ndarray:
+        """This file codes depend on the interval between start_date
+        and end_date, ie the duration of the appointment. The arguments
+        relate to the timespan in days that the interval has to be to
+        apply the code."""
+        # Compute the interval
+        interval = pc.days_between(  # pylint: disable=E1101
+            table["start_date"], table["end_date"]
+        ).to_numpy(zero_copy_only=False)
+        # Get the bool index
+        idx = (interval >= time_lims[0]) & (interval <= time_lims[1])
+        # Assign code to every True
+        return np.where(idx, code, array)
+
+    def field_code(
+        table: pa.Table, array: np.ndarray, code: int, colname: str, colvalue: Any
+    ) -> np.ndarray:
+        """This file codes depend on the values of a field in table.
+        The arguments relate to the name of the column and the value
+        that column has to have to apply the code."""
+        # Get the bool index
+        idx = pc.equal(table[colname], colvalue)  # pylint: disable=E1101
+        # Assign code to every True
+        return np.where(idx, code, array)
+
+    # -- Parameters --------------------------------------------------------------------------
+    func_dict = {
+        "single_code": single_code,
+        "duration_code": duration_code,
+        "field_code": field_code,
+    }
+
+    # -- Function assignment ----------------------------------------------------------------
+    # Create array of zeros (not defined concept by default)
+    visit_concept_id = np.zeros(len(table_raw), dtype=np.int64)
+    # Apply the codes
+    for func_str, code, kwargs in functions:
+        # Pass from string name to actual function
+        func = func_dict[func_str]
+        # Apply the function and the paramters
+        if verbose > 1:
+            print(f"- Applying {func.__name__}({code}, {kwargs})")
+        visit_concept_id = func(table_raw, visit_concept_id, code, **kwargs)
+    return visit_concept_id
 
 
 def to_omop(table: pa.Table, verbose: int = 0) -> pa.Table:
