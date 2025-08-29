@@ -214,25 +214,7 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
         )
 
         # -- PROVIDER -------------------------------------------------
-        params_provider = params.get("source_to_provider", {})
-        if params_provider.get(input_file, False):
-            # Read PROVIDER table
-            provider_table = parquet.read_table(
-                data_dir / params["provider_table_path"]
-            ).to_pandas()
-            # Retrieve the col that link to the provider_id
-            ((source_col, provider_col),) = params["source_to_provider_id"][
-                input_file
-            ].items()
-            # Build the dict that links current table to provider_id
-            provider_map = dict(
-                zip(provider_table[provider_col], provider_table["provider_id"])
-            )
-            # Retrieve provider values and apply mapping
-            provider_id = table.to_pandas()[source_col].map(provider_map)
-
-        else:
-            provider_id = pyarrow_utils.create_null_int_array(len(table))
+        provider_id = generate_provider_id(table, input_file, params, data_dir)
 
         # Append a new column with the provider_id
         table = table.append_column("provider_id", [provider_id])
@@ -254,6 +236,52 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
     processed_tables = processed_tables.cast(tmp_schema)
 
     return processed_tables
+
+
+def generate_provider_id(
+    table: pa.Table,
+    input_file: str,
+    params: dict,
+    data_dir: Path,
+):
+    """_summary_
+
+    Parameters
+    ----------
+    table : pa.Table
+        Table currently being processed
+    input_file : str
+        filename of the table to be processed
+    params : dict
+        dictionary with the parameters for the preprocessing
+    data_dir : Path
+        Path to the upstream location of the data files
+    """
+
+    params_provider = params.get("source_to_provider", {})
+    if params_provider.get(input_file, False):
+        # Read PROVIDER table
+        provider_table = parquet.read_table(
+            data_dir / params["provider_table_path"]
+        ).to_pandas()
+
+        # Retrieve the col that link to the provider_id
+        ((source_col, provider_col),) = params["source_to_provider_id"][
+            input_file
+        ].items()
+
+        # Build the dict that links current table to provider_id
+        provider_map = dict(
+            zip(provider_table[provider_col], provider_table["provider_id"])
+        )
+
+        # Retrieve provider values and apply mapping
+        provider_id = table.to_pandas()[source_col].map(provider_map)
+
+    else:
+        provider_id = pyarrow_utils.create_null_int_array(len(table))
+
+    return provider_id
 
 
 def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa.Table:
@@ -387,7 +415,7 @@ def to_omop(table: pa.Table, verbose: int = 0) -> pa.Table:
     return table
 
 
-def process_visit_table(data_dir: Path, params_visit: dict):
+def process_visit_table(data_dir: str | Path, params_visit: dict):
 
     # -- Load parameters --------------------------------------------------
     print("Reading parameters...")
@@ -395,6 +423,9 @@ def process_visit_table(data_dir: Path, params_visit: dict):
     # -- Load yaml file and related info
     output_dir = params_visit["output_dir"]
 
+    # Convert to Path
+    data_dir = Path(data_dir)
+    # Create directory
     makedirs(data_dir / output_dir, exist_ok=True)
 
     # == Apply functions ==================================================
