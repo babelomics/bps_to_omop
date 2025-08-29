@@ -413,7 +413,7 @@ def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
     return table
 
 
-def process_measurement_table(data_dir: Path, params_measurement: dict):
+def process_measurement_table(data_dir: str | Path, params_measurement: dict):
 
     # -- Unwrap some params for clarity ------------------------------
     output_dir = params_measurement["output_dir"]

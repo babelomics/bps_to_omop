@@ -151,7 +151,7 @@ def generate_param_combinations(candidate_params: dict) -> list[dict]:
 
 
 def get_reading_params(
-    data_dir: Path,
+    data_dir: str | Path,
     file_list: list,
     default_params: dict,
     candidate_params: dict,

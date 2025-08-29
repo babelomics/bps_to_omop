@@ -151,7 +151,7 @@ def create_provider_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
 
 
 # %%
-def process_provider_table(data_dir: str, provider_params: dict) -> None:
+def process_provider_table(data_dir: str | Path, provider_params: dict) -> None:
     """Process provider data files and generate OMOP PROVIDER table.
 
     Parameters
