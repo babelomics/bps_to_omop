@@ -258,7 +258,7 @@ def generate_provider_id(
         Path to the upstream location of the data files
     """
 
-    params_provider = params.get("source_to_provider", {})
+    params_provider = params.get("provider_params", {})
     if params_provider.get(input_file, False):
         # Read PROVIDER table
         provider_table = parquet.read_table(
