@@ -120,13 +120,13 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
         table = transform_table.apply_transformation(table, params, input_file)
 
         # -- Assign visit_concept_id ----------------------------------
+        # Assign visit concept ID
+        concept_id = get_visit_concept_id(table, concept_id_functions[input_file])
         # Select relevant columns and add visit_concept_id
         processed_table = table.select(final_columns).append_column(
             "visit_concept_id", [concept_id]
         )
         tmp_schema = tmp_schema.append(pa.field("visit_concept_id", pa.int64()))
-        # Assign visit concept ID
-        concept_id = get_visit_concept_id(table, concept_id_functions[input_file])
 
         if concept_id is None:
             raise KeyError(f"No visit concept ID assigned to file: {input_file}")
