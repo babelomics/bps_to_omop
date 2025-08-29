@@ -120,7 +120,7 @@ def get_visit_concept_id(
     return visit_concept_id
 
 
-def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
+def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table:
     """Gather and process tables for creating the VISIT_OCCURRENCE table
     based on configuration.
 
@@ -130,10 +130,10 @@ def gather_tables(data_dir: Path, params: dict, verbose: int = 0) -> pa.Table:
 
     Parameters
     ----------
-    data_dir : Path
-        Common directory for all files.
     params : dict
         dict containig the parameters.
+    data_dir : Path
+        Path to the upstream location of the data files
     verbose : int, optional
         Information output, by default 0
         - 0 No info
@@ -428,16 +428,14 @@ def process_visit_table(data_dir: str | Path, params_visit: dict):
     # Create directory
     makedirs(data_dir / output_dir, exist_ok=True)
 
+    # -- Load each file and prepare it --------------------------------
+    df = preprocess_files(params_visit, data_dir, verbose=1)
+
     # == Apply functions ==================================================
-    table_VISIT_OCCURRENCE_0 = gather_tables(data_dir, params_visit, verbose=1)
-    table_VISIT_OCCURRENCE_1 = clean_tables(
-        table_VISIT_OCCURRENCE_0, params_visit, verbose=2
-    )
-    table_VISIT_OCCURRENCE_2 = to_omop(table_VISIT_OCCURRENCE_1, verbose=1)
+    df = clean_tables(df, params_visit, verbose=2)
+    df = to_omop(df, verbose=1)
 
     # == Save to parquet ==================================================
     print("Saving... ", end="")
-    parquet.write_table(
-        table_VISIT_OCCURRENCE_2, data_dir / output_dir / "VISIT_OCCURRENCE.parquet"
-    )
+    parquet.write_table(df, data_dir / output_dir / "VISIT_OCCURRENCE.parquet")
     print("Done!")
