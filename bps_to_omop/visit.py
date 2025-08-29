@@ -11,6 +11,7 @@ http://omop-erd.surge.sh/omop_cdm/tables/VISIT_OCCURRENCE.html
 http://omop-erd.surge.sh/omop_cdm/tables/VISIT_DETAIL.html
 """
 
+# %%
 from os import makedirs
 from pathlib import Path
 from typing import Any
@@ -31,6 +32,7 @@ from bps_to_omop.utils import (
 )
 
 
+# %%
 def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table:
     """Gather and preprocess tables for creating the VISIT_OCCURRENCE table
     based on configuration.
@@ -90,19 +92,17 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
         else:
             print(f" {lbl} not found. Moving on...")
 
-    # -- Define some internal parameters ------------------------------
-    final_columns = [
-        "person_id",
-        "start_date",
-        "end_date",
-        "type_concept",
-    ]
-    tmp_schema = pa.schema(
+    # -- Define the initial schema ------------------------------------
+    # We force cast to force timestamp because it is quicker and keeps
+    # rows with hour information
+    columns_schema = pa.schema(
         [
             ("person_id", pa.int64()),
             ("start_date", pa.timestamp("us")),
             ("end_date", pa.timestamp("us")),
             ("type_concept", pa.int64()),
+            ("visit_concept_id", pa.int64()),
+            ("provider_id", pa.int64()),
         ]
     )
 
@@ -122,32 +122,24 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
         # -- Assign visit_concept_id ----------------------------------
         # Assign visit concept ID
         concept_id = get_visit_concept_id(table, concept_id_functions[input_file])
-        # Select relevant columns and add visit_concept_id
-        processed_table = table.select(final_columns).append_column(
-            "visit_concept_id", [concept_id]
-        )
-        tmp_schema = tmp_schema.append(pa.field("visit_concept_id", pa.int64()))
+        # append visit_concept_id
+        table = table.append_column("visit_concept_id", [concept_id])
 
         if concept_id is None:
             raise KeyError(f"No visit concept ID assigned to file: {input_file}")
 
         # -- PROVIDER -------------------------------------------------
         provider_id = generate_provider_id(table, input_file, params, data_dir)
-
         # Append a new column with the provider_id
         table = table.append_column("provider_id", [provider_id])
-        final_columns.append("provider_id")
-        tmp_schema = tmp_schema.append(pa.field("provider_id", pa.int64()))
 
         # -- Append at end of loop ------------------------------------
-        processed_tables.append(processed_table)
+        table = table.select(columns_schema.names).cast(columns_schema)
+        processed_tables.append(table)
 
     # -- Combine and return -------------------------------------------
     # Combine all processed tables
     processed_tables = pa.concat_tables(processed_tables)
-    # Cast to force timestamp
-    # It is quicker and keeps rows with hour information
-    processed_tables = processed_tables.cast(tmp_schema)
 
     return processed_tables
 
