@@ -190,70 +190,6 @@ def generate_provider_id(
     return provider_id
 
 
-def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa.Table:
-    """
-    Clean and process a table of medical visit records.
-
-    This receives a dict with paramaters, validates visit concept IDs,
-    converts them to a categorical type based on a specified order, and
-    removes overlapping records.
-
-    Parameters
-    ----------
-    gathered_table : pa.Table
-        A PyArrow Table containing the raw visit records.
-    params : dict
-        dictionary with the parameters from the YAML configuration file.
-    verbose : int, optional
-        Information output, by default 0
-        - 0 No info
-        - 1 Show number of iterations
-        - 2 Show an example of the first row being removed and
-            the row that contains it.
-        Will be passed to remove_overlap. Check definition to see output.
-
-    Returns
-    -------
-    pa.Table
-        A PyArrow Table with cleaned and processed records.
-
-    Notes
-    -----
-    The function expects the configuration file to contain a 'visit_occurrence'
-    key with a 'visit_concept_order' subkey specifying the order of visit concepts.
-    """
-    if verbose > 0:
-        print("Cleaning records...")
-    # Load configuration
-    visit_concept_order = params["visit_concept_order"]
-    sorting_columns = params["remove_overlap"]["sorting_columns"]
-    ascending_order = params["remove_overlap"]["ascending_order"]
-
-    # Convert to dataframe
-    df_raw = gathered_table.to_pandas()
-    df_raw = df_raw.drop_duplicates()
-
-    # Validate visit concept IDs
-    unique_concept_ids = df_raw["visit_concept_id"].unique()
-    missing_concepts = set(unique_concept_ids) - set(visit_concept_order)
-    if missing_concepts:
-        errs = ", ".join(map(str, missing_concepts))
-        raise KeyError(f"visit_concept(s) {errs} are not in visit_concept_order")
-
-    # Convert to categorical
-    df_raw["visit_concept_id"] = pd.Categorical(
-        df_raw["visit_concept_id"], categories=visit_concept_order, ordered=True
-    )
-
-    # -- Remove overlap
-    df_done = process_dates.remove_overlap(
-        df_raw, sorting_columns, ascending_order, verbose=verbose
-    )
-
-    # Convert back to PyArrow Table
-    return pa.Table.from_pandas(df_done, preserve_index=False)
-
-
 def get_visit_concept_id(
     table_raw: pa.Table, functions: list[dict], verbose: int = 0
 ) -> pa.Array:
@@ -341,6 +277,70 @@ def get_visit_concept_id(
             print(f"- Applying {func.__name__}({code}, {kwargs})")
         visit_concept_id = func(table_raw, visit_concept_id, code, **kwargs)
     return visit_concept_id
+
+
+def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa.Table:
+    """
+    Clean and process a table of medical visit records.
+
+    This receives a dict with paramaters, validates visit concept IDs,
+    converts them to a categorical type based on a specified order, and
+    removes overlapping records.
+
+    Parameters
+    ----------
+    gathered_table : pa.Table
+        A PyArrow Table containing the raw visit records.
+    params : dict
+        dictionary with the parameters from the YAML configuration file.
+    verbose : int, optional
+        Information output, by default 0
+        - 0 No info
+        - 1 Show number of iterations
+        - 2 Show an example of the first row being removed and
+            the row that contains it.
+        Will be passed to remove_overlap. Check definition to see output.
+
+    Returns
+    -------
+    pa.Table
+        A PyArrow Table with cleaned and processed records.
+
+    Notes
+    -----
+    The function expects the configuration file to contain a 'visit_occurrence'
+    key with a 'visit_concept_order' subkey specifying the order of visit concepts.
+    """
+    if verbose > 0:
+        print("Cleaning records...")
+    # Load configuration
+    visit_concept_order = params["visit_concept_order"]
+    sorting_columns = params["remove_overlap"]["sorting_columns"]
+    ascending_order = params["remove_overlap"]["ascending_order"]
+
+    # Convert to dataframe
+    df_raw = gathered_table.to_pandas()
+    df_raw = df_raw.drop_duplicates()
+
+    # Validate visit concept IDs
+    unique_concept_ids = df_raw["visit_concept_id"].unique()
+    missing_concepts = set(unique_concept_ids) - set(visit_concept_order)
+    if missing_concepts:
+        errs = ", ".join(map(str, missing_concepts))
+        raise KeyError(f"visit_concept(s) {errs} are not in visit_concept_order")
+
+    # Convert to categorical
+    df_raw["visit_concept_id"] = pd.Categorical(
+        df_raw["visit_concept_id"], categories=visit_concept_order, ordered=True
+    )
+
+    # -- Remove overlap
+    df_done = process_dates.remove_overlap(
+        df_raw, sorting_columns, ascending_order, verbose=verbose
+    )
+
+    # Convert back to PyArrow Table
+    return pa.Table.from_pandas(df_done, preserve_index=False)
 
 
 def to_omop(table: pa.Table, verbose: int = 0) -> pa.Table:
