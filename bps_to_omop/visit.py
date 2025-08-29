@@ -1,14 +1,17 @@
 """
 This module contains neccesary functions to build the VISIT_OCCURRENCE
-table of an OMOP-CDM instance.
+and VISIT_DETAIL tables of an OMOP-CDM instance.
 
 See:
 
 https://ohdsi.github.io/CommonDataModel/cdm54.html#visit_occurrence
+https://ohdsi.github.io/CommonDataModel/cdm54.html#visit_detail
 
 http://omop-erd.surge.sh/omop_cdm/tables/VISIT_OCCURRENCE.html
+http://omop-erd.surge.sh/omop_cdm/tables/VISIT_DETAIL.html
 """
 
+from os import makedirs
 from pathlib import Path
 from typing import Any
 
@@ -382,3 +385,28 @@ def to_omop(table: pa.Table, verbose: int = 0) -> pa.Table:
     table = format_to_omop.format_table(table, omop_schema)
 
     return table
+
+
+def process_visit_table(data_dir: Path, params_visit: dict):
+
+    # -- Load parameters --------------------------------------------------
+    print("Reading parameters...")
+
+    # -- Load yaml file and related info
+    output_dir = params_visit["output_dir"]
+
+    makedirs(data_dir / output_dir, exist_ok=True)
+
+    # == Apply functions ==================================================
+    table_VISIT_OCCURRENCE_0 = gather_tables(data_dir, params_visit, verbose=1)
+    table_VISIT_OCCURRENCE_1 = clean_tables(
+        table_VISIT_OCCURRENCE_0, params_visit, verbose=2
+    )
+    table_VISIT_OCCURRENCE_2 = to_omop(table_VISIT_OCCURRENCE_1, verbose=1)
+
+    # == Save to parquet ==================================================
+    print("Saving... ", end="")
+    parquet.write_table(
+        table_VISIT_OCCURRENCE_2, data_dir / output_dir / "VISIT_OCCURRENCE.parquet"
+    )
+    print("Done!")
