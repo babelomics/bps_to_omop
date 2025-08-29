@@ -230,4 +230,31 @@ omop_schemas = {
             ("longitude", float64(), True),
         ]
     ),
+    "DRUG_EXPOSURE": schema(
+        [
+            ("drug_exposure_id", int64(), False),
+            ("person_id", int64(), False),
+            ("drug_concept_id", int64(), False),
+            ("drug_exposure_start_date", date32(), False),
+            ("drug_exposure_start_datetime", timestamp("us"), True),
+            ("drug_exposure_endt_date", date32(), False),
+            ("drug_exposure_end_datetime", timestamp("us"), True),
+            ("verbatim_end_date", date32(), False),
+            ("drug_type_concept_id", int64(), False),
+            ("stop_reason", string(), True),
+            ("refills", int64(), False),
+            ("quantity", float64(), True),
+            ("days_supply", int64(), False),
+            ("sig", string(), True),
+            ("route_concept_id", int64(), False),
+            ("lot_number", string(), True),
+            ("provider_id", int64(), True),
+            ("visit_occurrence_id", int64(), True),
+            ("visit_detail_id", int64(), True),
+            ("drug_source_value", string(), True),
+            ("drug_source_concept_id", int64(), True),
+            ("route_source_value", string(), True),
+            ("dose_unit_source_value", string(), True),
+        ]
+    ),
 }
