@@ -447,7 +447,7 @@ def process_measurement_table(data_dir: Path, params_measurement: dict):
 
     # -- Check for codes that were not mapped -------------------------
     test_list = ["measurement", "unit"]
-    df = check_unmapped_values(df, params_measurement, test_list)
+    df = check_unmapped_values(df, params_measurement, test_list, concept_df)
 
     # -- Retrieve visit_occurrence_id ---------------------------------
     df = retrieve_visit_occurrence_id(df, data_dir / visit_dir)
