@@ -74,6 +74,29 @@ omop_schemas = {
             ("preceding_visit_occurrence_id", int64(), True),
         ]
     ),
+    "VISIT_DETAIL": schema(
+        [
+            ("visit_detail_id", int64(), False),
+            ("person_id", int64(), False),
+            ("visit_detail_concept_id", int64(), False),
+            ("visit_detail_start_date", date32(), False),
+            ("visit_detail_start_datetime", timestamp("us"), True),
+            ("visit_detail_end_date", date32(), False),
+            ("visit_detail_end_datetime", timestamp("us"), True),
+            ("visit_detail_type_concept_id", int64(), False),
+            ("provider_id", int64(), True),
+            ("care_site_id", int64(), True),
+            ("visit_detail_source_value", string(), True),
+            ("visit_detail_source_concept_id", int64(), True),
+            ("admitted_from_concept_id", int64(), True),
+            ("admitted_from_source_value", string(), True),
+            ("discharged_to_source_value", string(), True),
+            ("discharged_to_concept_id", int64(), True),
+            ("preceding_visit_detail_id", int64(), True),
+            ("parent_visit_detail_id", int64(), True),
+            ("visit_occurrence_id", int64(), False),
+        ]
+    ),
     "CONDITION_OCCURRENCE": schema(
         [
             ("condition_occurrence_id", int64(), False),
