@@ -185,20 +185,20 @@ def create_condition_occcurence_table(df: pd.DataFrame, schema: pa.Schema) -> pa
     )
 
     # Format dates to remove times
-    visit_start_date = pc.cast(
+    start_date = pc.cast(
         pc.floor_temporal(  # pylint: disable=E1101
             table["condition_start_datetime"], unit="day"
         ),
         pa.date32(),
     )
-    visit_end_date = pc.cast(
+    end_date = pc.cast(
         pc.floor_temporal(  # pylint: disable=E1101
             table["condition_end_datetime"], unit="day"
         ),
         pa.date32(),
     )
-    table = table.add_column(1, "condition_start_date", visit_start_date)
-    table = table.add_column(2, "condition_end_date", visit_end_date)
+    table = table.add_column(1, "condition_start_date", start_date)
+    table = table.add_column(2, "condition_end_date", end_date)
 
     # Fill, reorder and cast to schema
     table = format_to_omop.format_table(table, schema)
