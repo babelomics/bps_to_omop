@@ -66,6 +66,7 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
     - 'visit_concept_dict': Dict mapping files to concept ID functions.
         Every file should have a visit_concept_dict logic assigned.
     """
+    # -- Prepare parameters -------------------------------------------
     if verbose > 0:
         print("Gathering tables...")
     # Load configuration
@@ -87,6 +88,23 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
             params[lbl] = None
             print(f" {lbl} not found. Moving on...")
 
+    # -- Define some internal parameters ------------------------------
+    final_columns = [
+        "person_id",
+        "start_date",
+        "end_date",
+        "type_concept",
+    ]
+    tmp_schema = pa.schema(
+        [
+            ("person_id", pa.int64()),
+            ("start_date", pa.timestamp("us")),
+            ("end_date", pa.timestamp("us")),
+            ("type_concept", pa.int64()),
+        ]
+    )
+
+    # -- Loop through files -------------------------------------------
     processed_tables = []
 
     # Process each input file
@@ -111,21 +129,6 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
         if concept_id is None:
             raise KeyError(f"No visit concept ID assigned to file: {input_file}")
 
-        final_columns = [
-            "person_id",
-            "start_date",
-            "end_date",
-            "type_concept",
-        ]
-        tmp_schema = pa.schema(
-            [
-                ("person_id", pa.int64()),
-                ("start_date", pa.timestamp("us")),
-                ("end_date", pa.timestamp("us")),
-                ("type_concept", pa.int64()),
-            ]
-        )
-
         # -- PROVIDER -------------------------------------------------
         provider_id = generate_provider_id(table, input_file, params, data_dir)
 
@@ -137,6 +140,7 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
         # -- Append at end of loop ------------------------------------
         processed_tables.append(processed_table)
 
+    # -- Combine and return -------------------------------------------
     # Combine all processed tables
     processed_tables = pa.concat_tables(processed_tables)
     # Cast to force timestamp
