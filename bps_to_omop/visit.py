@@ -343,9 +343,9 @@ def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa
     return pa.Table.from_pandas(df_done, preserve_index=False)
 
 
-def to_omop(table: pa.Table, verbose: int = 0) -> pa.Table:
+def create_visit_occurrence_table(table: pa.Table, verbose: int = 0) -> pa.Table:
     """
-    Format a PyArrow table to conform to the OMOP Common Data Model for visit occurrences.
+    Format a PyArrow table to conform to the VISIT_OCCURRENCE table from thj OMOP Common Data Model.
 
     This function starts with a pyarrow table returned by clean_tables() and performs
     the following operations:
@@ -372,7 +372,7 @@ def to_omop(table: pa.Table, verbose: int = 0) -> pa.Table:
     """
     omop_schema = omop_schemas["VISIT_OCCURRENCE"]
     if verbose > 0:
-        print("Formatting to OMOP...")
+        print("Formatting VISIT_OCCURRENCE to OMOP...")
 
     # Rename columns
     table = format_to_omop.rename_table_columns(
@@ -403,6 +403,73 @@ def to_omop(table: pa.Table, verbose: int = 0) -> pa.Table:
     # Create the primary key
     visit_occurrence_id = pa.array(range(len(table)))
     table = table.add_column(0, "visit_occurrence_id", visit_occurrence_id)
+
+    # Fill all other columns required by the OMOP schema
+    table = format_to_omop.format_table(table, omop_schema)
+
+    return table
+
+
+def create_visit_detail_table(table: pa.Table, verbose: int = 0) -> pa.Table:
+    """
+    Format a PyArrow table to conform to the VISIT_DETAIL table from thj OMOP Common Data Model.
+
+    This function starts with a pyarrow table returned by clean_tables() and performs
+    the following operations:
+    1. Renames and reorders columns
+    2. Formats dates to create date fields
+    3. Creates a primary key (visit_detail_id)
+    4. Fills in any missing columns required by the OMOP schema
+    5. Reorders columns to match the OMOP schema
+    6. Casts the table to the OMOP schema
+
+    Parameters
+    ----------
+    table : pa.Table
+        The input PyArrow table to be formatted.
+    verbose : int, optional
+        Verbosity level for logging, by default 0.
+        - 0 No info
+        - 1 Tell that function was called
+
+    Returns
+    -------
+    pa.Table
+        A PyArrow table formatted according to the OMOP VISIT_DETAIL schema.
+    """
+    omop_schema = omop_schemas["VISIT_DETAIL"]
+    if verbose > 0:
+        print("Formatting VISIT_DETAIL to OMOP...")
+
+    # Rename columns
+    table = format_to_omop.rename_table_columns(
+        table,
+        {
+            "start_date": "visit_detail_start_datetime",
+            "end_date": "visit_detail_end_datetime",
+            "type_concept": "visit_detail_type_concept_id",
+        },
+    )
+
+    # Format dates to remove times
+    visit_start_date = pc.cast(
+        pc.floor_temporal(  # pylint: disable=E1101
+            table["visit_detail_start_datetime"], unit="day"
+        ),
+        pa.date32(),
+    )
+    visit_end_date = pc.cast(
+        pc.floor_temporal(  # pylint: disable=E1101
+            table["visit_detail_end_datetime"], unit="day"
+        ),
+        pa.date32(),
+    )
+    table = table.add_column(1, "visit_detail_start_date", visit_start_date)
+    table = table.add_column(2, "visit_detail_end_date", visit_end_date)
+
+    # Create the primary key
+    visit_occurrence_id = pa.array(range(len(table)))
+    table = table.add_column(0, "visit_detail_id", visit_occurrence_id)
 
     # Fill all other columns required by the OMOP schema
     table = format_to_omop.format_table(table, omop_schema)
