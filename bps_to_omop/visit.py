@@ -74,18 +74,20 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
     input_files = params["input_files"]
     concept_id_functions = params["visit_concept_dict"]
 
-    # Prepare possible parameters
-    possible_labels = [
+    # Prepare optional parameters
+    optional_labels = [
         "transformations",
-        "provider_table_path",
+        "provider_params",
         "col_to_provider_id",
     ]
 
-    for lbl in possible_labels:
-        try:
-            _ = params[lbl]
-        except KeyError:
-            params[lbl] = None
+    for lbl in optional_labels:
+        lbl_params = params.get(lbl, {})
+        if lbl_params:
+            print(f" {lbl}:")
+            for k, v in lbl_params.items():
+                print(f"  - {k}: {v}")
+        else:
             print(f" {lbl} not found. Moving on...")
 
     # -- Define some internal parameters ------------------------------
