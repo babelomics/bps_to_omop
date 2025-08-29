@@ -479,7 +479,7 @@ def create_visit_detail_table(table: pa.Table, verbose: int = 0) -> pa.Table:
 
 def process_visit_table(data_dir: str | Path, params_visit: dict):
 
-    # -- Load parameters --------------------------------------------------
+    # -- Load parameters ----------------------------------------------
     print("Reading parameters...")
 
     # -- Load yaml file and related info
@@ -493,11 +493,23 @@ def process_visit_table(data_dir: str | Path, params_visit: dict):
     # -- Load each file and prepare it --------------------------------
     df = preprocess_files(params_visit, data_dir, verbose=1)
 
-    # == Apply functions ==================================================
-    df = clean_tables(df, params_visit, verbose=2)
-    df = to_omop(df, verbose=1)
+    # -- Visit_detail is ready ----------------------------------------
+    # The preprocessed table is basically the VISIT_DETAIL table
+    # We build it now
+    visit_detail = create_visit_detail_table(df, verbose=1)
 
-    # == Save to parquet ==================================================
+    # == Apply functions ==============================================
+    df = clean_tables(df, params_visit, verbose=2)
+    visit_occurrence = create_visit_occurrence_table(df, verbose=1)
+
+    # == Save to parquet ==============================================
     print("Saving... ", end="")
-    parquet.write_table(df, data_dir / output_dir / "VISIT_OCCURRENCE.parquet")
+    parquet.write_table(
+        visit_detail,
+        data_dir / output_dir / "VISIT_DETAIL.parquet",
+    )
+    parquet.write_table(
+        visit_occurrence,
+        data_dir / output_dir / "VISIT_OCCURRENCE.parquet",
+    )
     print("Done!")
