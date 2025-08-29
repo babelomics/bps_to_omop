@@ -491,16 +491,17 @@ def process_visit_table(data_dir: str | Path, params_visit: dict):
     makedirs(data_dir / output_dir, exist_ok=True)
 
     # -- Load each file and prepare it --------------------------------
-    df = preprocess_files(params_visit, data_dir, verbose=1)
+    table = preprocess_files(params_visit, data_dir, verbose=1)
 
-    # -- Visit_detail is ready ----------------------------------------
     # The preprocessed table is basically the VISIT_DETAIL table
-    # We build it now
-    visit_detail = create_visit_detail_table(df, verbose=1)
+    visit_detail = table
 
     # == Apply functions ==============================================
-    df = clean_tables(df, params_visit, verbose=2)
-    visit_occurrence = create_visit_occurrence_table(df, verbose=1)
+    table = clean_tables(table, params_visit, verbose=2)
+
+    # Cast the tables to the omop schemas
+    visit_detail = create_visit_detail_table(visit_detail, verbose=1)
+    visit_occurrence = create_visit_occurrence_table(visit_occurrence, verbose=1)
 
     # == Save to parquet ==============================================
     print("Saving... ", end="")
