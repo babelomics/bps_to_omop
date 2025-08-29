@@ -237,7 +237,7 @@ omop_schemas = {
             ("drug_concept_id", int64(), False),
             ("drug_exposure_start_date", date32(), False),
             ("drug_exposure_start_datetime", timestamp("us"), True),
-            ("drug_exposure_endt_date", date32(), False),
+            ("drug_exposure_end_date", date32(), False),
             ("drug_exposure_end_datetime", timestamp("us"), True),
             ("verbatim_end_date", date32(), True),
             ("drug_type_concept_id", int64(), False),
