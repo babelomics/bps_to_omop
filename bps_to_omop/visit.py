@@ -315,8 +315,8 @@ def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa
         print("Cleaning records...")
     # Load configuration
     visit_concept_order = params["visit_concept_order"]
-    sorting_columns = params["remove_overlap"]["sorting_columns"]
-    ascending_order = params["remove_overlap"]["ascending_order"]
+    sorting_columns = ["person_id", "start_date", "end_date", "visit_concept_id"]
+    ascending_order = [True, True, False, True]
 
     # Convert to dataframe
     df_raw = gathered_table.to_pandas()
