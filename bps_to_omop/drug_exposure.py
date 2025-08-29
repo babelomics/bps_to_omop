@@ -247,8 +247,8 @@ def create_drug_exposure_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
     table = format_to_omop.rename_table_columns(
         table,
         {
-            "start_date": "drug_start_datetime",
-            "end_date": "drug_end_datetime",
+            "start_date": "drug_exposure_start_datetime",
+            "end_date": "drug_exposure_end_datetime",
             "type_concept": "drug_type_concept_id",
         },
     )
@@ -256,18 +256,18 @@ def create_drug_exposure_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
     # Format dates to remove times
     start_date = pc.cast(
         pc.floor_temporal(  # pylint: disable=E1101
-            table["drug_start_datetime"], unit="day"
+            table["drug_exposure_start_datetime"], unit="day"
         ),
         pa.date32(),
     )
     end_date = pc.cast(
         pc.floor_temporal(  # pylint: disable=E1101
-            table["drug_end_datetime"], unit="day"
+            table["drug_exposure_end_datetime"], unit="day"
         ),
         pa.date32(),
     )
-    table = table.add_column(1, "drug_start_date", start_date)
-    table = table.add_column(2, "drug_end_date", end_date)
+    table = table.add_column(1, "drug_exposure_start_date", start_date)
+    table = table.add_column(2, "drug_exposure_end_date", end_date)
 
     # Fill, reorder and cast to schema
     table = format_to_omop.format_table(table, schema)
