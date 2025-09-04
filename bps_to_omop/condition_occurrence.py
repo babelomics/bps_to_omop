@@ -1,5 +1,5 @@
 """
-This module contains necessary transformations to generate the 
+This module contains necessary transformations to generate the
 table CONDITION_OCCURRENCE from an OMOP-CDM.
 
 See:
@@ -233,6 +233,26 @@ def process_condition_occurrence_table(data_dir: Path, params_cond: dict):
 
     # -- Map to standard concepts -------------------------------------
     df = map_standard_concepts(df, concept_rel_df)
+    # Check unmapped
+    unmapped = map_to_omop.find_unmapped_values(
+        df,
+        "condition_source_value",
+        "condition_concept_id",
+    )
+    if unmapped:
+        # Retrieve the unmapped values
+        report_unmapped = map_to_omop.report_unmapped(
+            df,
+            unmapped,
+            "condition_source_value",
+            "condition_source_concept_id",
+            "condition_concept_id",
+        )
+        # Save them for later reference
+        report_unmapped.to_csv(
+            data_dir / output_dir / "unmapped_conditions.csv",
+            index=False,
+        )
 
     # -- Retrieve visit_occurrence_id ---------------------------------
     df = retrieve_visit_occurrence_id(df, data_dir / visit_dir)
