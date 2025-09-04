@@ -72,6 +72,8 @@ def map_source_value(
     Notes
     -----
     - The original DataFrame is not modified; a copy is returned
+    - Update only the rows for each target_vocab at a time. This will
+        rewrite existing mappings for the same vocabulary.
     """
 
     # Create a copy of the input DataFrame to store results
