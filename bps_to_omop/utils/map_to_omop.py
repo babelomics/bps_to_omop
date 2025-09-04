@@ -324,17 +324,15 @@ def find_unmapped_values(
     >>> unmapped = find_unmapped_values(df, 'source_code', 'source_concept_id')
     >>> print(unmapped)  # ['B2']
     """
-    existing_mappings = (
-        df.set_index(source_value_column)[source_concept_id_column]
+
+    return (
+        df[(df[source_concept_id_column] == 0) | (df[source_concept_id_column].isna())][
+            source_value_column
+        ]
         .drop_duplicates()
-        .to_dict()
+        .to_list()
     )
 
-    return [
-        value
-        for value, concept_id in existing_mappings.items()
-        if (pd.isna(concept_id) | (concept_id == 0))
-    ]
 
 
 def update_concept_mappings(
