@@ -334,6 +334,54 @@ def find_unmapped_values(
     )
 
 
+def report_unmapped(
+    df: pd.DataFrame,
+    unmapped: list,
+    source_value_column: str,
+    source_concept_id_column: str,
+    concept_id_column: str,
+    extra_cols: tuple | list = ("vocabulary_id", "type_concept"),
+) -> pd.DataFrame:
+    """
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input DataFrame containing source values and concept IDs
+    unmapped: list
+        List of unmapped source values. See find_unmapped_values().
+    source_value_column : str
+        Name of column containing original source values/codes
+    source_concept_id_column : str
+        Name of column containing existing concept ID mappings
+    concept_id_column : str
+        Name of column containing standard concept_ids.
+    extra_cols : tuple | list
+        Name of other columns to show. By default:
+        ["vocabulary_id", "type_concept"]
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe with the unmapped source_values
+    """
+    cols = [
+        source_value_column,
+        source_concept_id_column,
+        concept_id_column,
+    ] + list(extra_cols)
+    report_df = (
+        df.loc[df[source_value_column].isin(unmapped), cols]
+        .drop_duplicates()
+        .sort_values(source_value_column)
+    )
+    print(
+        f" {len(unmapped)} unmapped values found. Examples:\n",
+        report_df.head(6),
+        flush=True,
+    )
+
+    return report_df
+
 
 def update_concept_mappings(
     df: pd.DataFrame,
