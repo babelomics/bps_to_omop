@@ -363,6 +363,16 @@ def report_unmapped(
     -------
     pd.DataFrame
         Dataframe with the unmapped source_values
+
+    Notes
+    -------
+    - For the mapping to work needs the correct code and the correct
+    vocabulary.
+    - Since we are mixing files, some of them might have the correct
+    combination while others do not.
+    - We retrieve the problematic unmapped codes to see if there are
+    instances where the mapping was succesful.
+    - This way we can investigate why.
     """
     cols = [
         source_value_column,
