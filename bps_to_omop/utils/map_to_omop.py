@@ -421,14 +421,13 @@ def fallback_mapping(
             concept_id_column,
         )
 
-    else:
-        # When loop finishes, reidentify rows that need updating
-        unmapped_mask = get_unmapped_mask(df, concept_id_column)
+    # When loop finishes, reidentify rows that need updating
+    unmapped_mask = get_unmapped_mask(df, concept_id_column)
 
-        print(
-            f" {unmapped_mask.sum()} values are still unmapped after fallback.",
-            flush=True,
-        )
+    print(
+        f" {unmapped_mask.sum()} values are still unmapped after fallback.",
+        flush=True,
+    )
 
     return df, unmapped_mask
 
