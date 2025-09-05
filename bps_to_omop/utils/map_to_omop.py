@@ -345,7 +345,38 @@ def fallback_mapping(
     source_concept_id_column: str,
     concept_id_column: str,
 ) -> tuple:
-
+    """
+    Apply fallback vocabulary mappings to unmapped concept values.
+    
+    Iterates through fallback vocabularies to map unmapped rows by updating 
+    vocabulary_id and attempting source value and concept ID mappings.
+    
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing data to be mapped
+    concept_df : pd.DataFrame
+        Reference DataFrame with CONCEPT table
+    concept_rel_df : pd.DataFrame  
+        DataFrame with CONCEPT_RELATIONSHIP for mapping
+    fallback_vocabs : dict
+        Dictionary mapping vocabulary names to target values.
+        Example {"ICD10CM":"concept_code"}, maps ICD10CM via their concept_codes
+    source_value_column : str
+        Column name containing source values to map
+        E.g.: "condition_source_value"
+    source_concept_id_column : str
+        Column name for source values concept IDs
+        E.g.: "condition_source_concept_id"
+    concept_id_column : str
+        Column name for standard concept IDs
+        E.g.: "condition_concept_id"
+        
+    Returns
+    -------
+    tuple[pd.DataFrame, pd.Series]
+        Modified DataFrame and boolean mask of remaining unmapped rows
+    """
     # Iterate over fallback_vocabs
     for vocab, target in fallback_vocabs.items():
 
