@@ -57,6 +57,13 @@ def test_maps_unmapped_values_with_fallback(sample_dataframes):
         ("401.9", "ICD9CM", 35207668, 320128),
     ]
     expected_output = pd.DataFrame.from_records(rows, columns=columns)
+    expected_output
+    expected_output["source_concept_id"] = expected_output["source_concept_id"].astype(
+        pd.Int64Dtype()
+    )
+    expected_output["concept_id"] = expected_output["concept_id"].astype(
+        pd.Int64Dtype()
+    )
 
     # Apply the function
     df_output, unmapped_mask = map_to_omop.fallback_mapping(
@@ -70,8 +77,7 @@ def test_maps_unmapped_values_with_fallback(sample_dataframes):
     )
 
     # Check
-    assert pd.testing.assert_frame_equal(
+    pd.testing.assert_frame_equal(
         df_output,
         expected_output,
-        check_dtype=False,
     )
