@@ -344,6 +344,7 @@ def fallback_mapping(
     source_value_column: str,
     source_concept_id_column: str,
     concept_id_column: str,
+    vocabulary_id_column: str = "vocabulary_id"
 ) -> tuple:
     """
     Apply fallback vocabulary mappings to unmapped concept values.
@@ -371,6 +372,9 @@ def fallback_mapping(
     concept_id_column : str
         Column name for standard concept IDs
         E.g.: "condition_concept_id"
+    vocabulary_id_column : str
+        Column that holds the vocabulary_id of the source values.
+        By default, "vocabulary_id
         
     Returns
     -------
@@ -396,7 +400,7 @@ def fallback_mapping(
             )
 
             # Assign them to unmapped rows
-            df.loc[unmapped_mask, "vocabulary_id"] = vocab
+            df.loc[unmapped_mask, vocabulary_id_column] = vocab
 
             # Try to map again to source_concept_id
             df = map_source_value(
@@ -404,7 +408,7 @@ def fallback_mapping(
                 fallback_vocabs,
                 concept_df,
                 source_value_column,
-                "vocabulary_id",
+                vocabulary_id_column,
                 source_concept_id_column,
             )
             # Try to map to standard concept ids
