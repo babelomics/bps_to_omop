@@ -336,6 +336,11 @@ def find_unmapped_values(
     )
 
 
+def get_unmapped_mask(df: pd.DataFrame, col: str) -> pd.Series:
+    """Get boolean mask for unmapped values (null, NaN, 0, or empty)."""
+    return df[col].isna() | (df[col] == 0) | (df[col] == "")
+
+
 def fallback_mapping(
     df: pd.DataFrame,
     concept_df: pd.DataFrame,
@@ -344,21 +349,21 @@ def fallback_mapping(
     source_value_column: str,
     source_concept_id_column: str,
     concept_id_column: str,
-    vocabulary_id_column: str = "vocabulary_id"
+    vocabulary_id_column: str = "vocabulary_id",
 ) -> tuple:
     """
     Apply fallback vocabulary mappings to unmapped concept values.
-    
-    Iterates through fallback vocabularies to map unmapped rows by updating 
+
+    Iterates through fallback vocabularies to map unmapped rows by updating
     vocabulary_id and attempting source value and concept ID mappings.
-    
+
     Parameters
     ----------
     df : pd.DataFrame
         DataFrame containing data to be mapped
     concept_df : pd.DataFrame
         Reference DataFrame with CONCEPT table
-    concept_rel_df : pd.DataFrame  
+    concept_rel_df : pd.DataFrame
         DataFrame with CONCEPT_RELATIONSHIP for mapping
     fallback_vocabs : dict
         Dictionary mapping vocabulary names to target values.
@@ -375,7 +380,7 @@ def fallback_mapping(
     vocabulary_id_column : str
         Column that holds the vocabulary_id of the source values.
         By default, "vocabulary_id
-        
+
     Returns
     -------
     tuple[pd.DataFrame, pd.Series]
