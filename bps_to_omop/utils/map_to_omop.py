@@ -390,12 +390,8 @@ def fallback_mapping(
     for vocab, target in fallback_vocabs.items():
 
         # Identify rows that need updating (null, NaN, 0 or empty values)
-        unmapped_mask = (
-            df[concept_id_column].isna()
-            | (df[concept_id_column] == 0)
-            | df[concept_id_column].isnull()
-            | (df[concept_id_column] == "")
-        )
+        unmapped_mask = get_unmapped_mask(concept_id_column)
+
 
         if unmapped_mask.any():
 
@@ -427,12 +423,8 @@ def fallback_mapping(
             break
     else:
         # When loop finishes, reidentify rows that need updating
-        unmapped_mask = (
-            df[concept_id_column].isna()
-            | (df[concept_id_column] == 0)
-            | df[concept_id_column].isnull()
-            | (df[concept_id_column] == "")
-        )
+        unmapped_mask = get_unmapped_mask(concept_id_column)
+        
         print(
             f" {unmapped_mask.sum()} values are still unmapped after fallback.",
             flush=True,
