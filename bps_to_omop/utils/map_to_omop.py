@@ -392,34 +392,35 @@ def fallback_mapping(
         # Identify rows that need updating (null, NaN, 0 or empty values)
         unmapped_mask = get_unmapped_mask(concept_id_column)
 
-        if unmapped_mask.any():
-
-            print(
-                f" {unmapped_mask.sum()} unmapped values found. Falling back to {vocab}:{target}",
-                flush=True,
-            )
-
-            # Assign them to unmapped rows
-            df.loc[unmapped_mask, vocabulary_id_column] = vocab
-
-            # Try to map again to source_concept_id
-            df = map_source_value(
-                df,
-                fallback_vocabs,
-                concept_df,
-                source_value_column,
-                vocabulary_id_column,
-                source_concept_id_column,
-            )
-            # Try to map to standard concept ids
-            df = map_source_concept_id(
-                df,
-                concept_rel_df,
-                source_concept_id_column,
-                concept_id_column,
-            )
-        else:
+        # Early exit
+        if not unmapped_mask.any():
             break
+
+        print(
+            f" {unmapped_mask.sum()} unmapped values found. Falling back to {vocab}:{target}",
+            flush=True,
+        )
+
+        # Assign them to unmapped rows
+        df.loc[unmapped_mask, vocabulary_id_column] = vocab
+
+        # Try to map again to source_concept_id
+        df = map_source_value(
+            df,
+            fallback_vocabs,
+            concept_df,
+            source_value_column,
+            vocabulary_id_column,
+            source_concept_id_column,
+        )
+        # Try to map to standard concept ids
+        df = map_source_concept_id(
+            df,
+            concept_rel_df,
+            source_concept_id_column,
+            concept_id_column,
+        )
+
     else:
         # When loop finishes, reidentify rows that need updating
         unmapped_mask = get_unmapped_mask(concept_id_column)
