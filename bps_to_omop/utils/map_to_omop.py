@@ -297,11 +297,30 @@ def apply_source_mapping(
     return result_table
 
 
+def get_unmapped_mask(df: pd.DataFrame, concept_id_column: str) -> pd.Series:
+    """Get boolean mask for unmapped values (null, NaN, 0, or empty).
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input DataFrame containing source values and concept IDs
+    concept_id_column : str
+        Name of column containing the standard concept_id
+        E.g.: "condition_concept_id"
+
+    """
+    return (
+        df[concept_id_column].isna()
+        | (df[concept_id_column] == 0)
+        | (df[concept_id_column] == "")
+    )
+
+
 def find_unmapped_values(
     df: pd.DataFrame, source_value_column: str, source_concept_id_column: str
 ) -> list:
     """
-    Identify source values that have no concept ID mapping (NaN values).
+    Identify source values that have no standard concept_id.
 
     Parameters
     ----------
@@ -309,8 +328,10 @@ def find_unmapped_values(
         Input DataFrame containing source values and concept IDs
     source_value_column : str
         Name of column containing original source values/codes
+        E.g.: "condition_source_value"
     source_concept_id_column : str
         Name of column containing existing concept ID mappings
+        E.g.: "condition_concept_id"
 
     Returns
     -------
@@ -328,17 +349,10 @@ def find_unmapped_values(
     """
 
     return (
-        df[(df[source_concept_id_column] == 0) | (df[source_concept_id_column].isna())][
-            source_value_column
-        ]
+        df[get_unmapped_mask(df, source_concept_id_column)][source_value_column]
         .drop_duplicates()
         .to_list()
     )
-
-
-def get_unmapped_mask(df: pd.DataFrame, col: str) -> pd.Series:
-    """Get boolean mask for unmapped values (null, NaN, 0, or empty)."""
-    return df[col].isna() | (df[col] == 0) | (df[col] == "")
 
 
 def fallback_mapping(
