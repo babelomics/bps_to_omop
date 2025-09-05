@@ -239,17 +239,23 @@ def process_condition_occurrence_table(data_dir: Path, params_cond: dict):
     # We will retrieve unmapped values, and try to map to both
 
     # Define the fallback_vocabs
-    fallback_vocabs = {"ICD10CM": "concept_code", "ICD9CM": "concept_code"}
-
-    df, unmapped_mask = map_to_omop.fallback_mapping(
-        df,
-        concept_df,
-        concept_rel_df,
-        fallback_vocabs,
-        "condition_source_value",
-        "condition_source_concept_id",
-        "condition_concept_id",
+    fallback_vocabs = params_cond.get(
+        "fallback_vocabs",
+        False,  # Use this by default
     )
+
+    if fallback_vocabs:
+        df, unmapped_mask = map_to_omop.fallback_mapping(
+            df,
+            concept_df,
+            concept_rel_df,
+            fallback_vocabs,
+            "condition_source_value",
+            "condition_source_concept_id",
+            "condition_concept_id",
+        )
+    else:
+        unmapped_mask = map_to_omop.get_unmapped_mask(df, "condition_concept_id")
 
     # If we still have unmapped, report them
     if unmapped_mask.any():
