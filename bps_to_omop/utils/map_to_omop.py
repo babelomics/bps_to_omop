@@ -569,12 +569,7 @@ def update_concept_mappings(
     result_df = df.copy()
 
     # Identify rows that need updating (null, NaN, or 0 values)
-    unmapped_mask = (
-        result_df[target_column].isna()
-        | (result_df[target_column] == 0)
-        | result_df[target_column].isnull()
-        | (result_df[target_column] == "")
-    )
+    unmapped_mask = get_unmapped_mask(df, target_column)
 
     # Update only the unmapped rows
     for source_value, concept_id in new_concept_mappings.items():
