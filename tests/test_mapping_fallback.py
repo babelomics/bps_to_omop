@@ -83,6 +83,64 @@ def test_maps_unmapped_values_with_fallback(sample_dataframes):
     )
 
 
+def test_no_mapping_without_vocab(sample_dataframes):
+    """
+    Test that if a source code has no mapping it will change the vocabulary_id column.
+
+    Last vocab in fallback_vocabs will remain in vocabulary_id, erasing the original value, if any.
+    This is ok as vocabulary_id column is not carried to the final OMOP tables.
+    """
+    concept_df, concept_rel_df = sample_dataframes
+    fallback_vocabs = {"ICD10CM": "concept_code", "ICD9CM": "concept_code"}
+
+    # Define input
+    columns = [
+        "source_value",
+        "vocabulary_id",
+        "source_concept_id",
+        "concept_id",
+    ]
+    rows = [
+        ("155296003", "Nebraska Lexicon", np.nan, 0),  # Wrong vocab, does it update?
+    ]
+    df_input = pd.DataFrame.from_records(rows, columns=columns)
+
+    # Define expected output
+    rows = [
+        (
+            "155296003",
+            "ICD9CM",
+            np.nan,
+            0,
+        ),  # Tried to map, leaving ICD9CM, without luck
+    ]
+    expected_output = pd.DataFrame.from_records(rows, columns=columns)
+    expected_output
+    expected_output["source_concept_id"] = expected_output["source_concept_id"].astype(
+        pd.Int64Dtype()
+    )
+    expected_output["concept_id"] = expected_output["concept_id"].astype(
+        pd.Int64Dtype()
+    )
+
+    # Apply the function
+    df_output, unmapped_mask = map_to_omop.fallback_mapping(
+        df_input,
+        concept_df,
+        concept_rel_df,
+        fallback_vocabs,
+        "source_value",
+        "source_concept_id",
+        "concept_id",
+    )
+
+    # Check
+    pd.testing.assert_frame_equal(
+        df_output,
+        expected_output,
+    )
+
+
 def test_handles_different_unmapped_value_types(sample_dataframes):
     """Test that function correctly identifies different types of unmapped values."""
     concept_df, concept_rel_df = sample_dataframes
