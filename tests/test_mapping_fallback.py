@@ -81,3 +81,48 @@ def test_maps_unmapped_values_with_fallback(sample_dataframes):
         df_output,
         expected_output,
     )
+
+
+def test_handles_different_unmapped_value_types(sample_dataframes):
+    """Test that function correctly identifies different types of unmapped values."""
+    concept_df, concept_rel_df = sample_dataframes
+    fallback_vocabs = {"ICD10CM": "concept_code", "ICD9CM": "concept_code"}
+
+    # Define input
+    columns = [
+        "source_value",
+        "vocabulary_id",
+        "source_concept_id",
+        "concept_id",
+    ]
+    rows = [
+        ("I10", "ICD10CM", 0, 0),
+        ("I10", "ICD10CM", "", ""),
+        ("I10", "ICD10CM", np.nan, np.nan),
+        ("I10", "ICD10CM", None, None),
+    ]
+    df_input = pd.DataFrame.from_records(rows, columns=columns)
+
+    # Define expected output
+    rows = [
+        ("I10", "ICD10CM", 44821949, 320128),
+        ("I10", "ICD10CM", 44821949, 320128),
+        ("I10", "ICD10CM", 44821949, 320128),
+        ("I10", "ICD10CM", 44821949, 320128),
+    ]
+
+    # Apply the function
+    df_output, unmapped_mask = map_to_omop.fallback_mapping(
+        df_input,
+        concept_df,
+        concept_rel_df,
+        fallback_vocabs,
+        "source_value",
+        "source_concept_id",
+        "concept_id",
+    )
+    expected_output = pd.DataFrame.from_records(rows, columns=columns)
+    expected_output
+
+    # Check
+    pd.testing.assert_frame_equal(df_output, expected_output, check_dtype=False)
