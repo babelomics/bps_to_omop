@@ -336,6 +336,71 @@ def find_unmapped_values(
     )
 
 
+def fallback_mapping(
+    df: pd.DataFrame,
+    concept_df: pd.DataFrame,
+    concept_rel_df: pd.DataFrame,
+    fallback_vocabs: dict,
+    source_value_column: str,
+    source_concept_id_column: str,
+    concept_id_column: str,
+) -> tuple:
+
+    # Iterate over fallback_vocabs
+    for vocab, target in fallback_vocabs.items():
+
+        # Identify rows that need updating (null, NaN, 0 or empty values)
+        unmapped_mask = (
+            df[concept_id_column].isna()
+            | (df[concept_id_column] == 0)
+            | df[concept_id_column].isnull()
+            | (df[concept_id_column] == "")
+        )
+
+        if unmapped_mask.any():
+
+            print(
+                f" {unmapped_mask.sum()} unmapped values found. Falling back to {vocab}:{target}",
+                flush=True,
+            )
+
+            # Assign them to unmapped rows
+            df.loc[unmapped_mask, "vocabulary_id"] = vocab
+
+            # Try to map again to source_concept_id
+            df = map_source_value(
+                df,
+                fallback_vocabs,
+                concept_df,
+                source_value_column,
+                "vocabulary_id",
+                source_concept_id_column,
+            )
+            # Try to map to standard concept ids
+            df = map_source_concept_id(
+                df,
+                concept_rel_df,
+                source_concept_id_column,
+                concept_id_column,
+            )
+        else:
+            break
+    else:
+        # When loop finishes, reidentify rows that need updating
+        unmapped_mask = (
+            df[concept_id_column].isna()
+            | (df[concept_id_column] == 0)
+            | df[concept_id_column].isnull()
+            | (df[concept_id_column] == "")
+        )
+        print(
+            f" {unmapped_mask.sum()} values are still unmapped after fallback.",
+            flush=True,
+        )
+
+    return df, unmapped_mask
+
+
 def report_unmapped(
     df: pd.DataFrame,
     unmapped: list,
