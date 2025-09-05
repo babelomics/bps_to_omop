@@ -392,7 +392,6 @@ def fallback_mapping(
         # Identify rows that need updating (null, NaN, 0 or empty values)
         unmapped_mask = get_unmapped_mask(concept_id_column)
 
-
         if unmapped_mask.any():
 
             print(
@@ -424,7 +423,7 @@ def fallback_mapping(
     else:
         # When loop finishes, reidentify rows that need updating
         unmapped_mask = get_unmapped_mask(concept_id_column)
-        
+
         print(
             f" {unmapped_mask.sum()} values are still unmapped after fallback.",
             flush=True,
