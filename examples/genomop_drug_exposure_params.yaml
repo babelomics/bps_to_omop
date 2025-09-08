@@ -1,0 +1,22 @@
+input_dir: rare/03_omop_initial/
+output_dir: rare/04_omop_intermediate/DRUG_EXPOSURE/
+input_files:
+  - Hepatocarcinoma_drug_dispensation.parquet
+  - Hepatocarcinoma_drug_medication.parquet
+vocab_dir: raw/omop_vocab/
+visit_dir: rare/04_omop_intermediate/VISIT_OCCURRENCE/
+append_vocabulary:
+  Hepatocarcinoma_drug_dispensation.parquet: CIMA
+  Hepatocarcinoma_drug_medication.parquet: CIMA
+column_map:
+  Hepatocarcinoma_drug_dispensation.parquet:
+    cima_code: drug_source_value
+  Hepatocarcinoma_drug_medication.parquet:
+    cima_code: drug_source_value
+vocabulary_config:
+  Hepatocarcinoma_drug_dispensation.parquet:
+    CIMA: concept_code
+  Hepatocarcinoma_drug_medication.parquet:
+    CIMA: concept_code
+unmapped_drug:
+  "698083": 1501700
