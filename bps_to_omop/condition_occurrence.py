@@ -1,5 +1,5 @@
 """
-This module contains necessary transformations to generate the 
+This module contains necessary transformations to generate the
 table CONDITION_OCCURRENCE from an OMOP-CDM.
 
 See:
@@ -233,6 +233,45 @@ def process_condition_occurrence_table(data_dir: Path, params_cond: dict):
 
     # -- Map to standard concepts -------------------------------------
     df = map_standard_concepts(df, concept_rel_df)
+
+    # -- fallback mapping
+    # If we find unmapped values, it is possible it's not ICD10, but ICD9, or otherwise.
+    # We will retrieve unmapped values, and try to map to both
+
+    # Define the fallback_vocabs
+    fallback_vocabs = params_cond.get(
+        "fallback_vocabs",
+        False,  # Use this by default
+    )
+
+    if fallback_vocabs:
+        df, unmapped_mask = map_to_omop.fallback_mapping(
+            df,
+            concept_df,
+            concept_rel_df,
+            fallback_vocabs,
+            "condition_source_value",
+            "condition_source_concept_id",
+            "condition_concept_id",
+        )
+    else:
+        unmapped_mask = map_to_omop.get_unmapped_mask(df, "condition_concept_id")
+
+    # If we still have unmapped, report them
+    if unmapped_mask.any():
+        # Retrieve the unmapped values
+        report_unmapped = map_to_omop.report_unmapped(
+            df,
+            df.loc[unmapped_mask, "condition_source_value"].to_list(),
+            "condition_source_value",
+            "condition_source_concept_id",
+            "condition_concept_id",
+        )
+        # Save them for later reference
+        report_unmapped.to_csv(
+            data_dir / output_dir / "unmapped_conditions.csv",
+            index=False,
+        )
 
     # -- Retrieve visit_occurrence_id ---------------------------------
     df = retrieve_visit_occurrence_id(df, data_dir / visit_dir)

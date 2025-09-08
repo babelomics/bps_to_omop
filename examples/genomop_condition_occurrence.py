@@ -20,8 +20,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--measurement_parameters_file",
         type=str,
-        help="Condition Occurrence table parameters file. See guide.",
-        default="./src/genomop_condition_occurrence_params.yaml",
+        help="CONDITION_OCCURRENCE table parameters file. See guide.",
+        default="./src/condition_occurrence_parameters_file.yaml",
     )
     args = parser.parse_args()
 
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     # -- Load yaml file and related info
     params_gen = extract.read_yaml_params(args.general_parameters_file)
-    params_cond = extract.read_yaml_params(args.measurement_parameters_file)
+    params_cond = extract.read_yaml_params(args.condition_occurrence_parameters_file)
 
     data_dir = params_gen["repo_data_dir"]
 

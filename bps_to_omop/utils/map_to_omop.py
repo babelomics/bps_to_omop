@@ -72,6 +72,8 @@ def map_source_value(
     Notes
     -----
     - The original DataFrame is not modified; a copy is returned
+    - Update only the rows for each target_vocab at a time. This will
+        rewrite existing mappings for the same vocabulary.
     """
 
     # Create a copy of the input DataFrame to store results
@@ -295,11 +297,30 @@ def apply_source_mapping(
     return result_table
 
 
+def get_unmapped_mask(df: pd.DataFrame, concept_id_column: str) -> pd.Series:
+    """Get boolean mask for unmapped values (null, NaN, 0, or empty).
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input DataFrame containing source values and concept IDs
+    concept_id_column : str
+        Name of column containing the standard concept_id
+        E.g.: "condition_concept_id"
+
+    """
+    return (
+        df[concept_id_column].isna()
+        | (df[concept_id_column] == 0)
+        | (df[concept_id_column] == "")
+    )
+
+
 def find_unmapped_values(
     df: pd.DataFrame, source_value_column: str, source_concept_id_column: str
 ) -> list:
     """
-    Identify source values that have no concept ID mapping (NaN values).
+    Identify source values that have no standard concept_id.
 
     Parameters
     ----------
@@ -307,8 +328,10 @@ def find_unmapped_values(
         Input DataFrame containing source values and concept IDs
     source_value_column : str
         Name of column containing original source values/codes
+        E.g.: "condition_source_value"
     source_concept_id_column : str
         Name of column containing existing concept ID mappings
+        E.g.: "condition_concept_id"
 
     Returns
     -------
@@ -324,17 +347,162 @@ def find_unmapped_values(
     >>> unmapped = find_unmapped_values(df, 'source_code', 'source_concept_id')
     >>> print(unmapped)  # ['B2']
     """
-    existing_mappings = (
-        df.set_index(source_value_column)[source_concept_id_column]
+
+    return (
+        df[get_unmapped_mask(df, source_concept_id_column)][source_value_column]
         .drop_duplicates()
-        .to_dict()
+        .to_list()
     )
 
-    return [
-        value
-        for value, concept_id in existing_mappings.items()
-        if (pd.isna(concept_id) | (concept_id == 0))
-    ]
+
+def fallback_mapping(
+    df: pd.DataFrame,
+    concept_df: pd.DataFrame,
+    concept_rel_df: pd.DataFrame,
+    fallback_vocabs: dict,
+    source_value_column: str,
+    source_concept_id_column: str,
+    concept_id_column: str,
+    vocabulary_id_column: str = "vocabulary_id",
+) -> tuple:
+    """
+    Apply fallback vocabulary mappings to unmapped concept values.
+
+    Iterates through fallback vocabularies to map unmapped rows by updating
+    vocabulary_id and attempting source value and concept ID mappings.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame containing data to be mapped
+    concept_df : pd.DataFrame
+        Reference DataFrame with CONCEPT table
+    concept_rel_df : pd.DataFrame
+        DataFrame with CONCEPT_RELATIONSHIP for mapping
+    fallback_vocabs : dict
+        Dictionary mapping vocabulary names to target values.
+        Example {"ICD10CM":"concept_code"}, maps ICD10CM via their concept_codes
+    source_value_column : str
+        Column name containing source values to map
+        E.g.: "condition_source_value"
+    source_concept_id_column : str
+        Column name for source values concept IDs
+        E.g.: "condition_source_concept_id"
+    concept_id_column : str
+        Column name for standard concept IDs
+        E.g.: "condition_concept_id"
+    vocabulary_id_column : str
+        Column that holds the vocabulary_id of the source values.
+        By default, "vocabulary_id
+
+    Returns
+    -------
+    tuple[pd.DataFrame, pd.Series]
+        Modified DataFrame and boolean mask of remaining unmapped rows
+    """
+    # Iterate over fallback_vocabs
+    for vocab, target in fallback_vocabs.items():
+
+        # Identify rows that need updating (null, NaN, 0 or empty values)
+        unmapped_mask = get_unmapped_mask(df, concept_id_column)
+
+        # Early exit
+        if not unmapped_mask.any():
+            break
+
+        print(
+            f" {unmapped_mask.sum()} unmapped values found. Falling back to {vocab}:{target}",
+            flush=True,
+        )
+
+        # Assign them to unmapped rows
+        df.loc[unmapped_mask, vocabulary_id_column] = vocab
+
+        # Try to map again to source_concept_id
+        df = map_source_value(
+            df,
+            fallback_vocabs,
+            concept_df,
+            source_value_column,
+            vocabulary_id_column,
+            source_concept_id_column,
+        )
+        # Try to map to standard concept ids
+        df = map_source_concept_id(
+            df,
+            concept_rel_df,
+            source_concept_id_column,
+            concept_id_column,
+        )
+
+    # When loop finishes, reidentify rows that need updating
+    unmapped_mask = get_unmapped_mask(df, concept_id_column)
+
+    print(
+        f" {unmapped_mask.sum()} values are still unmapped after fallback.",
+        flush=True,
+    )
+
+    return df, unmapped_mask
+
+
+def report_unmapped(
+    df: pd.DataFrame,
+    unmapped: list,
+    source_value_column: str,
+    source_concept_id_column: str,
+    concept_id_column: str,
+    extra_cols: tuple | list = ("vocabulary_id", "type_concept"),
+) -> pd.DataFrame:
+    """
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Input DataFrame containing source values and concept IDs
+    unmapped: list
+        List of unmapped source values. See find_unmapped_values().
+    source_value_column : str
+        Name of column containing original source values/codes
+    source_concept_id_column : str
+        Name of column containing existing concept ID mappings
+    concept_id_column : str
+        Name of column containing standard concept_ids.
+    extra_cols : tuple | list
+        Name of other columns to show. By default:
+        ["vocabulary_id", "type_concept"]
+
+    Returns
+    -------
+    pd.DataFrame
+        Dataframe with the unmapped source_values
+
+    Notes
+    -------
+    - For the mapping to work needs the correct code and the correct
+    vocabulary.
+    - Since we are mixing files, some of them might have the correct
+    combination while others do not.
+    - We retrieve the problematic unmapped codes to see if there are
+    instances where the mapping was succesful.
+    - This way we can investigate why.
+    """
+    cols = [
+        source_value_column,
+        source_concept_id_column,
+        concept_id_column,
+    ] + list(extra_cols)
+    report_df = (
+        df.loc[df[source_value_column].isin(unmapped), cols]
+        .drop_duplicates()
+        .sort_values(source_value_column)
+    )
+    print(
+        f" {len(unmapped)} unmapped values found. Examples:\n",
+        report_df.head(6),
+        flush=True,
+    )
+
+    return report_df
 
 
 def update_concept_mappings(
@@ -401,12 +569,7 @@ def update_concept_mappings(
     result_df = df.copy()
 
     # Identify rows that need updating (null, NaN, or 0 values)
-    unmapped_mask = (
-        result_df[target_column].isna()
-        | (result_df[target_column] == 0)
-        | result_df[target_column].isnull()
-        | (result_df[target_column] == "")
-    )
+    unmapped_mask = get_unmapped_mask(df, target_column)
 
     # Update only the unmapped rows
     for source_value, concept_id in new_concept_mappings.items():
