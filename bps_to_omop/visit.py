@@ -279,7 +279,7 @@ def get_visit_concept_id(
     return visit_concept_id
 
 
-def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa.Table:
+def clean_tables(table: pa.Table, params: dict, verbose: int = 0) -> pa.Table:
     """
     Clean and process a table of medical visit records.
 
@@ -289,7 +289,7 @@ def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa
 
     Parameters
     ----------
-    gathered_table : pa.Table
+    table : pa.Table
         A PyArrow Table containing the raw visit records.
     params : dict
         dictionary with the parameters from the YAML configuration file.
@@ -319,7 +319,7 @@ def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa
     ascending_order = [True, True, False, True]
 
     # Convert to dataframe
-    df_raw = gathered_table.to_pandas()
+    df_raw = table.to_pandas()
     df_raw = df_raw.drop_duplicates()
 
     # Validate visit concept IDs
