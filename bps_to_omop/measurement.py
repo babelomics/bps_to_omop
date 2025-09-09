@@ -310,6 +310,7 @@ def check_unmapped_values(
     std_codes = concept_df.loc[
         concept_df["standard_concept"] == "S", "concept_id"
     ].to_list()
+    std_codes.append(0)  # We do not want to fail if it is not mapped
 
     for col in test_list:
         # Check for unmapped values
