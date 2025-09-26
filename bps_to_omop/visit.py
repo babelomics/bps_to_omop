@@ -358,7 +358,7 @@ def clean_tables(table: pa.Table, params: dict, verbose: int = 0) -> pa.Table:
 
 def create_visit_occurrence_table(table: pa.Table, verbose: int = 0) -> pa.Table:
     """
-    Format a PyArrow table to conform to the VISIT_OCCURRENCE table from thj OMOP Common Data Model.
+    Format a PyArrow table to conform to the VISIT_OCCURRENCE table from the OMOP Common Data Model.
 
     This function starts with a pyarrow table returned by clean_tables() and performs
     the following operations:
