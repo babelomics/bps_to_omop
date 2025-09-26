@@ -149,8 +149,13 @@ def generate_provider_id(
     input_file: str,
     params: dict,
     data_dir: Path,
-):
-    """_summary_
+) -> pa.Array:
+    """Generate provider_id column by mapping values from a provider lookup table.
+
+    For tables that require provider mapping (as specified in params), this function
+    reads the provider reference table and creates a provider_id column by mapping
+    values from a source column in the current table to the provider_id values.
+    For tables without provider mapping, returns a null integer array.
 
     Parameters
     ----------
@@ -159,32 +164,40 @@ def generate_provider_id(
     input_file : str
         filename of the table to be processed
     params : dict
-        dictionary with the parameters for the preprocessing
+        Configuration dictionary containing:
+        - 'provider_params': dict mapping filenames to boolean flags
+        - 'provider_table_path': path to the provider reference table
+        - 'source_to_provider_id': dict mapping input files to column mappings
     data_dir : Path
         Path to the upstream location of the data files
-    """
 
-    params_provider = params.get("provider_params", {})
-    if params_provider.get(input_file, False):
-        # Read PROVIDER table
+    Returns
+    -------
+    pa.Array or pd.Series
+        Array of provider_id values (either mapped integers or nulls)
+    """
+    provider_params = params.get("provider_params", {})
+
+    # Check if this file requires provider mapping
+    if provider_params.get(input_file, False):
+        # Load provider reference table
         provider_table = parquet.read_table(
             data_dir / params["provider_table_path"]
         ).to_pandas()
 
-        # Retrieve the col that link to the provider_id
-        ((source_col, provider_col),) = params["source_to_provider_id"][
-            input_file
-        ].items()
+        # Extract column mapping configuration
+        source_to_provider_mapping = params["source_to_provider_id"][input_file]
+        ((source_col, provider_key_col),) = source_to_provider_mapping.items()
 
-        # Build the dict that links current table to provider_id
-        provider_map = dict(
-            zip(provider_table[provider_col], provider_table["provider_id"])
+        # Create lookup dictionary: provider_key -> provider_id
+        provider_lookup = dict(
+            zip(provider_table[provider_key_col], provider_table["provider_id"])
         )
 
-        # Retrieve provider values and apply mapping
-        provider_id = table.to_pandas()[source_col].map(provider_map)
-
+        # Map source values to provider_id
+        provider_id = table.to_pandas()[source_col].map(provider_lookup)
     else:
+        # No provider mapping needed - return null array
         provider_id = pyarrow_utils.create_null_int_array(len(table))
 
     return provider_id
