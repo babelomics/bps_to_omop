@@ -60,3 +60,6 @@ Puedes encontrar más información sobre `pixi` [aquí](https://pixi.sh/latest/)
     ```
 
 -----
+<div align="center" style="background-color: white; padding: 10px 0;">
+<span style="vertical-align: middle;"> <img src="./assets/logos/LOGO_COLOR.png" alt="Logo de la empresa" height="50"> </span><span style="vertical-align: middle;"> <img src="./assets/logos/GOB_MCIU_negro_marco.svg" alt="Logo de la empresa" height="50"> </span><span style="vertical-align: middle;"> <img src="./assets/logos/NEXT_GEN_EU_3COLORES-transp.png" alt="Logo de la empresa" height="50"> </span><span style="vertical-align: middle;"> <img src="./assets/logos/logo-junta-nuevo.png" alt="Logo de la empresa" height="40"> </span><span style="vertical-align: middle;"> <img src="./assets/logos/perte.png" alt="Logo de la empresa" height="50"> </span>
+</div>
