@@ -1,6 +1,6 @@
-# Repository Setup
+# BPS TO OMOP
 
-This repository provides a suite of tools designed to **transform data stored in Parquet files into the OMOP Common Data Model (CDM) v5.4 standard**.
+This repository provides a suite of tools designed to **transform data stored in Parquet files into the OMOP Common Data Model (CDM) v5.4 standard**. It was developed for data from the *"Base Poblacional de Salud"* from Andalucía, Spain, but it can be used on any dataset.
 
 **Note:** This project is currently under active and heavy development. Users should anticipate frequent updates and changes.
 
