@@ -257,4 +257,24 @@ omop_schemas = {
             ("dose_unit_source_value", string(), True),
         ]
     ),
+    "PROCEDURE_OCCURRENCE": schema(
+        [
+            ("procedure_occurrence_id", int64(), False),
+            ("person_id", int64(), False),
+            ("procedure_concept_id", int64(), False),
+            ("procedure_date", date32(), False),
+            ("procedure_datetime", timestamp("us"), True),
+            ("procedure_end_date", date32(), True),
+            ("procedure_end_datetime", timestamp("us"), True),
+            ("procedure_type_concept_id", int64(), False),
+            ("modifier_concept_id", int64(), True),
+            ("quantity", int64(), True),
+            ("provider_id", int64(), True),
+            ("visit_occurrence_id", int64(), True),
+            ("visit_detail_id", int64(), True),
+            ("procedure_source_value", string(), True),
+            ("procedure_source_concept_id", int64(), True),
+            ("modifier_source_value", string(), True),
+        ]
+    ),
 }
