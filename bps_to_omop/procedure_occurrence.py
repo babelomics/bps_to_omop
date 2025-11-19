@@ -197,8 +197,8 @@ def create_procedure_occcurence_table(df: pd.DataFrame, schema: pa.Schema) -> pa
         ),
         pa.date32(),
     )
-    table = table.add_column(1, "procedure_datetime", start_date)
-    table = table.add_column(2, "procedure_end_datetime", end_date)
+    table = table.add_column(1, "procedure_date", start_date)
+    table = table.add_column(2, "procedure_end_date", end_date)
 
     # Fill, reorder and cast to schema
     table = format_to_omop.format_table(table, schema)
