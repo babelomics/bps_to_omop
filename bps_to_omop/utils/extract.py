@@ -360,7 +360,7 @@ def get_date_parser_options(
 
         # -- Verbose! --
         if verbose > 0:
-            print(f" == == {f} == == ")
+            print(f"\n == == {f} == == ")
         # --------------
 
         # Read first nrows as string with readoptions
