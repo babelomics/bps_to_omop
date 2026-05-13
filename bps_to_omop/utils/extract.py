@@ -695,9 +695,9 @@ def apply_modifications(data_dir: Path, yaml_file: str, verbose: int = 0) -> Non
             print(" > Resulting datatypes:")
             print(df.info())
         # Save to parquet
-        output_files[f] = f"{Path(f).with_suffix('.parquet')}"
         new_name = output_dir / output_files[f]
         os.makedirs(new_name.parent, exist_ok=True)
+        output_files[f] = f"{f.replace('txt', 'parquet')}"
         df.to_parquet(new_name)
 
     if verbose > 0:
