@@ -14,7 +14,6 @@ def find_overlap_index(df: pd.DataFrame) -> pd.Series:
        - belong to the same person_id
        - are contained with the previous row.
        - are not single day visits
-    and removes them.
 
     Parameters
     ----------
