@@ -548,11 +548,12 @@ def build_visit_occurrence(df, verbose=0, n_iter_max=1000):
         n_unknown = (
             df.filter((pl.col("main_visit") == "Unknown")).select(pl.len()).item()
         )
-        if n_iter == n_iter_max and n_unknown > 0:
-            warnings.warn(
-                f"{n_unknown} rows still unresolved after {n_iter_max} iterations."
-            )
         n_iter += 1
+
+    if n_unknown > 0:
+        warnings.warn(
+            f"{n_unknown} rows still unresolved after {n_iter_max} iterations."
+        )
 
     # Assign an unique visit_occurrence_id only to main_visits
     df = assign_visit_occurrence_id(df)
