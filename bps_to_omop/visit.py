@@ -96,15 +96,15 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
     # -- Define the initial schema ------------------------------------
     # We force cast to force timestamp because it is quicker and keeps
     # rows with hour information
-    columns_schema = pa.schema(
-        [
-            ("person_id", pa.int64()),
-            ("start_date", pa.timestamp("us")),
-            ("end_date", pa.timestamp("us")),
-            ("type_concept", pa.int64()),
-            ("visit_concept_id", pa.int64()),
-            ("provider_id", pa.int64()),
-        ]
+    columns_schema = pl.Schema(
+        {
+            "person_id": pl.Int64,
+            "start_date": pl.Datetime("us"),
+            "end_date": pl.Datetime("us"),
+            "type_concept": pl.Int64,
+            "visit_concept_id": pl.Int64,
+            "provider_id": pl.Int64,
+        }
     )
 
     # -- Loop through files -------------------------------------------
@@ -117,15 +117,16 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
             print(f"- File: {input_file}")
 
         # Read and transform the input table
-        table = parquet.read_table(data_dir / input_dir / input_file)
-        table = transform_table.apply_transformation(table, params, input_file)
+        table = pl.read_parquet(data_dir / input_dir / input_file)
+        # table = transform_table.apply_transformation(table, params, input_file)
 
         # -- Assign visit_concept_id ----------------------------------
         # Assign visit concept ID
         concept_id = get_visit_concept_id(table, concept_id_functions[input_file])
         # append visit_concept_id
-        table = table.append_column("visit_concept_id", [concept_id])
+        table = table.with_columns(concept_id.alias("visit_concept_id"))
 
+        # TODO: fix this check
         if concept_id is None:
             raise KeyError(f"No visit concept ID assigned to file: {input_file}")
 
