@@ -118,7 +118,7 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
 
         # Read and transform the input table
         table = pl.read_parquet(data_dir / input_dir / input_file)
-        # table = transform_table.apply_transformation(table, params, input_file)
+        table = transform_table.apply_transformation(table, params, input_file)
 
         # -- Assign visit_concept_id ----------------------------------
         # Assign visit concept ID
