@@ -11,17 +11,14 @@ http://omop-erd.surge.sh/omop_cdm/tables/VISIT_OCCURRENCE.html
 http://omop-erd.surge.sh/omop_cdm/tables/VISIT_DETAIL.html
 """
 
+import warnings
+
 # %%
 from os import makedirs
 from pathlib import Path
 from typing import Any
 
-import numpy as np
-import pandas as pd
 import polars as pl
-import pyarrow as pa
-import pyarrow.compute as pc
-from pyarrow import parquet
 
 from bps_to_omop.omop_schemas import omop_schemas
 from bps_to_omop.utils import (
@@ -34,7 +31,7 @@ from bps_to_omop.utils import (
 
 
 # %%
-def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table:
+def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pl.DataFrame:
     """Gather and preprocess tables for creating the VISIT_OCCURRENCE table
     based on configuration.
 
@@ -53,8 +50,8 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
 
     Returns
     -------
-    pa.Table
-        A PyArrow Table containing the processed and consolidated visit occurrence data.
+    pl.DataFrame
+        A polars DataFrame containing the processed and consolidated visit occurrence data.
 
     Raises
     ------
@@ -84,14 +81,15 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
         "col_to_provider_id",
     ]
 
-    for lbl in optional_labels:
-        lbl_params = params.get(lbl, {})
-        if lbl_params:
-            print(f" {lbl}:")
-            for k, v in lbl_params.items():
-                print(f"  - {k}: {v}")
-        else:
-            print(f" {lbl} not found. Moving on...")
+    if verbose > 0:
+        for lbl in optional_labels:
+            lbl_params = params.get(lbl, {})
+            if lbl_params:
+                print(f" {lbl}:")
+                for k, v in lbl_params.items():
+                    print(f"  - {k}: {v}")
+            else:
+                print(f" {lbl} not found. Moving on...")
 
     # -- Define the initial schema ------------------------------------
     # We force cast to force timestamp because it is quicker and keeps
@@ -125,10 +123,6 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
         concept_id = get_visit_concept_id(table, concept_id_functions[input_file])
         # append visit_concept_id
         table = table.with_columns(concept_id.alias("visit_concept_id"))
-
-        # TODO: fix this check
-        if concept_id is None:
-            raise KeyError(f"No visit concept ID assigned to file: {input_file}")
 
         # -- PROVIDER -------------------------------------------------
         provider_id = generate_provider_id(table, input_file, params, data_dir)
@@ -296,202 +290,314 @@ def get_visit_concept_id(
     return visit_concept_id
 
 
-def clean_tables(gathered_table: pa.Table, params: dict, verbose: int = 0) -> pa.Table:
-    """
-    Clean and process a table of medical visit records.
-
-    This receives a dict with paramaters, validates visit concept IDs,
-    converts them to a categorical type based on a specified order, and
-    removes overlapping records.
-
-    Parameters
-    ----------
-    gathered_table : pa.Table
-        A PyArrow Table containing the raw visit records.
-    params : dict
-        dictionary with the parameters from the YAML configuration file.
-    verbose : int, optional
-        Information output, by default 0
-        - 0 No info
-        - 1 Show number of iterations
-        - 2 Show an example of the first row being removed and
-            the row that contains it.
-        Will be passed to remove_overlap. Check definition to see output.
-
-    Returns
-    -------
-    pa.Table
-        A PyArrow Table with cleaned and processed records.
-
-    Notes
-    -----
-    The function expects the configuration file to contain a 'visit_occurrence'
-    key with a 'visit_concept_order' subkey specifying the order of visit concepts.
-    """
-    if verbose > 0:
-        print("Cleaning records...")
-    # Load configuration
-    visit_concept_order = params["visit_concept_order"]
-    sorting_columns = ["person_id", "start_date", "end_date", "visit_concept_id"]
-    ascending_order = [True, True, False, True]
-
-    # Convert to dataframe
-    df_raw = gathered_table.to_pandas()
-    df_raw = df_raw.drop_duplicates()
-
-    # Validate visit concept IDs
-    unique_concept_ids = df_raw["visit_concept_id"].unique()
-    missing_concepts = set(unique_concept_ids) - set(visit_concept_order)
-    if missing_concepts:
-        errs = ", ".join(map(str, missing_concepts))
-        raise KeyError(f"visit_concept(s) {errs} are not in visit_concept_order")
-
-    # Convert to categorical
-    df_raw["visit_concept_id"] = pd.Categorical(
-        df_raw["visit_concept_id"], categories=visit_concept_order, ordered=True
+def build_visit_detail(df):
+    return (
+        # First we do the sorting
+        df.sort(
+            ["person_id", "start_date", "end_date", "type_concept"],
+            descending=[False, False, True, False],
+        )
+        # Assign the visit_detail_id
+        .with_columns(visit_detail_id=pl.int_range(pl.len()))
+        # Rename columns
+        .rename(
+            {
+                "start_date": "visit_detail_start_datetime",
+                "end_date": "visit_detail_end_datetime",
+                "type_concept": "visit_detail_type_concept_id",
+            }
+        )
     )
 
-    # -- Remove overlap
-    df_done = process_dates.remove_overlap(
-        df_raw, sorting_columns, ascending_order, verbose=verbose
+
+def build_visit_detail_extended(visit_detail):
+    # Get the first date of every person
+    visit_occurrence_dates = visit_detail.group_by(
+        "person_id", maintain_order=True
+    ).agg(
+        visit_start_datetime=pl.col("visit_detail_start_datetime").first(),
+        visit_end_datetime=pl.col("visit_detail_end_datetime").first(),
+        visit_detail_id_original=pl.col("visit_detail_id").first(),
     )
 
-    # Convert back to PyArrow Table
-    return pa.Table.from_pandas(df_done, preserve_index=False)
+    # Join and return
+    return visit_detail.join(
+        visit_occurrence_dates, on="person_id", how="left"
+    ).with_columns(
+        main_visit=pl.lit("Unknown").cast(pl.Enum(["Yes", "No", "Unknown"])),
+        is_contained=pl.lit(False),
+        is_partial=pl.lit(False),
+        not_contained=pl.lit(False),
+        parent_visit_detail_id=pl.lit(None),
+    )
 
 
-def create_visit_occurrence_table(table: pa.Table, verbose: int = 0) -> pa.Table:
-    """
-    Format a PyArrow table to conform to the VISIT_OCCURRENCE table from thj OMOP Common Data Model.
+def identify_next_main_visits(df):
+    return df.with_columns(
+        # Set new possible main visit as "Yes"
+        main_visit=(
+            pl.when(
+                (pl.col("main_visit") == "Unknown")
+                & (pl.col("visit_detail_id_original") == pl.col("visit_detail_id"))
+            )
+            .then(pl.lit("Yes"))
+            .otherwise(pl.col("main_visit"))
+        )
+    ).with_columns(
+        # Reset flags
+        is_contained=pl.when(pl.col("main_visit").is_in(["Unknown", "Yes"]))
+        .then(pl.lit(False))
+        .otherwise(pl.col("is_contained")),
+        is_partial=pl.when(pl.col("main_visit").is_in(["Unknown", "Yes"]))
+        .then(pl.lit(False))
+        .otherwise(pl.col("is_partial")),
+        not_contained=pl.when(pl.col("main_visit").is_in(["Unknown", "Yes"]))
+        .then(pl.lit(False))
+        .otherwise(pl.col("not_contained")),
+    )
 
-    This function starts with a pyarrow table returned by clean_tables() and performs
-    the following operations:
-    1. Renames and reorders columns
-    2. Formats dates to create date fields
-    3. Creates a primary key (visit_occurrence_id)
-    4. Fills in any missing columns required by the OMOP schema
-    5. Reorders columns to match the OMOP schema
-    6. Casts the table to the OMOP schema
 
-    Parameters
-    ----------
-    table : pa.Table
-        The input PyArrow table to be formatted.
-    verbose : int, optional
-        Verbosity level for logging, by default 0.
-        - 0 No info
-        - 1 Tell that function was called
+def identify_contained_rows(df):
+    return df.with_columns(
+        is_contained=pl.when(
+            (pl.col("main_visit") == "Unknown")
+            & (pl.col("visit_start_datetime") <= pl.col("visit_detail_start_datetime"))
+            & (pl.col("visit_end_datetime") >= pl.col("visit_detail_end_datetime"))
+        )
+        .then(True)
+        .otherwise(pl.col("is_contained"))
+    )
 
-    Returns
-    -------
-    pa.Table
-        A PyArrow table formatted according to the OMOP VISIT_OCCURRENCE schema.
-    """
-    omop_schema = omop_schemas["VISIT_OCCURRENCE"]
-    if verbose > 0:
-        print("Formatting VISIT_OCCURRENCE to OMOP...")
+
+def update_contained_rows(df):
+
+    return df.with_columns(
+        # Update main_visit to mark contained visits
+        main_visit=(
+            pl.when((pl.col("is_contained") == True))
+            .then(pl.lit("No"))
+            .otherwise(pl.col("main_visit"))
+        ),
+        # Build the parent_visit_detail_id, since we are here
+        parent_visit_detail_id=(
+            pl.when(
+                (pl.col("is_contained") == True)
+                & (pl.col("visit_detail_id") != pl.col("visit_detail_id_original"))
+            )
+            .then(pl.col("visit_detail_id_original"))
+            .otherwise(pl.col("parent_visit_detail_id"))
+            .cast(pl.Int32())
+        ),
+    )
+
+
+def identify_partial_rows(df):
+    return df.with_columns(
+        is_partial=pl.when(
+            (pl.col("main_visit") == "Unknown")
+            & (pl.col("visit_detail_start_datetime") <= pl.col("visit_end_datetime"))
+            & (pl.col("visit_detail_end_datetime") > pl.col("visit_end_datetime"))
+        )
+        .then(True)
+        .otherwise(pl.col("is_partial"))
+    )
+
+
+def update_partial_rows(df):
+
+    latest_date = (
+        df.filter(pl.col("is_partial") == True)
+        .group_by(["person_id", "visit_detail_id_original"], maintain_order=True)
+        .agg(latest_end_datetime=pl.col("visit_detail_end_datetime").max())
+    )
+    return (
+        # Join back to the main dataframe and update visit_end_datetime
+        df.join(
+            latest_date,
+            on=["person_id", "visit_detail_id_original"],
+            how="left",
+        )
+        .with_columns(
+            main_visit=(
+                pl.when((pl.col("is_partial") == True))
+                .then(pl.lit("No"))
+                .otherwise(pl.col("main_visit"))
+            ),
+            visit_end_datetime=pl.when(
+                pl.col("visit_end_datetime") != pl.col("latest_end_datetime")
+            )
+            .then(
+                pl.coalesce(
+                    [pl.col("latest_end_datetime"), pl.col("visit_detail_end_datetime")]
+                )
+            )
+            .otherwise(pl.col("visit_end_datetime")),
+        )
+        .drop("latest_end_datetime")
+    )
+
+
+def identify_not_contained_rows(df):
+    return df.with_columns(
+        not_contained=pl.when(
+            (pl.col("main_visit") == "Unknown")
+            & (pl.col("visit_detail_start_datetime") >= pl.col("visit_end_datetime"))
+        )
+        .then(True)
+        .otherwise(pl.col("not_contained"))
+    )
+
+
+def update_not_contained_rows(df):
+
+    newest_not_contained = (
+        df.filter(pl.col("not_contained") == True)
+        .group_by("person_id", maintain_order=True)
+        .agg(
+            visit_detail_id_newest=pl.col("visit_detail_id").first(),
+            visit_detail_start_datetime_newest=pl.col(
+                "visit_detail_start_datetime"
+            ).first(),
+            visit_detail_end_datetime_newest=pl.col(
+                "visit_detail_end_datetime"
+            ).first(),
+        )
+    )
+
+    return (
+        # Join back to the main dataframe and update visit_end_datetime
+        df.join(
+            newest_not_contained,
+            on="person_id",
+            how="left",
+        )
+        # Update the values on visit_detail_id_original, visit_start_datetime and visit_end_datetime
+        .with_columns(
+            visit_detail_id_original=pl.when((pl.col("not_contained") == True))
+            .then(pl.col("visit_detail_id_newest"))
+            .otherwise(pl.col("visit_detail_id_original")),
+            visit_start_datetime=pl.when((pl.col("not_contained") == True))
+            .then(pl.col("visit_detail_start_datetime_newest"))
+            .otherwise(pl.col("visit_start_datetime")),
+            visit_end_datetime=pl.when((pl.col("not_contained") == True))
+            .then(pl.col("visit_detail_end_datetime_newest"))
+            .otherwise(pl.col("visit_end_datetime")),
+        ).drop(
+            pl.col(
+                "visit_detail_id_newest",
+                "visit_detail_start_datetime_newest",
+                "visit_detail_end_datetime_newest",
+            )
+        )
+    )
+
+
+def assign_visit_occurrence_id(visit_occurrence):
+
+    return (
+        # Create a helper column to track main visit sequence
+        visit_occurrence.with_columns(is_main_visit=(pl.col("main_visit") == "Yes"))
+        # Assign a unique identifier only to main visits using row_number and clean the helper
+        .with_columns(
+            visit_occurrence_id=pl.when(pl.col("is_main_visit"))
+            .then(pl.col("is_main_visit").cast(pl.Int32).cum_sum() - 1)
+            .otherwise(None)
+        ).drop("is_main_visit")
+        # Fill the rest using forward fill (ffill)
+        .with_columns(visit_occurrence_id=pl.col("visit_occurrence_id").forward_fill())
+    )
+
+
+def build_visit_occurrence(df, verbose=0, n_iter_max=1000):
+    # -- Initialization --
+    # Get the core of the visit_detail table
+    df = build_visit_detail(df)
+    # Extend the table for processing
+    df = build_visit_detail_extended(df)
+    # Initialize counters for the while loop
+    n_unknown = df.filter(pl.col("main_visit") == "Unknown").select(pl.len()).item()
+    n_iter = 0
+
+    # Look for next batch of main_visits
+    df = identify_next_main_visits(df)
+
+    # -- Loop --
+    while n_unknown > 0 and n_iter < n_iter_max:
+        if verbose > 0:
+            print(f"Iter {n_iter:>2}: {n_unknown} unknown rows left.")
+
+        # Identify and update completely contained visits
+        df = identify_contained_rows(df)
+        df = update_contained_rows(df)
+
+        # Identify and update partially contained visits
+        df = identify_partial_rows(df)
+        df = update_partial_rows(df)
+
+        # Identify and update not contained visits
+        df = identify_not_contained_rows(df)
+        df = update_not_contained_rows(df)
+
+        if verbose > 1:
+            print(df.filter(pl.col("main_visit") == "Unknown").head(5))
+
+        # Look for next batch of main_visits
+        df = identify_next_main_visits(df)
+
+        # Update conditions
+        n_unknown = (
+            df.filter((pl.col("main_visit") == "Unknown")).select(pl.len()).item()
+        )
+        if n_iter == n_iter_max and n_unknown > 0:
+            warnings.warn(
+                f"{n_unknown} rows still unresolved after {n_iter_max} iterations."
+            )
+        n_iter += 1
+
+    # Assign an unique visit_occurrence_id only to main_visits
+    df = assign_visit_occurrence_id(df)
+
+    # Drop the extra helper columns
+    df = df.drop(
+        # Drop helpers
+        pl.col("visit_detail_id_original"),
+        pl.col("is_contained"),
+        pl.col("is_partial"),
+        pl.col("not_contained"),
+    )
+
+    # -- Build the core of the visit_detal table --
+    # Drop visit_occurrence columns
+    visit_detail = df.drop(
+        pl.col("visit_start_datetime"),
+        pl.col("visit_end_datetime"),
+        pl.col(
+            "main_visit"
+        ),  # This one is dropped here so it can be used for visit_occurrence
+    )
+
+    # -- Build the core of the visit_occurrence table --
+    # Get only main visits
+    visit_occurrence = df.filter(pl.col("main_visit") == "Yes").drop(
+        pl.col("main_visit")
+    )
 
     # Rename columns
-    table = format_to_omop.rename_table_columns(
-        table,
+    visit_occurrence = visit_occurrence.rename(
         {
-            "start_date": "visit_start_datetime",
-            "end_date": "visit_end_datetime",
-            "type_concept": "visit_type_concept_id",
-        },
+            "visit_detail_type_concept_id": "visit_type_concept_id",
+        }
     )
 
-    # Format dates to remove times
-    visit_start_date = pc.cast(
-        pc.floor_temporal(  # pylint: disable=E1101
-            table["visit_start_datetime"], unit="day"
-        ),
-        pa.date32(),
-    )
-    visit_end_date = pc.cast(
-        pc.floor_temporal(  # pylint: disable=E1101
-            table["visit_end_datetime"], unit="day"
-        ),
-        pa.date32(),
-    )
-    table = table.add_column(1, "visit_start_date", visit_start_date)
-    table = table.add_column(2, "visit_end_date", visit_end_date)
-
-    # Create the primary key
-    visit_occurrence_id = pa.array(range(len(table)))
-    table = table.add_column(0, "visit_occurrence_id", visit_occurrence_id)
-
-    # Fill all other columns required by the OMOP schema
-    table = format_to_omop.format_table(table, omop_schema)
-
-    return table
-
-
-def create_visit_detail_table(table: pa.Table, verbose: int = 0) -> pa.Table:
-    """
-    Format a PyArrow table to conform to the VISIT_DETAIL table from thj OMOP Common Data Model.
-
-    This function starts with a pyarrow table returned by clean_tables() and performs
-    the following operations:
-    1. Renames and reorders columns
-    2. Formats dates to create date fields
-    3. Creates a primary key (visit_detail_id)
-    4. Fills in any missing columns required by the OMOP schema
-    5. Reorders columns to match the OMOP schema
-    6. Casts the table to the OMOP schema
-
-    Parameters
-    ----------
-    table : pa.Table
-        The input PyArrow table to be formatted.
-    verbose : int, optional
-        Verbosity level for logging, by default 0.
-        - 0 No info
-        - 1 Tell that function was called
-
-    Returns
-    -------
-    pa.Table
-        A PyArrow table formatted according to the OMOP VISIT_DETAIL schema.
-    """
-    omop_schema = omop_schemas["VISIT_DETAIL"]
-    if verbose > 0:
-        print("Formatting VISIT_DETAIL to OMOP...")
-
-    # Rename columns
-    table = format_to_omop.rename_table_columns(
-        table,
-        {
-            "start_date": "visit_detail_start_datetime",
-            "end_date": "visit_detail_end_datetime",
-            "type_concept": "visit_detail_type_concept_id",
-        },
+    # Drop columns from visit_detail
+    visit_occurrence = visit_occurrence.drop(
+        pl.col("visit_detail_start_datetime"),
+        pl.col("visit_detail_end_datetime"),
+        pl.col("visit_detail_id"),
+        pl.col("parent_visit_detail_id"),
     )
 
-    # Format dates to remove times
-    visit_start_date = pc.cast(
-        pc.floor_temporal(  # pylint: disable=E1101
-            table["visit_detail_start_datetime"], unit="day"
-        ),
-        pa.date32(),
-    )
-    visit_end_date = pc.cast(
-        pc.floor_temporal(  # pylint: disable=E1101
-            table["visit_detail_end_datetime"], unit="day"
-        ),
-        pa.date32(),
-    )
-    table = table.add_column(1, "visit_detail_start_date", visit_start_date)
-    table = table.add_column(2, "visit_detail_end_date", visit_end_date)
-
-    # Create the primary key
-    visit_occurrence_id = pa.array(range(len(table)))
-    table = table.add_column(0, "visit_detail_id", visit_occurrence_id)
-
-    # Fill all other columns required by the OMOP schema
-    table = format_to_omop.format_table(table, omop_schema)
-
-    return table
+    return visit_detail, visit_occurrence
 
 
 def process_visit_table(data_dir: str | Path, params_visit: dict):
@@ -510,24 +616,17 @@ def process_visit_table(data_dir: str | Path, params_visit: dict):
     # -- Load each file and prepare it --------------------------------
     table = preprocess_files(params_visit, data_dir, verbose=1)
 
-    # The preprocessed table is basically the VISIT_DETAIL table
-    visit_detail = table
+    # -- Generate the visit_detail and visit_occurrence tables --------
+    visit_detail, visit_occurrence = build_visit_occurrence(
+        table, verbose=1, n_iter_max=10
+    )
 
-    # == Apply functions ==============================================
-    table = clean_tables(table, params_visit, verbose=2)
-
-    # Cast the tables to the omop schemas
-    visit_detail = create_visit_detail_table(visit_detail, verbose=1)
-    visit_occurrence = create_visit_occurrence_table(visit_occurrence, verbose=1)
-
-    # == Save to parquet ==============================================
+    # -- Save to parquet ----------------------------------------------
     print("Saving... ", end="")
-    parquet.write_table(
-        visit_detail,
+    visit_detail.write_parquet(
         data_dir / output_dir / "VISIT_DETAIL.parquet",
     )
-    parquet.write_table(
-        visit_occurrence,
+    visit_occurrence.write_parquet(
         data_dir / output_dir / "VISIT_OCCURRENCE.parquet",
     )
     print("Done!")
