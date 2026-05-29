@@ -133,15 +133,15 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
         # -- PROVIDER -------------------------------------------------
         provider_id = generate_provider_id(table, input_file, params, data_dir)
         # Append a new column with the provider_id
-        table = table.append_column("provider_id", [provider_id])
+        table = table.with_columns(provider_id.alias("provider_id"))
 
         # -- Append at end of loop ------------------------------------
-        table = table.select(columns_schema.names).cast(columns_schema)
+        table = table.select(columns_schema.names()).cast(columns_schema)
         processed_tables.append(table)
 
     # -- Combine and return -------------------------------------------
     # Combine all processed tables
-    processed_tables = pa.concat_tables(processed_tables)
+    processed_tables = pl.concat(processed_tables)
 
     return processed_tables
 
