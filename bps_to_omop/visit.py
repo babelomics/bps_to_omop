@@ -147,47 +147,67 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pa.Table
 
 
 def generate_provider_id(
-    table: pa.Table,
+    table: pl.DataFrame,
     input_file: str,
     params: dict,
     data_dir: Path,
-):
-    """_summary_
+) -> pl.Series:
+    """Generate a provider_id Series for the given table by mapping a source
+    column to provider IDs via a reference provider table. If no provider
+    mapping is configured for the given file, returns a null integer Series.
 
     Parameters
     ----------
-    table : pa.Table
-        Table currently being processed
+    table : pl.DataFrame
+        Table currently being processed.
     input_file : str
-        filename of the table to be processed
+        Filename of the table to be processed. Used to look up provider
+        mapping configuration in `params`.
     params : dict
-        dictionary with the parameters for the preprocessing
+        Dictionary with preprocessing parameters. Expected keys:
+        - "provider_params": dict mapping filenames to a truthy value when
+          a provider mapping should be applied.
+        - "provider_table_path": path (relative to `data_dir`) of the
+          Parquet file containing the provider reference table.
+        - "source_to_provider_id": dict mapping filenames to a
+          {source_col: provider_col} dict that defines which column in
+          `table` links to which column in the provider reference table.
     data_dir : Path
-        Path to the upstream location of the data files
+        Path to the upstream location of the data files.
+
+    Returns
+    -------
+    pl.Series
+        A Series of Int64 provider IDs aligned to the rows of `table`.
+        Rows with no match in the provider table will have a null value.
+        If no provider mapping is configured for `input_file`, all values
+        will be null.
     """
 
     params_provider = params.get("provider_params", {})
     if params_provider.get(input_file, False):
         # Read PROVIDER table
-        provider_table = parquet.read_table(
-            data_dir / params["provider_table_path"]
-        ).to_pandas()
+        provider_table = pl.read_parquet(data_dir / params["provider_table_path"])
 
-        # Retrieve the col that link to the provider_id
+        # Retrieve the col that links to the provider_id
         ((source_col, provider_col),) = params["source_to_provider_id"][
             input_file
         ].items()
 
-        # Build the dict that links current table to provider_id
-        provider_map = dict(
-            zip(provider_table[provider_col], provider_table["provider_id"])
+        # Join to map source column to provider_id
+        provider_id = (
+            table.select(pl.col(source_col))
+            .join(
+                provider_table.select([provider_col, "provider_id"]),
+                left_on=source_col,
+                right_on=provider_col,
+                how="left",
+            )
+            .get_column("provider_id")
         )
 
-        # Retrieve provider values and apply mapping
-        provider_id = table.to_pandas()[source_col].map(provider_map)
-
     else:
-        provider_id = pyarrow_utils.create_null_int_array(len(table))
+        provider_id = pl.Series("provider_id", [None] * len(table), dtype=pl.Int64)
 
     return provider_id
 
