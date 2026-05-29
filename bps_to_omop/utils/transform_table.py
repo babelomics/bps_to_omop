@@ -3,18 +3,18 @@ Functions to help with common transformations to tables before
 incorporating them to an OMOP-CDM instance.
 """
 
-import pyarrow as pa
+import polars as pl
 
 
 # -- Main function --
-def apply_transformation(table: pa.Table, params: dict, key: str) -> pa.Table:
+def apply_transformation(table: pl.DataFrame, params: dict, key: str) -> pl.DataFrame:
     """
     Apply transformations to a PyArrow table based on provided parameters.
 
     Parameters
     ----------
-    table : pa.Table
-        Input PyArrow table to be transformed
+    table : pl.DataFrame
+        Input polars dataframe table to be transformed
     params : dict
         Dictionary containing transformation parameters
     key : str
@@ -45,51 +45,45 @@ def apply_transformation(table: pa.Table, params: dict, key: str) -> pa.Table:
 
 
 # -- Helper functions --
-def melt_start_end(table: pa.Table) -> pa.Table:
+def melt_start_end(table: pl.DataFrame) -> pl.DataFrame:
     """This table does not reflect a time period between start_date and
-    end_date, but rather specific events at the begining and the end.
-    Before proceeding, we want to separate this columns in two independent
+    end_date, but rather specific events at the beginning and the end.
+    Before proceeding, we want to separate these columns into two independent
     events."""
-    df_raw = table.to_pandas()
-    # nos quedamos solo con las columnas que queremos
-    df_clean = df_raw[["person_id", "start_date", "end_date"]]
-    # Hacemos un melt para pasar de dataframe ancho a largo
-    df_melt = df_clean.melt(id_vars=["person_id"], value_name="fecha")
-    # Eliminamos las columnas sobrantes y quitamos los nan
-    df_melt = df_melt[["person_id", "fecha"]]
-    df_melt = df_melt.dropna()
-    # Reasignamos la nueva columna fecha al principio y al final
-    df_melt["start_date"] = df_melt["fecha"]
-    df_melt["end_date"] = df_melt["fecha"]
-    # Añadimos el type_concept
-    df_melt["type_concept"] = df_raw["type_concept"][0]
-    # Nos quedamos sólo con lo que queremos una vez más
-    df_melt = df_melt[["person_id", "start_date", "end_date", "type_concept"]]
-    # Quitamos duplicados, que puede ver
-    df_melt = df_melt.drop_duplicates(ignore_index=True)
-    # Pasamos a pyarrow table y devolvemos
-    return pa.Table.from_pandas(df_melt, preserve_index=False)
+    type_concept = table["type_concept"][0]
+
+    return (
+        table.select(["person_id", "start_date", "end_date"])
+        .unpivot(index="person_id", value_name="fecha")
+        .select(["person_id", "fecha"])
+        .drop_nulls()
+        .with_columns(
+            [
+                pl.col("fecha").alias("start_date"),
+                pl.col("fecha").alias("end_date"),
+                pl.lit(type_concept).alias("type_concept"),
+            ]
+        )
+        .select(["person_id", "start_date", "end_date", "type_concept"])
+        .unique()
+    )
 
 
-def remove_end_date(table: pa.Table) -> pa.Table:
+def remove_end_date(table: pl.DataFrame) -> pl.DataFrame:
     """
     Remove the end_date column and use start_date as the new end_date.
 
-    This function is designed to handle files where the end_date is not relevant,
-    treating the event as a single-day occurrence.
-
     Parameters
     ----------
-    filename : str
-        Path to the Parquet file to be processed.
+    table : pl.DataFrame
+        Input Polars DataFrame.
 
     Returns
     -------
-    pa.Table
-        A PyArrow table with the end_date column removed and replaced by start_date.
+    pl.DataFrame
+        DataFrame with end_date replaced by start_date.
     """
-    table = table.drop("end_date")
-    return table.add_column(2, "end_date", table["start_date"])
+    return table.with_columns(pl.col("start_date").alias("end_date"))
 
 
 # -- Definition of transformations
