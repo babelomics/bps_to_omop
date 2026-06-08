@@ -619,7 +619,7 @@ def process_visit_table(data_dir: str | Path, params_visit: dict):
 
     # -- Generate the visit_detail and visit_occurrence tables --------
     visit_detail, visit_occurrence = build_visit_occurrence(
-        table, verbose=1, n_iter_max=10
+        table, verbose=1, n_iter_max=10000
     )
 
     # -- Save to parquet ----------------------------------------------
