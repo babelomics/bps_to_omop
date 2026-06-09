@@ -16,6 +16,8 @@ import numpy as np
 import pandas as pd
 import polars as pl
 import pytest
+from joblib import Parallel, delayed
+from polars.testing import assert_frame_equal
 
 from bps_to_omop.visit import (
     assign_visit_occurrence_id,
@@ -27,6 +29,7 @@ from bps_to_omop.visit import (
     identify_next_main_visits,
     identify_not_contained_rows,
     identify_partial_rows,
+    remap_visit_detail_ids,
     update_contained_rows,
     update_not_contained_rows,
     update_partial_rows,
@@ -72,11 +75,31 @@ def make_df(rows: list[tuple]) -> pl.DataFrame:
 
 
 def run_pipeline(rows: list[tuple]) -> tuple[pl.DataFrame, pl.DataFrame]:
-    """Run the full pipeline on a list of (person_id, start, end, type) rows."""
+    """Run the serial pipeline on a list of (person_id, start, end, type) rows."""
     df = make_df(rows)
     df = build_visit_occurrence(df)
     visit_detail, visit_occurrence = finalize_visit_tables(df)
     return visit_detail, visit_occurrence
+
+
+def run_pipeline_parallel(
+    df: pl.DataFrame, n_jobs: int = 2
+) -> tuple[pl.DataFrame, pl.DataFrame]:
+    """Run the parallel pipeline on an already-built DataFrame."""
+    groups = [group for _, group in df.group_by("person_id")]
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(build_visit_occurrence)(group) for group in groups
+    )
+    df = pl.concat(results)
+    return finalize_visit_tables(df)
+
+
+def assert_frames_equal_unordered(df1: pl.DataFrame, df2: pl.DataFrame) -> None:
+    """Assert two DataFrames are equal regardless of row order."""
+    sort_cols = [c for c in df1.columns if c in df2.columns]
+    df1_sorted = df1.sort(sort_cols)
+    df2_sorted = df2.sort(sort_cols)
+    assert_frame_equal(df1_sorted, df2_sorted)
 
 
 # ---------------------------------------------------------------------------
@@ -852,3 +875,109 @@ class TestEdgeCases:
         df = make_df(rows)
         with pytest.warns(UserWarning, match="unresolved"):
             build_visit_occurrence(df, n_iter_max=2)
+
+
+# ---------------------------------------------------------------------------
+# 10. Parallelization
+# ---------------------------------------------------------------------------
+
+
+class TestParallelization:
+    """Verify that parallelizing over person_id does not alter results."""
+
+    def test_same_visit_detail_as_sequential(self):
+        """Parallel and sequential should produce identical visit_detail tables."""
+        df = make_df(REFERENCE_ROWS)
+
+        # Sequential
+        df_seq = build_visit_occurrence(df)
+        visit_detail_seq, _ = finalize_visit_tables(df_seq)
+
+        # Parallel
+        visit_detail_par, _ = run_pipeline_parallel(df)
+
+        # Drop visit_occurrence_id column since they do not need to be the same
+        visit_detail_seq = visit_detail_seq.drop("visit_occurrence_id")
+        visit_detail_par = visit_detail_par.drop("visit_occurrence_id")
+
+        assert_frames_equal_unordered(visit_detail_seq, visit_detail_par)
+
+    def test_visit_occurrence_ids_are_globally_unique(self):
+        """After parallelization, visit_occurrence_id must be unique across all persons."""
+        _, visit_occurrence = run_pipeline_parallel(make_df(REFERENCE_ROWS))
+        ids = visit_occurrence["visit_occurrence_id"].to_list()
+        assert len(ids) == len(set(ids))
+
+    def test_foreign_key_integrity(self):
+        """Every visit_occurrence_id in visit_detail must exist in visit_occurrence."""
+        visit_detail, visit_occurrence = run_pipeline_parallel(make_df(REFERENCE_ROWS))
+        valid_ids = set(visit_occurrence["visit_occurrence_id"].to_list())
+        detail_ids = set(visit_detail["visit_occurrence_id"].to_list())
+        assert detail_ids.issubset(valid_ids)
+
+
+# ---------------------------------------------------------------------------
+# 11. Remapping visits
+# ---------------------------------------------------------------------------
+
+
+class TestRemapVisitDetailIds:
+    """Test that remap_visit_detail_ids produces globally unique, consistent IDs."""
+
+    def test_visit_detail_ids_are_globally_unique(self):
+        """After remapping, visit_detail_id must be unique across all persons."""
+        df = make_df(REFERENCE_ROWS)
+        df = build_visit_occurrence(df)
+        df = remap_visit_detail_ids(df)
+        ids = df["visit_detail_id"].to_list()
+        assert len(ids) == len(set(ids))
+
+    def test_parent_ids_point_to_valid_visit_detail_ids(self):
+        """Every non-null parent_visit_detail_id must exist in visit_detail_id."""
+        df = make_df(REFERENCE_ROWS)
+        df = build_visit_occurrence(df)
+        df = remap_visit_detail_ids(df)
+        valid_ids = set(df["visit_detail_id"].to_list())
+        parent_ids = df["parent_visit_detail_id"].drop_nulls().to_list()
+        assert set(parent_ids).issubset(valid_ids)
+
+    def test_null_parent_ids_are_preserved(self):
+        """Main visits with null parent_visit_detail_id should remain null after remap."""
+        df = make_df(REFERENCE_ROWS)
+        df = build_visit_occurrence(df)
+        null_count_before = df["parent_visit_detail_id"].null_count()
+        df = remap_visit_detail_ids(df)
+        null_count_after = df["parent_visit_detail_id"].null_count()
+        assert null_count_before == null_count_after
+
+    def test_row_count_unchanged(self):
+        """Remapping should not add or drop any rows."""
+        df = make_df(REFERENCE_ROWS)
+        df = build_visit_occurrence(df)
+        n_before = len(df)
+        df = remap_visit_detail_ids(df)
+        assert len(df) == n_before
+
+    def test_parent_child_relationship_preserved(self):
+        """A child row's parent_visit_detail_id should point to a row with an
+        earlier or equal start datetime within the same person."""
+        df = make_df(REFERENCE_ROWS)
+        df = build_visit_occurrence(df)
+        df = remap_visit_detail_ids(df)
+
+        # Build a lookup of visit_detail_id -> start_datetime
+        id_to_start = dict(
+            zip(
+                df["visit_detail_id"].to_list(),
+                df["visit_detail_start_datetime"].to_list(),
+            )
+        )
+
+        child_rows = df.filter(pl.col("parent_visit_detail_id").is_not_null())
+        for row in child_rows.iter_rows(named=True):
+            parent_start = id_to_start[row["parent_visit_detail_id"]]
+            assert parent_start <= row["visit_detail_start_datetime"], (
+                f"Parent start {parent_start} is after child start "
+                f"{row['visit_detail_start_datetime']} for visit_detail_id "
+                f"{row['visit_detail_id']}"
+            )
