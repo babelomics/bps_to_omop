@@ -509,6 +509,60 @@ def assign_visit_occurrence_id(visit_occurrence):
     )
 
 
+def remap_visit_detail_ids(df: pl.DataFrame) -> pl.DataFrame:
+    """Remap visit_detail_id and parent_visit_detail_id to globally unique values.
+
+    If IDs are assigned per-person during parallel processing, they are
+    only unique within a person. This function builds a composite mapping on
+    (person_id, old_visit_detail_id) -> new_global_id and applies it to both
+    columns, preserving null parent_visit_detail_id values for main visits.
+
+    Parameters
+    ----------
+    df : pl.DataFrame
+        DataFrame containing person_id, visit_detail_id, and
+        parent_visit_detail_id columns.
+
+    Returns
+    -------
+    pl.DataFrame
+        DataFrame with globally unique visit_detail_id and
+        parent_visit_detail_id values.
+    """
+    # Build mapping: (person_id, old visit_detail_id) -> new global id
+    id_mapping = (
+        df.select("person_id", "visit_detail_id")
+        .unique()
+        .sort(["person_id", "visit_detail_id"])
+        .with_columns(visit_detail_id_new=pl.int_range(pl.len()))
+    )
+
+    # Remap visit_detail_id
+    df = (
+        df.join(id_mapping, on=["person_id", "visit_detail_id"])
+        .drop("visit_detail_id")
+        .rename({"visit_detail_id_new": "visit_detail_id"})
+    )
+
+    # Remap parent_visit_detail_id using the same mapping
+    df = (
+        df.join(
+            id_mapping.rename(
+                {
+                    "visit_detail_id": "parent_visit_detail_id",
+                    "visit_detail_id_new": "parent_visit_detail_id_new",
+                }
+            ),
+            on=["person_id", "parent_visit_detail_id"],
+            how="left",
+        )
+        .drop("parent_visit_detail_id")
+        .rename({"parent_visit_detail_id_new": "parent_visit_detail_id"})
+    )
+
+    return df
+
+
 def build_visit_occurrence(df, verbose=0, n_iter_max=1000):
     # -- Initialization --
     # Get the core of the visit_detail table
@@ -562,6 +616,9 @@ def build_visit_occurrence(df, verbose=0, n_iter_max=1000):
 def finalize_visit_tables(df):
     # Assign an unique visit_occurrence_id only to main_visits
     df = assign_visit_occurrence_id(df)
+
+    # Remap visit_detail_id and parent_visit_detail_id to global values
+    df = remap_visit_detail_ids(df)
 
     # Drop the extra helper columns
     df = df.drop(
