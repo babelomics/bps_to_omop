@@ -110,6 +110,11 @@ REFERENCE_ROWS = [
     # -- Person 4: duplicate row, only one main visit --
     (4, "2022-03-01", "2022-04-01", 1),
     (4, "2022-03-01", "2022-04-01", 2),
+    # -- Person 4: 2+ consecutives visits that share start-end
+    # We are considering this independent visits
+    (5, "2020-01-01 01:00", "2020-02-01 01:00", 1),
+    (5, "2020-02-01 01:00", "2020-03-01 01:00", 2),
+    (5, "2020-03-01 01:00", "2020-04-01 01:00", 2),
 ]
 
 
@@ -603,7 +608,7 @@ class TestBuildVisitOccurrenceIntegration:
 
     def test_visit_occurrence_row_count(self, results):
         _, visit_occurrence = results
-        assert visit_occurrence.shape[0] == 9
+        assert visit_occurrence.shape[0] == 12
 
     def test_visit_detail_row_count(self, results):
         visit_detail, _ = results
@@ -614,7 +619,33 @@ class TestBuildVisitOccurrenceIntegration:
     def test_visit_detail_occurrence_id_assignment(self, results):
         visit_detail, _ = results
         expected = pl.Series(
-            [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 5, 6, 7, 8, 8]
+            [
+                0,
+                0,
+                0,
+                0,
+                0,
+                1,
+                1,
+                1,
+                1,
+                1,
+                2,
+                2,
+                2,
+                3,
+                3,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                8,
+                9,
+                10,
+                11,
+            ]
         )
         assert (visit_detail["visit_occurrence_id"] == expected).all()
 
@@ -622,7 +653,7 @@ class TestBuildVisitOccurrenceIntegration:
 
     def test_visit_occurrence_person_ids(self, results):
         _, visit_occurrence = results
-        expected = pl.Series([1, 1, 1, 1, 2, 2, 3, 3, 4])
+        expected = pl.Series([1, 1, 1, 1, 2, 2, 3, 3, 4, 5, 5, 5])
         assert (visit_occurrence["person_id"] == expected).all()
 
     # --- visit_occurrence start datetimes ---
@@ -640,6 +671,9 @@ class TestBuildVisitOccurrenceIntegration:
                 "2021-02-01 00:00:00",
                 "2021-03-01 00:00:00",
                 "2022-03-01 00:00:00",
+                "2020-01-01 01:00:00",
+                "2020-02-01 01:00:00",
+                "2020-03-01 01:00:00",
             ]
         ).str.to_datetime()
         assert (visit_occurrence["visit_start_datetime"] == expected).all()
@@ -659,6 +693,9 @@ class TestBuildVisitOccurrenceIntegration:
                 "2021-02-01 00:00:00",
                 "2021-03-01 00:00:00",
                 "2022-04-01 00:00:00",
+                "2020-02-01 01:00:00",
+                "2020-03-01 01:00:00",
+                "2020-04-01 01:00:00",
             ]
         ).str.to_datetime()
         assert (visit_occurrence["visit_end_datetime"] == expected).all()

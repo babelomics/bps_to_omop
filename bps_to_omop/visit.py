@@ -395,7 +395,7 @@ def identify_partial_rows(df):
     return df.with_columns(
         is_partial=pl.when(
             (pl.col("main_visit") == "Unknown")
-            & (pl.col("visit_detail_start_datetime") <= pl.col("visit_end_datetime"))
+            & (pl.col("visit_detail_start_datetime") < pl.col("visit_end_datetime"))
             & (pl.col("visit_detail_end_datetime") > pl.col("visit_end_datetime"))
         )
         .then(True)
