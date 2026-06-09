@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 import polars as pl
+from joblib import Parallel, delayed
 
 from bps_to_omop.omop_schemas import omop_schemas
 from bps_to_omop.utils import (
@@ -605,8 +606,27 @@ def finalize_visit_tables(df):
     return visit_detail, visit_occurrence
 
 
-def process_visit_table(data_dir: str | Path, params_visit: dict):
+def process_visit_table(
+    data_dir: str | Path,
+    params_visit: dict,
+    n_jobs: int = -2,
+) -> None:
+    """Build and save the VISIT_DETAIL and VISIT_OCCURRENCE parquet tables.
 
+    Loads raw visit files, processes each person's visits in parallel, then
+    finalizes and saves the resulting tables.
+
+    Parameters
+    ----------
+    data_dir : str | Path
+        Root directory where input data is located and output will be saved.
+    params_visit : dict
+        Configuration dictionary. Must contain an 'output_dir' key specifying
+        the subdirectory where parquet files will be written.
+    n_jobs : int, optional
+        Number of parallel jobs for joblib. -1 uses all available cores,
+        -2 leaves one core free. Default is -2.
+    """
     # -- Load parameters ----------------------------------------------
     print("Reading parameters...")
 
@@ -621,8 +641,17 @@ def process_visit_table(data_dir: str | Path, params_visit: dict):
     # -- Load each file and prepare it --------------------------------
     table = preprocess_files(params_visit, data_dir, verbose=1)
 
-    # -- Generate the visit_detail and visit_occurrence tables --------
-    df = build_visit_occurrence(table, verbose=1, n_iter_max=10000)
+    # -- Split by person_id and process in parallel -------------------
+    groups = [group for _, group in table.group_by("person_id")]
+    print(f"Processing {len(groups)} persons using {n_jobs} jobs...")
+
+    results: list[pl.DataFrame] = Parallel(n_jobs=n_jobs)(
+        delayed(build_visit_occurrence)(group, verbose=0, n_iter_max=10000)
+        for group in groups
+    )
+
+    # -- Reassemble and finalize --------------------------------------
+    df = pl.concat(results)
     visit_detail, visit_occurrence = finalize_visit_tables(df)
 
     # -- Save to parquet ----------------------------------------------
