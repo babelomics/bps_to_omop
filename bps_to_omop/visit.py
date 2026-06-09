@@ -11,10 +11,9 @@ http://omop-erd.surge.sh/omop_cdm/tables/VISIT_OCCURRENCE.html
 http://omop-erd.surge.sh/omop_cdm/tables/VISIT_DETAIL.html
 """
 
-import warnings
-
 # %%
-from os import makedirs
+import os
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -664,10 +663,22 @@ def finalize_visit_tables(df):
     return visit_detail, visit_occurrence
 
 
+def _process_batch(batch_df: pl.DataFrame, n_iter_max: int) -> pl.DataFrame:
+    """Process a batch of persons (multiple person_ids) in a single worker."""
+    groups = [group for _, group in batch_df.group_by("person_id")]
+    return pl.concat(
+        [
+            build_visit_occurrence(group, verbose=0, n_iter_max=n_iter_max)
+            for group in groups
+        ]
+    )
+
+
 def process_visit_table(
     data_dir: str | Path,
     params_visit: dict,
     n_jobs: int = -2,
+    batch_size: int = 1000,
 ) -> None:
     """Build and save the VISIT_DETAIL and VISIT_OCCURRENCE parquet tables.
 
@@ -684,28 +695,46 @@ def process_visit_table(
     n_jobs : int, optional
         Number of parallel jobs for joblib. -1 uses all available cores,
         -2 leaves one core free. Default is -2.
+    batch_size : int, optional
+        Number of people in each processing batch. Default is 1000.
     """
-    # -- Load parameters ----------------------------------------------
-    print("Reading parameters...")
-
-    # -- Load yaml file and related info
+    # -- Manage folders -----------------------------------------------
     output_dir = params_visit["output_dir"]
 
     # Convert to Path
     data_dir = Path(data_dir)
     # Create directory
-    makedirs(data_dir / output_dir, exist_ok=True)
+    os.makedirs(data_dir / output_dir, exist_ok=True)
+
+    # -- Print runtime configuration ----------------------------------
+    polars_threads = pl.thread_pool_size()
+    actual_n_jobs = os.cpu_count() if n_jobs == -1 else n_jobs
+    print(
+        f"Runtime configuration:\n"
+        f"  n_jobs:          {actual_n_jobs} workers\n"
+        f"  polars_threads:  {polars_threads} threads/worker\n"
+        f"  total threads:   {actual_n_jobs * polars_threads}\n"
+        f"  available cores: {os.cpu_count()}"
+    )
 
     # -- Load each file and prepare it --------------------------------
     table = preprocess_files(params_visit, data_dir, verbose=1)
 
-    # -- Split by person_id and process in parallel -------------------
-    groups = [group for _, group in table.group_by("person_id")]
-    print(f"Processing {len(groups)} persons using {n_jobs} jobs...")
-    results = Parallel(n_jobs=n_jobs)(
-        delayed(build_visit_occurrence)(group, verbose=0, n_iter_max=10000)
-        for group in tqdm(groups, desc="Processing persons", unit="person")
+    # -- Split into batches -------------------------------------------
+    person_ids = table["person_id"].unique().to_list()
+    batches = [
+        table.filter(pl.col("person_id").is_in(person_ids[i : i + batch_size]))
+        for i in range(0, len(person_ids), batch_size)
+    ]
+
+    print(
+        f"Processing {len(person_ids)} persons in {len(batches)} batches of ~{batch_size}..."
     )
+    results = Parallel(n_jobs=n_jobs)(
+        delayed(_process_batch)(batch, n_iter_max=10000)
+        for batch in tqdm(batches, desc="Processing batches", unit="batch")
+    )
+
     # -- Reassemble and finalize --------------------------------------
     df = pl.concat(results)
     visit_detail, visit_occurrence = finalize_visit_tables(df)
