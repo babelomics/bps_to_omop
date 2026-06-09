@@ -20,6 +20,7 @@ from typing import Any
 
 import polars as pl
 from joblib import Parallel, delayed
+from tqdm import tqdm
 
 from bps_to_omop.omop_schemas import omop_schemas
 from bps_to_omop.utils import (
@@ -701,12 +702,10 @@ def process_visit_table(
     # -- Split by person_id and process in parallel -------------------
     groups = [group for _, group in table.group_by("person_id")]
     print(f"Processing {len(groups)} persons using {n_jobs} jobs...")
-
-    results: list[pl.DataFrame] = Parallel(n_jobs=n_jobs)(
+    results = Parallel(n_jobs=n_jobs)(
         delayed(build_visit_occurrence)(group, verbose=0, n_iter_max=10000)
-        for group in groups
+        for group in tqdm(groups, desc="Processing persons", unit="person")
     )
-
     # -- Reassemble and finalize --------------------------------------
     df = pl.concat(results)
     visit_detail, visit_occurrence = finalize_visit_tables(df)

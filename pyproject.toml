@@ -43,6 +43,7 @@ pyyaml = "*"
 quarto = "*"
 polars = "*"
 joblib = "*"
+tqdm = "*"
 
 [tool.pixi.pypi-dependencies]
 fireducks = "*"
