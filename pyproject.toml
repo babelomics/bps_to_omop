@@ -41,8 +41,8 @@ jupyter = "*"
 notebook = "*"
 pyyaml = "*"
 quarto = "*"
-dask = "*"
 polars = "*"
+joblib = "*"
 
 [tool.pixi.pypi-dependencies]
 fireducks = "*"
