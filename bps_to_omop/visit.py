@@ -555,6 +555,10 @@ def build_visit_occurrence(df, verbose=0, n_iter_max=1000):
             f"{n_unknown} rows still unresolved after {n_iter_max} iterations."
         )
 
+    return df
+
+
+def finalize_visit_tables(df):
     # Assign an unique visit_occurrence_id only to main_visits
     df = assign_visit_occurrence_id(df)
 
@@ -618,9 +622,8 @@ def process_visit_table(data_dir: str | Path, params_visit: dict):
     table = preprocess_files(params_visit, data_dir, verbose=1)
 
     # -- Generate the visit_detail and visit_occurrence tables --------
-    visit_detail, visit_occurrence = build_visit_occurrence(
-        table, verbose=1, n_iter_max=10000
-    )
+    df = build_visit_occurrence(table, verbose=1, n_iter_max=10000)
+    visit_detail, visit_occurrence = finalize_visit_tables(df)
 
     # -- Save to parquet ----------------------------------------------
     print("Saving... ", end="")
