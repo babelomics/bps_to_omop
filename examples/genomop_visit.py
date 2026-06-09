@@ -37,9 +37,9 @@ if __name__ == "__main__":
     data_dir = params_gen["repo_data_dir"]
 
     # Set paralellization params, be conservative by default
-    polars_max_threads = str(params_gen.get("polars_max_threads", "4"))
+    polars_max_threads = params_gen.get("polars_max_threads", "4")
     n_jobs = params_gen.get("n_jobs", 2)
 
     # Create output
-    os.environ["POLARS_MAX_THREADS"] = polars_max_threads
+    os.environ["POLARS_MAX_THREADS"] = str(polars_max_threads)
     visit.process_visit_table(data_dir, params_visit, n_jobs=n_jobs)
