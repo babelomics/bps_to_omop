@@ -22,6 +22,7 @@ from bps_to_omop.visit import (
     build_visit_detail,
     build_visit_detail_extended,
     build_visit_occurrence,
+    finalize_visit_tables,
     identify_contained_rows,
     identify_next_main_visits,
     identify_not_contained_rows,
@@ -73,7 +74,9 @@ def make_df(rows: list[tuple]) -> pl.DataFrame:
 def run_pipeline(rows: list[tuple]) -> tuple[pl.DataFrame, pl.DataFrame]:
     """Run the full pipeline on a list of (person_id, start, end, type) rows."""
     df = make_df(rows)
-    return build_visit_occurrence(df)
+    df = build_visit_occurrence(df)
+    visit_detail, visit_occurrence = finalize_visit_tables(df)
+    return visit_detail, visit_occurrence
 
 
 # ---------------------------------------------------------------------------
@@ -601,7 +604,8 @@ class TestBuildVisitOccurrenceIntegration:
     @pytest.fixture(scope="class")
     def results(self):
         df = make_df(REFERENCE_ROWS)
-        visit_detail, visit_occurrence = build_visit_occurrence(df)
+        df = build_visit_occurrence(df)
+        visit_detail, visit_occurrence = finalize_visit_tables(df)
         return visit_detail, visit_occurrence
 
     # --- Shape ---
