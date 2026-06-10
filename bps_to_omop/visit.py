@@ -22,13 +22,7 @@ from joblib import Parallel, delayed
 from tqdm import tqdm
 
 from bps_to_omop.omop_schemas import omop_schemas
-from bps_to_omop.utils import (
-    common,
-    format_to_omop,
-    process_dates,
-    pyarrow_utils,
-    transform_table,
-)
+from bps_to_omop.utils import format_to_omop, transform_table
 
 
 # %%
@@ -738,6 +732,11 @@ def process_visit_table(
     # -- Reassemble and finalize --------------------------------------
     df = pl.concat(results)
     visit_detail, visit_occurrence = finalize_visit_tables(df)
+
+    visit_detail = format_to_omop.format_table(table, omop_schemas["VISIT_DETAIL"])
+    visit_occurrence = format_to_omop.format_table(
+        table, omop_schemas["VISIT_OCCURRENCE"]
+    )
 
     # -- Save to parquet ----------------------------------------------
     print("Saving... ", end="")
