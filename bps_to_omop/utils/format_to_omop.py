@@ -2,14 +2,27 @@
 General utilities to format tables into an OMOP-CDM structure.
 """
 
+from datetime import date, datetime
+
+import polars as pl
 import pyarrow as pa
 
-import bps_to_omop.utils.pyarrow_utils as pa_utils
+POLARS_NON_NULLABLE_DEFAULTS = {
+    pl.Int64: 0,
+    pl.Float64: 0.0,
+    pl.String: "",
+    pl.Date: date(1970, 1, 1),
+    pl.Datetime("us"): datetime(1970, 1, 1),
+}
+
+
+def _arrow_type_to_polars(arrow_type: pa.DataType) -> pl.DataType:
+    return pl.from_arrow(pa.array([], type=arrow_type)).dtype
 
 
 def fill_omop_table(
-    table: pa.Table, omop_schema: pa.Schema, verbose: int = 0
-) -> pa.Table:
+    df: pl.DataFrame, omop_schema: pa.Schema, verbose: int = 0
+) -> pl.DataFrame:
     """
     Fill missing columns in a PyArrow table to match the OMOP Common Data Model schema.
 
@@ -29,7 +42,7 @@ def fill_omop_table(
 
     Returns
     -------
-    pa.Table
+    pl.DataFrame
         A PyArrow table with all required columns as per the OMOP schema.
 
     Notes
@@ -41,109 +54,87 @@ def fill_omop_table(
     if verbose > 0:
         print("Adding missing columns...")
 
-    table_size = len(table)
-    missing_fields = [
-        field for field in omop_schema if field.name not in table.column_names
-    ]
+    if len(df) == 0:
+        polars_schema = {
+            field.name: _arrow_type_to_polars(field.type) for field in omop_schema
+        }
+        return pl.DataFrame(schema=polars_schema)
 
-    for field in missing_fields:
+    new_cols = []
+    for field in omop_schema:
+        if field.name in df.columns:
+            continue
+
+        polars_type = _arrow_type_to_polars(field.type)
+
         if verbose > 0:
             print(
                 f"  Adding: {field.name}, Type: {field.type}, Nullable: {field.nullable}"
             )
 
-        if field.type not in [pa.int64(), pa.string(), pa.float64()]:
-            print(
-                f"Unhandled field type {field.type} for field {field.name}. "
-                f"Defaulting to string type."
-            )
-            field = field.with_type(pa.string())
-
-        default_value = (
-            None
-            if field.nullable
-            else (
-                0
-                if field.type == pa.int64()
-                else 0.0 if field.type == pa.float64() else ""
-            )
-        )
-
         if field.nullable:
-            array = (
-                pa_utils.create_null_int_array(table_size)
-                if field.type == pa.int64()
-                else (
-                    pa_utils.create_null_double_array(table_size)
-                    if field.type == pa.float64()
-                    else pa_utils.create_null_str_array(table_size)
-                )
-            )
+            col = pl.lit(None, dtype=polars_type).alias(field.name)
         else:
-            array = (
-                pa_utils.create_uniform_int_array(table_size, default_value)
-                if field.type == pa.int64()
-                else (
-                    pa_utils.create_uniform_double_array(table_size, default_value)
-                    if field.type == pa.float64()
-                    else pa_utils.create_uniform_str_array(table_size, default_value)
-                )
-            )
+            default = POLARS_NON_NULLABLE_DEFAULTS[polars_type]
+            col = pl.lit(default, dtype=polars_type).alias(field.name)
 
-        table = table.append_column(field.name, array)
+        new_cols.append(col)
 
-    return table
+    if new_cols:
+        df = df.with_columns(new_cols)
+
+    return df
 
 
-def reorder_omop_table(table: pa.Table, omop_schema: pa.Schema) -> pa.Table:
+def reorder_omop_table(df: pl.DataFrame, omop_schema: pa.Schema) -> pl.DataFrame:
     """
-    Reorder columns of a PyArrow table to match the OMOP Common Data Model schema.
+    Reorder columns  to match the OMOP Common Data Model schema.
 
     Parameters
     ----------
-    table : pa.Table
-        The input PyArrow table to be reordered.
+    df : pl.DataFrame
+        The input dataframe to be reordered.
     omop_schema : pa.Schema
         The target OMOP schema that defines the desired column order.
 
     Returns
     -------
-    pa.Table
-        A new PyArrow table with columns reordered to match the OMOP schema.
+    pl.DataFrame
+        A new datframe with columns reordered to match the OMOP schema.
 
     Notes
     -----
     - This function assumes that all columns in the OMOP schema are present in the input table.
     - Columns in the input table that are not in the OMOP schema will be excluded from the output.
     """
-    column_order = [field.name for field in omop_schema]
-    return table.select(column_order)
+    return df.select([field.name for field in omop_schema])
 
 
-def format_table(table: pa.Table, schema: pa.Schema) -> pa.Table:
+def format_table(df: pl.DataFrame, omop_schema: pa.Schema) -> pl.DataFrame:
     """Formats table to provided schema, adding, removing and renaming
     columns as necessary.
 
     Parameters
     ----------
-    df : pa.Table
+    df : pl.DataFrame
         Input table to be formatted
     schema : dict
         Schema information
 
     Returns
     -------
-    pa.Table
+    pl.DataFrame
         Formatted table
     """
-    # -- Finishing up
-    # Fill other fields
-    table = fill_omop_table(table, schema)
-    table = reorder_omop_table(table, schema)
-    # Cast to schema
-    table = table.cast(schema)
+    if isinstance(df, pa.Table):
+        df = pl.from_arrow(df)
 
-    return table
+    df = fill_omop_table(df, omop_schema)
+    df = reorder_omop_table(df, omop_schema)
+    df = df.cast(
+        {field.name: _arrow_type_to_polars(field.type) for field in omop_schema}
+    )
+    return df
 
 
 def rename_table_columns(table: pa.Table, col_map: dict) -> pa.Table:
