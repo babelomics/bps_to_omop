@@ -4,6 +4,7 @@ Tests for omop_format utilities: fill_omop_table, reorder_omop_table, format_tab
 
 from datetime import date, datetime
 
+import pandas as pd
 import polars as pl
 import pyarrow as pa
 import pytest
@@ -159,13 +160,6 @@ class TestFormatTable:
         assert result["name"].to_list() == ["alice", "bob"]
         assert result["score"].is_null().all()
 
-    def test_accepts_pyarrow_table_input(self):
-        arrow_table = pa.table({"person_id": pa.array([1, 2], type=pa.int64())})
-        result = format_table(arrow_table, SIMPLE_SCHEMA)
-
-        assert isinstance(result, pl.DataFrame)
-        assert result.columns == [f.name for f in SIMPLE_SCHEMA]
-
     def test_casts_to_correct_types(self):
         df = pl.DataFrame(
             {
@@ -189,3 +183,18 @@ class TestFormatTable:
 
         assert result.columns == [f.name for f in SIMPLE_SCHEMA]
         assert len(result) == 0
+
+    def test_returns_pyarrow_table_when_input_is_pyarrow(self):
+        arrow_table = pa.table({"person_id": pa.array([1, 2], type=pa.int64())})
+        result = format_table(arrow_table, SIMPLE_SCHEMA)
+        assert isinstance(result, pa.Table)
+
+    def test_returns_pandas_dataframe_when_input_is_pandas(self):
+        pd_df = pd.DataFrame({"person_id": [1, 2]})
+        result = format_table(pd_df, SIMPLE_SCHEMA)
+        assert isinstance(result, pd.DataFrame)
+
+    def test_returns_polars_dataframe_when_input_is_polars(self):
+        pl_df = pl.DataFrame({"person_id": [1, 2]})
+        result = format_table(pl_df, SIMPLE_SCHEMA)
+        assert isinstance(result, pl.DataFrame)

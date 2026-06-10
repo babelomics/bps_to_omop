@@ -4,6 +4,7 @@ General utilities to format tables into an OMOP-CDM structure.
 
 from datetime import date, datetime
 
+import pandas as pd
 import polars as pl
 import pyarrow as pa
 
@@ -13,6 +14,16 @@ POLARS_NON_NULLABLE_DEFAULTS = {
     pl.String: "",
     pl.Date: date(1970, 1, 1),
     pl.Datetime("us"): datetime(1970, 1, 1),
+}
+
+CONVERTERS = {
+    pa.Table: pl.from_arrow,
+    pd.DataFrame: pl.from_pandas,
+}
+
+BACK_CONVERTERS = {
+    pa.Table: lambda df: df.to_arrow(),
+    pd.DataFrame: lambda df: df.to_pandas(),
 }
 
 
@@ -126,14 +137,20 @@ def format_table(df: pl.DataFrame, omop_schema: pa.Schema) -> pl.DataFrame:
     pl.DataFrame
         Formatted table
     """
-    if isinstance(df, pa.Table):
-        df = pl.from_arrow(df)
+    start_type = type(df)
+
+    if start_type in CONVERTERS:
+        df = CONVERTERS[start_type](df)
 
     df = fill_omop_table(df, omop_schema)
     df = reorder_omop_table(df, omop_schema)
     df = df.cast(
         {field.name: _arrow_type_to_polars(field.type) for field in omop_schema}
     )
+
+    if start_type in BACK_CONVERTERS:
+        df = BACK_CONVERTERS[start_type](df)
+
     return df
 
 
