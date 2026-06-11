@@ -708,7 +708,8 @@ def process_visit_table(
         f"  n_jobs:          {actual_n_jobs} workers\n"
         f"  polars_threads:  {polars_threads} threads/worker\n"
         f"  total threads:   {actual_n_jobs * polars_threads}\n"
-        f"  available cores: {os.cpu_count()}"
+        f"  available cores: {os.cpu_count()}",
+        flush=True,
     )
 
     # -- Load each file and prepare it --------------------------------
