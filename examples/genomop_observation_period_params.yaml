@@ -1,4 +1,3 @@
-input_dir: preomop/03_omop_initial/
-output_dir: preomop/04_omop_intermediate/OBSERVATION_PERIOD/
 visit_occurrence_dir: rare/04_omop_intermediate/VISIT_OCCURRENCE/
+output_dir: preomop/04_omop_intermediate/OBSERVATION_PERIOD/
 n_days: 365
