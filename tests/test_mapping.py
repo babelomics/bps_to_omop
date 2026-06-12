@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 import pytest
-from utils.map_to_omop import (
+
+from bps_to_omop.utils.map_to_omop import (
     map_source_concept_id,
     map_source_value,
     update_concept_mappings,

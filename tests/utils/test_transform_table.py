@@ -4,7 +4,12 @@ from datetime import date
 
 import polars as pl
 import pytest
-from utils.transform_table import apply_transformation, melt_start_end, remove_end_date
+
+from bps_to_omop.utils.transform_table import (
+    apply_transformation,
+    melt_start_end,
+    remove_end_date,
+)
 
 # ---------------------------------------------------------------------------
 # Fixtures

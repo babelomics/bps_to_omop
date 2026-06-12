@@ -9,7 +9,12 @@ import polars as pl
 import pyarrow as pa
 import pytest
 from pyarrow import date32, float64, int64, schema, string, timestamp
-from utils.format_to_omop import fill_omop_table, format_table, reorder_omop_table
+
+from bps_to_omop.utils.format_to_omop import (
+    fill_omop_table,
+    format_table,
+    reorder_omop_table,
+)
 
 # ---------------------------------------------------------------------------
 # Fixtures

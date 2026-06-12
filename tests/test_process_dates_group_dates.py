@@ -3,7 +3,7 @@ import sys
 import pandas as pd
 
 sys.path.append("../bps_to_omop/")
-from utils.process_dates import group_dates
+from bps_to_omop.utils.process_dates import group_dates
 
 
 # == TESTS =============================================================================
