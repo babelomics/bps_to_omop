@@ -4,14 +4,15 @@ table of an OMOP-CDM database instance.
 
 See:
 
-https://ohdsi.github.io/CommonDataModel/cdm54.html#measurement
+https://ohdsi.github.io/CommonDataModel/cdm54.html#provider
 
-http://omop-erd.surge.sh/omop_cdm/tables/MEASUREMENT.html
+http://omop-erd.surge.sh/omop_cdm/tables/PROVIDER.html
 """
 
 from os import makedirs
 from pathlib import Path
 
+import polars as pl
 import numpy as np
 import pandas as pd
 import pyarrow as pa
@@ -21,14 +22,14 @@ from bps_to_omop.omop_schemas import omop_schemas
 from bps_to_omop.utils import common, format_to_omop, map_to_omop
 
 
-def preprocess_files(data_dir: Path, params_data: dict) -> pd.DataFrame:
+def preprocess_files(data_dir: Path, params_provider: dict) -> pd.DataFrame:
     """Preprocess all files to create an unique dataframe
 
     Parameters
     ----------
     data_dir : Path
         Path to the upstream location of the data files
-    params_data : dict
+    params_provider : dict
         dictionary with the parameters for the preprocessing
 
     Returns
@@ -37,51 +38,87 @@ def preprocess_files(data_dir: Path, params_data: dict) -> pd.DataFrame:
         Dataframe with all information joined together
     """
 
-    print("Preprocessing files...")
-    input_dir = params_data["input_dir"]
-    input_files = params_data["input_files"]
-    column_name_map = params_data["column_name_map"]
-    column_values_map = params_data["column_values_map"]
+    input_dir = params_provider["input_dir"]
+    input_files = params_provider["input_files"]
+    column_name_map = params_provider.get("column_name_map", {}) or {}
+    column_values_map = params_provider.get("column_values_map", {}) or {}
+    constant_values = params_provider.get("constant_values", {}) or {}
 
     # == Load file and prepare it =====================================================================
     print("Preprocessing files...")
     provider = []
     for f in input_files:
         print(f" Processing {f}: ")
-        tmp = pd.read_parquet(data_dir / input_dir / f)
+        tmp_df = pl.read_parquet(data_dir / input_dir / f)
 
-        # Rename columns
-        column_name_map = {**column_name_map[f]}
-        tmp = tmp.rename(column_name_map, axis=1)
+        # -- Rename columns -------------------------------------------
+        # First ensure we have a dict with the relevant info
+        tmp_colmap = column_name_map.get(f, {})
+
+        # Ensure there is at least a column that was mapped to specialty_source_value
+        assert (
+            "specialty_source_value" in tmp_colmap.values()
+        ), f"File {f} has no map to location_id"
+
+        # Apply changes
+        tmp_df = tmp_df.rename(tmp_colmap)
 
         # Keep only columns that belong in a PROVIDER table
-        existing_cols = [
-            col for col in omop_schemas["PROVIDER"].names if col in tmp.columns
+        provider_cols = [
+            col for col in omop_schemas["PROVIDER"].names if col in tmp_df.columns
         ]
-        tmp = tmp.loc[:, existing_cols]
 
-        # Remove duplicates
-        tmp = tmp.drop_duplicates()
+        # Reduce size to essentials
+        tmp_df = tmp_df.select(provider_cols).unique()
 
-        # Retrieve the concept_id using the supplied parameters
-        map_dict = column_values_map[f]["specialty_source_value"]
-        tmp["specialty_concept_id"] = tmp["specialty_source_value"].map(map_dict)
+        # -- Apply values mapping -------------------------------------
+        tmp_valmap = column_values_map.get(f, {})
+        if tmp_valmap:
+            # Loop over column_values to create all changes at once later
+            expressions = []
+            for source_column, mapping in tmp_valmap.items():
+                # Create the new concept_id name
+                concept_column = source_column.replace("_source_value", "_concept_id")
+
+                # Create the expression to use later
+                expressions.append(
+                    pl.col(source_column)
+                    .replace(mapping, default=None)
+                    .alias(concept_column)
+                )
+
+        # -- Add Constant values --------------------------------------
+        tmp_cteval = constant_values.get(f, {})
+        if tmp_cteval:
+            # Loop over constant_values to create all changes at once later
+            expressions = []
+            for col_name, col_value in tmp_cteval.items():
+                # Create the expression to use later
+                expressions.append(pl.lit(col_value).alias(col_name))
+            # Create the new columns
+            tmp_df = tmp_df.with_columns(expressions)
+
+        # -- Format the table -----------------------------------------
+        tmp_df = format_to_omop.format_table(tmp_df, omop_schemas["PROVIDER"])
 
         # Append to table
-        provider.append(tmp)
+        provider.append(tmp_df)
 
     # Create the table
-    provider = pd.concat(provider)
+    provider = pl.concat(provider)
+
+    # Remove duplicates between tables
+    provider = provider.unique()
 
     # Generate the provider_id
-    provider["provider_id"] = pa.array(range(len(provider)))
+    provider = provider.drop("provider_id").with_row_index("provider_id")
 
     return provider
 
 
 def check_unmapped_values(
-    df: pd.DataFrame, params_data: dict, test_list: list
-) -> pd.DataFrame:
+    df: pl.DataFrame, params_data: dict, test_list: list
+) -> pl.DataFrame:
     """Check and handle unmapped values in the groups of columns specified by
     test_list.
 
@@ -105,49 +142,45 @@ def check_unmapped_values(
 
     for col in test_list:
         # Check for unmapped values
-        unmapped_values = map_to_omop.find_unmapped_values(
-            df, f"{col}_source_value", f"{col}_concept_id"
+        unmapped_values = (
+            df.filter(pl.col(f"{col}_source_concept_id").is_null())
+            .get_column(f"{col}_source_value")
+            .to_list()
         )
         # Apply mapping if needed
         if len(unmapped_values) > 0:
-            print(f" No concept ID found for {col} source values: {[*unmapped_values]}")
+            preview = unmapped_values[:10]
+            suffix = (
+                f" ... and {len(unmapped_values) - 10} more"
+                if len(unmapped_values) > 10
+                else ""
+            )
+            print(f" No concept ID found for {col} source values: {preview}{suffix}")
             print("  Applying custom concepts...")
-            df = map_to_omop.update_concept_mappings(
-                df,
-                f"{col}_source_value",
-                f"{col}_concept_id",
-                params_data[f"unmapped_{col}"],
+
+            map_dict = {str(k): v for k, v in params_data[f"unmapped_{col}"].items()}
+            df = df.with_columns(
+                pl.col(f"{col}_source_value")
+                .replace(map_dict, default=None)
+                .alias(f"{col}_source_concept_id")
             )
 
-            unmapped_values = map_to_omop.find_unmapped_values(
-                df, f"{col}_source_value", f"{col}_concept_id"
+            # Check for unmapped values again
+            unmapped_values = (
+                df.filter(pl.col(f"{col}_source_concept_id").is_null())
+                .get_column(f"{col}_source_value")
+                .to_list()
             )
+            preview = unmapped_values[:10]
+            suffix = (
+                f" ... and {len(unmapped_values) - 10} more"
+                if len(unmapped_values) > 10
+                else ""
+            )
+            print(f"   No concept ID found for {col} source values: {preview}{suffix}")
+            print(f"   Consider adding custom concepts to unmapped_{col}. Moving on...")
 
     return df
-
-
-def create_provider_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
-    """Creates the PROVIDER table following the OMOP-CDM schema.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Preprocessed dataframe with provider data
-    schema : pa.Schema
-        Schema information
-
-    Returns
-    -------
-    pa.Table
-        Table containing the PROVIDER table
-    """
-    print("Formatting to OMOP...")
-    table = pa.Table.from_pandas(df, preserve_index=False)
-
-    # Fill, reorder and cast to schema
-    table = format_to_omop.format_table(table, schema)
-
-    return table
 
 
 # %%
@@ -175,21 +208,17 @@ def process_provider_table(data_dir: str | Path, provider_params: dict) -> None:
     makedirs(output_path, exist_ok=True)
 
     # Load and preprocess input files
-    raw_provider_data = preprocess_files(data_dir, provider_params)
+    provider = preprocess_files(data_dir, provider_params)
 
     # Check for unmapped specialty codes
     unmapped_fields = ["specialty"]
-    validated_provider_data = check_unmapped_values(
-        raw_provider_data, provider_params, unmapped_fields
-    )
+    provider = check_unmapped_values(provider, provider_params, unmapped_fields)
 
     # Create standardized OMOP provider table
-    provider_table = create_provider_table(
-        validated_provider_data, omop_schemas["PROVIDER"]
-    )
+    provider = format_to_omop.format_table(provider, omop_schemas["PROVIDER"])
 
     # Save to parquet file
     output_file = output_path / "PROVIDER.parquet"
     print(f"Saving to {output_file}...")
-    parquet.write_table(provider_table, output_file)
+    provider.write_parquet(output_file)
     print("Done.")
