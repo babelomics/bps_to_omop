@@ -38,9 +38,16 @@ def apply_transformation(table: pl.DataFrame, params: dict, key: str) -> pl.Data
 
     # Apply each transformation function
     transformed_table = table
-    for func in params.get("transformations", {}).get(key, []):
-        transformed_table = transformations[func](transformed_table)
-
+    funcs = params["transformations"][key]
+    if isinstance(funcs, str):
+        transformed_table = transformations[funcs](transformed_table)
+    elif isinstance(funcs, list):
+        for func in params.get("transformations", {}).get(key, []):
+            transformed_table = transformations[func](transformed_table)
+    else:
+        raise ValueError(
+            "Unexpected transformations input. Use a single string or a list of strings."
+        )
     return transformed_table
 
 
