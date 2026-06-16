@@ -108,7 +108,7 @@ def preprocess_files(data_dir: Path, params_provider: dict) -> pd.DataFrame:
     provider = pl.concat(provider)
 
     # Remove duplicates between tables
-    provider = provider.unique()
+    provider = provider.unique(subset="specialty_source_value")
 
     # Generate the provider_id
     provider = provider.drop("provider_id").with_row_index("provider_id")
