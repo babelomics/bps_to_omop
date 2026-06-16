@@ -120,9 +120,7 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pl.DataF
         table = table.with_columns(concept_id.alias("visit_concept_id"))
 
         # -- PROVIDER -------------------------------------------------
-        provider_id = generate_provider_id(table, input_file, params, data_dir)
-        # Append a new column with the provider_id
-        table = table.with_columns(provider_id.alias("provider_id"))
+        table = generate_provider_id(table, input_file, params, data_dir)
 
         # -- Append at end of loop ------------------------------------
         table = table.select(columns_schema.names()).cast(columns_schema)
@@ -140,7 +138,7 @@ def generate_provider_id(
     input_file: str,
     params: dict,
     data_dir: Path,
-) -> pl.Series:
+) -> pl.DataFrame:
     """Generate a provider_id Series for the given table by mapping a source
     column to provider IDs via a reference provider table. If no provider
     mapping is configured for the given file, returns a null integer Series.
@@ -164,8 +162,8 @@ def generate_provider_id(
 
     Returns
     -------
-    pl.Series
-        A Series of Int64 provider IDs aligned to the rows of `table`.
+    pl.DataFrame
+        The original dataframe with the Int64 provider IDs.
         Rows with no match in the provider table will have a null value.
         If no provider mapping is configured for `input_file`, all values
         will be null.
@@ -180,21 +178,17 @@ def generate_provider_id(
         ((source_col, provider_col),) = source_to_provider_id[input_file].items()
 
         # Join to map source column to provider_id
-        provider_id = (
-            table.select(pl.col(source_col))
-            .join(
-                provider_table.select([provider_col, "provider_id"]),
-                left_on=source_col,
-                right_on=provider_col,
-                how="left",
-            )
-            .get_column("provider_id")
-        )
+        table_with_provider = table.join(
+            provider_table.select([provider_col, "provider_id"]),
+            left_on=source_col,
+            right_on=provider_col,
+            how="left",
+        ).get_column("provider_id")
 
     else:
-        provider_id = pl.Series("provider_id", [None] * len(table), dtype=pl.Int64)
+        table_with_provider = table.with_columns(pl.lit(None).alias("provider_id"))
 
-    return provider_id
+    return table_with_provider
 
 
 def get_visit_concept_id(
