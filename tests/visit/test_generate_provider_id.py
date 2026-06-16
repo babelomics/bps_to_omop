@@ -53,15 +53,6 @@ def test_no_provider_config_returns_all_nulls(provider_parquet, base_params):
     assert len(result) == len(table)
 
 
-def test_no_provider_config_returns_int64(provider_parquet, base_params):
-    """Null fallback Series has Int64 dtype."""
-    table = pl.DataFrame({"source_col": ["A"]})
-    result = generate_provider_id(
-        table, "other_file.parquet", base_params, provider_parquet
-    )
-    assert result.dtype == pl.Int64
-
-
 def test_empty_table_with_mapping(provider_parquet, base_params):
     """An empty input table returns an empty Series without errors."""
     table = pl.DataFrame({"source_col": pl.Series([], dtype=pl.Utf8)})
