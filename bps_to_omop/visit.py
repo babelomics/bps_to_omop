@@ -106,7 +106,7 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pl.DataF
     print("Processing:")
     for input_file in input_files:
         if verbose > 0:
-            print(f"- File: {input_file}")
+            print(f"- {input_file}")
 
         # Read and transform the input table
         table = pl.read_parquet(data_dir / input_dir / input_file)
@@ -127,7 +127,11 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pl.DataF
 
     # -- Combine and return -------------------------------------------
     # Combine all processed tables
+    if verbose > 0:
+        print(f"Concatening tables... ", end="", flush=True)
     processed_tables = pl.concat(processed_tables)
+    if verbose > 0:
+        print(f"Done!", flush=True)
 
     return processed_tables
 
@@ -708,6 +712,7 @@ def process_visit_table(
     table = preprocess_files(params_visit, data_dir, verbose=1)
 
     # -- Split into batches -------------------------------------------
+    print("Preparing batches...", flush=True)
     person_ids = table["person_id"].unique().to_list()
     batches = [
         table.filter(pl.col("person_id").is_in(person_ids[i : i + batch_size]))
@@ -715,10 +720,11 @@ def process_visit_table(
     ]
 
     print(
-        f"Processing {len(person_ids)} persons in {len(batches)} batches of ~{batch_size}..."
+        f"Processing {len(person_ids)} persons in {len(batches)} batches of ~{batch_size}...",
+        flush=True,
     )
     results = Parallel(n_jobs=n_jobs)(
-        delayed(_process_batch)(batch, n_iter_max=10000)
+        delayed(_process_batch)(batch, n_iter_max=100000)
         for batch in tqdm(batches, desc="Processing batches", unit="batch")
     )
 
