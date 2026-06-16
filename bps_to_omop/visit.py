@@ -669,6 +669,7 @@ def process_visit_table(
     params_visit: dict,
     n_jobs: int = -2,
     batch_size: int = 1000,
+    n_iter_max: int = 1000000,
 ) -> None:
     """Build and save the VISIT_DETAIL and VISIT_OCCURRENCE parquet tables.
 
@@ -687,6 +688,8 @@ def process_visit_table(
         -2 leaves one core free. Default is -2.
     batch_size : int, optional
         Number of people in each processing batch. Default is 1000.
+    n_iter_max : int, optional
+        Number of maximun iterations allowed per batch. Default is 1000000.
     """
     # -- Manage folders -----------------------------------------------
     output_dir = params_visit["output_dir"]
@@ -724,7 +727,7 @@ def process_visit_table(
         flush=True,
     )
     results = Parallel(n_jobs=n_jobs)(
-        delayed(_process_batch)(batch, n_iter_max=100000)
+        delayed(_process_batch)(batch, n_iter_max=n_iter_max)
         for batch in tqdm(batches, desc="Processing batches", unit="batch")
     )
 
