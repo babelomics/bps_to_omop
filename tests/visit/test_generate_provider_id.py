@@ -33,14 +33,14 @@ def test_maps_known_values(provider_parquet, base_params):
     """All source values present in the provider table are mapped correctly."""
     table = pl.DataFrame({"source_col": ["A", "B", "C"]})
     result = generate_provider_id(table, "file.parquet", base_params, provider_parquet)
-    assert result.to_list() == [1, 2, 3]
+    assert result.get_column("provider_id").to_list() == [1, 2, 3]
 
 
 def test_unmatched_values_are_null(provider_parquet, base_params):
     """Source values absent from the provider table produce null."""
     table = pl.DataFrame({"source_col": ["A", "UNKNOWN"]})
     result = generate_provider_id(table, "file.parquet", base_params, provider_parquet)
-    assert result.to_list() == [1, None]
+    assert result.get_column("provider_id").to_list() == [1, None]
 
 
 def test_no_provider_config_returns_all_nulls(provider_parquet, base_params):
@@ -49,7 +49,7 @@ def test_no_provider_config_returns_all_nulls(provider_parquet, base_params):
     result = generate_provider_id(
         table, "other_file.parquet", base_params, provider_parquet
     )
-    assert result.is_null().all()
+    assert result.get_column("provider_id").is_null().all()
     assert len(result) == len(table)
 
 
