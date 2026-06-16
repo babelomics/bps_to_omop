@@ -73,7 +73,6 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pl.DataF
     optional_labels = [
         "transformations",
         "source_to_provider_id",
-        "provider_table_path",
     ]
 
     if verbose > 0:
@@ -183,7 +182,10 @@ def generate_provider_id(
             left_on=source_col,
             right_on=provider_col,
             how="left",
-        ).get_column("provider_id")
+        )
+        assert (
+            table_with_provider.height == table.height
+        ), "Extra rows generated when joining PROVIDER. Check PROVIDER for duplicated entries."
 
     else:
         table_with_provider = table.with_columns(pl.lit(None).alias("provider_id"))
