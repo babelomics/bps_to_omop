@@ -72,8 +72,8 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pl.DataF
     # Prepare optional parameters
     optional_labels = [
         "transformations",
-        "provider_params",
-        "col_to_provider_id",
+        "source_to_provider_id",
+        "provider_table_path",
     ]
 
     if verbose > 0:
@@ -154,8 +154,6 @@ def generate_provider_id(
         mapping configuration in `params`.
     params : dict
         Dictionary with preprocessing parameters. Expected keys:
-        - "provider_params": dict mapping filenames to a truthy value when
-          a provider mapping should be applied.
         - "provider_table_path": path (relative to `data_dir`) of the
           Parquet file containing the provider reference table.
         - "source_to_provider_id": dict mapping filenames to a
@@ -173,15 +171,13 @@ def generate_provider_id(
         will be null.
     """
 
-    params_provider = params.get("provider_params", {})
-    if params_provider.get(input_file, False):
+    source_to_provider_id = params.get("source_to_provider_id", {})
+    if source_to_provider_id.get(input_file, False):
         # Read PROVIDER table
         provider_table = pl.read_parquet(data_dir / params["provider_table_path"])
 
         # Retrieve the col that links to the provider_id
-        ((source_col, provider_col),) = params["source_to_provider_id"][
-            input_file
-        ].items()
+        ((source_col, provider_col),) = source_to_provider_id[input_file].items()
 
         # Join to map source column to provider_id
         provider_id = (
