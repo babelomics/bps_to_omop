@@ -133,6 +133,14 @@ def preprocess_files(params: dict, data_dir: Path, verbose: int = 0) -> pl.DataF
     if verbose > 0:
         print(f"Done!", flush=True)
 
+    # Fill empty end_dates with the start_date
+    processed_tables = processed_tables.with_columns(
+        pl.when(pl.col("end_date").is_null())
+        .then(pl.col("start_date"))
+        .otherwise(pl.col("end_date"))
+        .alias("end_date")
+    )
+
     return processed_tables
 
 
@@ -716,28 +724,44 @@ def process_visit_table(
 
     # -- Split into batches -------------------------------------------
     print("Preparing batches...", flush=True)
-    person_ids = table["person_id"].unique().to_list()
-    batches = [
-        table.filter(pl.col("person_id").is_in(person_ids[i : i + batch_size]))
-        for i in range(0, len(person_ids), batch_size)
-    ]
 
+    # 1. Get unique IDs and map them to a batch index
+    person_ids = table["person_id"].unique().to_list()
+
+    # Create a mapping DataFrame or dictionary for batch IDs
+    id_to_batch = {pid: b_idx // batch_size for b_idx, pid in enumerate(person_ids)}
+
+    # 2. Add a temporary batch_id column and partition the table instantly
+    # (Using a map/join or a fast expression is much quicker than a Python loop)
+    batches = table.with_columns(
+        pl.col("person_id").replace(id_to_batch).alias("batch_id")
+    ).partition_by("batch_id", include_key=False)
+
+    # 3. Run the serial or parallel process
     print(
-        f"Processing {len(person_ids)} persons in {len(batches)} batches of ~{batch_size}...",
+        f"Processing {len(person_ids)} persons in {len(batches)} batches of {batch_size}",
         flush=True,
     )
-    results = Parallel(n_jobs=n_jobs)(
-        delayed(_process_batch)(batch, n_iter_max=n_iter_max)
-        for batch in tqdm(batches, desc="Processing batches", unit="batch")
-    )
+    if n_jobs == 1:
+        df = []
+        for batch in tqdm(batches, desc="Processing batches...", unit="batch"):
+            tmp = build_visit_occurrence(batch, verbose=0, n_iter_max=n_iter_max)
+            df.append(tmp)
+    else:
+        df = Parallel(n_jobs=n_jobs)(
+            delayed(_process_batch)(batch, n_iter_max=n_iter_max)
+            for batch in tqdm(batches, desc="Processing batches...", unit="batch")
+        )
 
     # -- Reassemble and finalize --------------------------------------
-    df = pl.concat(results)
+    df = pl.concat(df)
     visit_detail, visit_occurrence = finalize_visit_tables(df)
 
-    visit_detail = format_to_omop.format_table(table, omop_schemas["VISIT_DETAIL"])
+    visit_detail = format_to_omop.format_table(
+        visit_detail, omop_schemas["VISIT_DETAIL"]
+    )
     visit_occurrence = format_to_omop.format_table(
-        table, omop_schemas["VISIT_OCCURRENCE"]
+        visit_occurrence, omop_schemas["VISIT_OCCURRENCE"]
     )
 
     # -- Save to parquet ----------------------------------------------
