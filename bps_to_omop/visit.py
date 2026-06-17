@@ -612,6 +612,7 @@ def build_visit_occurrence(df, verbose=0, n_iter_max=1000):
 
 
 def finalize_visit_tables(df):
+    # -- Common tasks --
     # Assign an unique visit_occurrence_id only to main_visits
     df = assign_visit_occurrence_id(df)
 
@@ -632,30 +633,42 @@ def finalize_visit_tables(df):
     visit_detail = df.drop(
         pl.col("visit_start_datetime"),
         pl.col("visit_end_datetime"),
-        pl.col(
-            "main_visit"
-        ),  # This one is dropped here so it can be used for visit_occurrence
+        # This one is dropped here so it can be used for visit_occurrence
+        pl.col("main_visit"),
+    ).with_columns(
+        # We have used visit_*_datetime columns to build the tables
+        # We need to fill the visit_*_date columns using that info
+        pl.col("visit_detail_start_datetime")
+        .cast(pl.Date())
+        .alias("visit_detail_start_date"),
+        pl.col("visit_detail_end_datetime")
+        .cast(pl.Date())
+        .alias("visit_detail_end_date"),
     )
 
     # -- Build the core of the visit_occurrence table --
-    # Get only main visits
-    visit_occurrence = df.filter(pl.col("main_visit") == "Yes").drop(
-        pl.col("main_visit")
-    )
-
-    # Rename columns
-    visit_occurrence = visit_occurrence.rename(
-        {
-            "visit_detail_type_concept_id": "visit_type_concept_id",
-        }
-    )
-
-    # Drop columns from visit_detail
-    visit_occurrence = visit_occurrence.drop(
-        pl.col("visit_detail_start_datetime"),
-        pl.col("visit_detail_end_datetime"),
-        pl.col("visit_detail_id"),
-        pl.col("parent_visit_detail_id"),
+    visit_occurrence = (
+        # Get only main visits
+        df.filter(pl.col("main_visit") == "Yes").drop(pl.col("main_visit"))
+        # Rename the type_concept
+        .rename(
+            {
+                "visit_detail_type_concept_id": "visit_type_concept_id",
+            }
+        )
+        # Drop columns from visit_detail
+        .drop(
+            pl.col("visit_detail_start_datetime"),
+            pl.col("visit_detail_end_datetime"),
+            pl.col("visit_detail_id"),
+            pl.col("parent_visit_detail_id"),
+        )
+        # We have used visit_*_datetime columns to build the tables
+        # We need to fill the visit_*_date columns using that info
+        .with_columns(
+            pl.col("visit_start_datetime").cast(pl.Date()).alias("visit_start_date"),
+            pl.col("visit_end_datetime").cast(pl.Date()).alias("visit_end_date"),
+        )
     )
 
     return visit_detail, visit_occurrence
