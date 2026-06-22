@@ -155,11 +155,14 @@ def process_observation_period_table(
     os.makedirs(data_dir / output_dir, exist_ok=True)
 
     # -- Load VISIT_OCCURRENCE ----------------------------------------
+    print("Loading data...", flush=True, end="")
     visit = pl.read_parquet(
         data_dir / visit_occurrence_dir / "VISIT_OCCURRENCE.parquet"
     )
+    print(" Done!", flush=True)
 
     # -- Build OBSERVATION_PERIOD -------------------------------------
+    print("Grouping dates...", flush=True, end="")
     table = visit.select(
         "person_id", "visit_start_date", "visit_end_date", "visit_type_concept_id"
     )
@@ -183,6 +186,7 @@ def process_observation_period_table(
     observation_period = format_to_omop.format_table(
         table, omop_schemas["OBSERVATION_PERIOD"]
     )
+    print(" Done!", flush=True)
 
     # -- Save to parquet ----------------------------------------------
     print("Saving... ", end="")
