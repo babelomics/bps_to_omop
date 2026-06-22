@@ -139,10 +139,6 @@ def process_observation_period_table(
     verbose : int, optional
         Information output, by default 0
     """
-    # TODO:
-    # - Remove visits mentions
-    # - Configure retrieving the visit table, error if it does not exist.
-    # - configure applying the schema from pyarrow but in polars
 
     # -- Manage params ------------------------------------------------
     output_dir = params_obs["output_dir"]
