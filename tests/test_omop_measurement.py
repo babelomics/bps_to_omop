@@ -35,12 +35,12 @@ def sample_params(test_data_dir):
         "append_vocabulary": {"measurement_values.parquet": "CLC"},
         "column_map": {
             "measurement_values.parquet": {
-                "desc_clc": "measurement_source_value",
+                "cod_clc": "measurement_source_value",
                 "valor": "value_source_value",
             }
         },
         "vocabulary_config": {
-            "measurement_values.parquet": {"CLC": "concept_name"},
+            "measurement_values.parquet": {"CLC": "concept_code"},
             "measurement_categorical.parquet": {"SNOMED": "concept_name"},
         },  # TODO Add test to map by concept_code
         "value_map": {
@@ -68,6 +68,7 @@ def sample_measurement_values(test_data_dir):
             "end_date": ["2020-01-01", "2020-01-01", "2020-01-01"],
             "type_concept": ["1", "1", "1"],
             "desc_clc": ["Hemoglobina", "Plaquetas (recuento)", "Albúmina"],
+            "cod_clc": ["CLC00195", "CLC00198", "CLC00606"],
             "valor": ["11.0", "22.0", "33.0"],
         }
     )
@@ -257,6 +258,7 @@ def sample_clc_table(test_data_dir):
     df = pd.DataFrame(
         {
             "NombreConvCLC": ["Hemoglobina", "Plaquetas (recuento)", "Albúmina"],
+            "CódigoCLC": ["CLC00195", "CLC00198", "CLC00606"],
             "UnidadConv": ["g/dL", "x 10^3/µL", "g/dL"],
         }
     )
