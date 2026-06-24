@@ -397,9 +397,7 @@ def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
     print("Formatting to OMOP...")
 
     # Fill in for new start_datetime column
-    df["start_datetime"] = df.get("start_datetime", pd.NaT).fillna(
-        pd.to_datetime(df["start_date"])
-    )
+    df["start_datetime"] = pd.to_datetime(df["start_date"])
 
     # Convert to pyarrow table, value_source_value is mixed dtype so we force str
     df["value_source_value"] = df["value_source_value"].astype(str)
@@ -460,6 +458,7 @@ def process_measurement_table(data_dir: str | Path, params_measurement: dict):
     df = retrieve_visit_occurrence_id(df, data_dir / visit_dir)
 
     # -- Standardize contents -----------------------------------------
+
     table = create_measurement_table(df, omop_schemas["MEASUREMENT"])
 
     # -- Save ---------------------------------------------------------
