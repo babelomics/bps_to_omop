@@ -276,7 +276,7 @@ def create_drug_exposure_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
 
 
 # %%
-def process_drug_exposure_table(data_dir: Path, params_drug_exposure: dict):
+def process_drug_exposure_table(data_dir: str | Path, params_drug_exposure: dict):
 
     # -- Unwrap some params for clarity ------------------------------
     output_dir = params_drug_exposure["output_dir"]

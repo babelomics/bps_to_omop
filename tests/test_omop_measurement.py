@@ -4,10 +4,10 @@ import pathlib
 import numpy as np
 import pandas as pd
 import pytest
-import utils.extract as ext
 import yaml
 
 import bps_to_omop.measurement as mea
+import bps_to_omop.utils.extract as ext
 from bps_to_omop.omop_schemas import omop_schemas
 
 
@@ -72,6 +72,10 @@ def sample_measurement_values(test_data_dir):
         }
     )
 
+    # Convert start_date and end_date to datetime
+    df["start_date"] = pd.to_datetime(df["start_date"])
+    df["end_date"] = pd.to_datetime(df["end_date"])
+
     file_path = test_data_dir / "input" / "measurement_values.parquet"
     df.to_parquet(file_path)
     return file_path
@@ -96,6 +100,10 @@ def sample_measurement_categorical(test_data_dir):
         }
     )
 
+    # Convert start_date and end_date to datetime
+    df["start_date"] = pd.to_datetime(df["start_date"])
+    df["end_date"] = pd.to_datetime(df["end_date"])
+
     file_path = test_data_dir / "input" / "measurement_categorical.parquet"
     df.to_parquet(file_path)
     return file_path
@@ -113,6 +121,10 @@ def sample_visit_table(test_data_dir):
             "visit_type_concept_id": ["1", "1"],
         }
     )
+
+    # Convert start_date and end_date to datetime
+    df["visit_start_datetime"] = pd.to_datetime(df["visit_start_datetime"])
+    df["visit_end_datetime"] = pd.to_datetime(df["visit_end_datetime"])
 
     file_path = test_data_dir / "visit" / "VISIT_OCCURRENCE.parquet"
     df.to_parquet(file_path)
@@ -137,6 +149,7 @@ def sample_concept_table(test_data_dir):
                 9189,
                 9191,
                 8713,
+                8848,
             ],
             "concept_name": [
                 "Hemoglobina",
@@ -147,6 +160,7 @@ def sample_concept_table(test_data_dir):
                 "Negative",
                 "Positive",
                 "gram per deciliter",
+                "10^3/µL",
             ],
             "domain_id": [
                 "Measurement",
@@ -156,6 +170,7 @@ def sample_concept_table(test_data_dir):
                 "Measurement",
                 "Meas Value",
                 "Meas Value",
+                "Unit",
                 "Unit",
             ],
             "vocabulary_id": [
@@ -167,8 +182,9 @@ def sample_concept_table(test_data_dir):
                 "SNOMED",
                 "SNOMED",
                 "UCUM",
+                "filler",
             ],
-            "standard_code": [None, None, None, "S", None, "S", "S", "S"],
+            "standard_concept": [None, None, None, "S", None, "S", "S", "S", "S"],
             "concept_code": [
                 "CLC00195",
                 "CLC00198",
@@ -178,6 +194,7 @@ def sample_concept_table(test_data_dir):
                 "260385009",
                 "10828004",
                 "g/dL",
+                "10^3/µL",
             ],
         }
     )

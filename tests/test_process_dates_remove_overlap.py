@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 sys.path.append("../bps_to_omop/")
-from utils.process_dates import remove_overlap
+from bps_to_omop.utils.process_dates import remove_overlap
 
 
 # == TESTS =============================================================================

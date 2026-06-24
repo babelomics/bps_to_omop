@@ -1,8 +1,3 @@
-input_dir: preomop/03_omop_initial/
+visit_occurrence_dir: rare/04_omop_intermediate/VISIT_OCCURRENCE/
 output_dir: preomop/04_omop_intermediate/OBSERVATION_PERIOD/
-input_files:
-  - 02_Patologias_BPS.parquet
-  - 03_MPA.parquet
 n_days: 365
-transformations:
-  02_Patologias_BPS.parquet: melt_start_end

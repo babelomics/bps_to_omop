@@ -142,7 +142,7 @@ def map_units(
     print("Mapping units...")
     # Retrieve unit_source_value from clc_df vocabulary
     map_dict = map_to_omop.create_vocabulary_mapping(
-        df, clc_df, "measurement_source_value", "NombreConvCLC", "UnidadConv"
+        df, clc_df, "measurement_source_value", "CódigoCLC", "UnidadConv"
     )
     df["unit_source_value"] = df["measurement_source_value"].map(map_dict)
     # Map source_concept_id using UCUM and SNOMED
@@ -396,6 +396,10 @@ def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
         Table containing the MEASUREMENT table
     """
     print("Formatting to OMOP...")
+
+    # Fill in for new start_datetime column
+    df["start_datetime"] = pd.to_datetime(df["start_date"])
+
     # Convert to pyarrow table, value_source_value is mixed dtype so we force str
     df["value_source_value"] = df["value_source_value"].astype(str)
     table = pa.Table.from_pandas(df, preserve_index=False)
@@ -404,6 +408,7 @@ def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
         table,
         {
             "start_date": "measurement_date",
+            "start_datetime": "measurement_datetime",
             "type_concept": "measurement_type_concept_id",
         },
     )
@@ -414,7 +419,7 @@ def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
     return table
 
 
-def process_measurement_table(data_dir: Path, params_measurement: dict):
+def process_measurement_table(data_dir: str | Path, params_measurement: dict):
 
     # -- Unwrap some params for clarity ------------------------------
     output_dir = params_measurement["output_dir"]
@@ -454,6 +459,7 @@ def process_measurement_table(data_dir: Path, params_measurement: dict):
     df = retrieve_visit_occurrence_id(df, data_dir / visit_dir)
 
     # -- Standardize contents -----------------------------------------
+
     table = create_measurement_table(df, omop_schemas["MEASUREMENT"])
 
     # -- Save ---------------------------------------------------------

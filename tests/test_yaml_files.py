@@ -5,7 +5,7 @@ import pytest
 import yaml
 
 sys.path.append("../bps_to_omop/")
-from utils.extract import read_yaml_params, update_yaml_params
+from bps_to_omop.utils.extract import read_yaml_params, update_yaml_params
 
 
 # == Fixtures =========================================================

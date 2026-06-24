@@ -207,7 +207,7 @@ def create_condition_occcurence_table(df: pd.DataFrame, schema: pa.Schema) -> pa
 
 
 # %%
-def process_condition_occurrence_table(data_dir: Path, params_cond: dict):
+def process_condition_occurrence_table(data_dir: str | Path, params_cond: dict):
 
     # -- Unwrap some params for clarity ------------------------------
     output_dir = params_cond["output_dir"]
