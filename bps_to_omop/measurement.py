@@ -395,6 +395,12 @@ def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
         Table containing the MEASUREMENT table
     """
     print("Formatting to OMOP...")
+
+    # Fill in for new start_datetime column
+    df["start_datetime"] = df.get("start_datetime", pd.NaT).fillna(
+        pd.to_datetime(df["start_date"])
+    )
+
     # Convert to pyarrow table, value_source_value is mixed dtype so we force str
     df["value_source_value"] = df["value_source_value"].astype(str)
     table = pa.Table.from_pandas(df, preserve_index=False)
@@ -403,6 +409,7 @@ def create_measurement_table(df: pd.DataFrame, schema: pa.Schema) -> pa.Table:
         table,
         {
             "start_date": "measurement_date",
+            "start_datetime": "measurement_datetime",
             "type_concept": "measurement_type_concept_id",
         },
     )
