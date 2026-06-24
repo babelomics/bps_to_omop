@@ -142,7 +142,7 @@ def map_units(
     print("Mapping units...")
     # Retrieve unit_source_value from clc_df vocabulary
     map_dict = map_to_omop.create_vocabulary_mapping(
-        df, clc_df, "measurement_source_value", "NombreConvCLC", "UnidadConv"
+        df, clc_df, "measurement_source_value", "CódigoCLC", "UnidadConv"
     )
     df["unit_source_value"] = df["measurement_source_value"].map(map_dict)
     # Map source_concept_id using UCUM and SNOMED
