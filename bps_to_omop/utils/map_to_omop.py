@@ -381,7 +381,7 @@ def fallback_mapping(
         Dictionary with the table specific params.
     col_prefix : str
         Prefix of the concept column to deduce the relevant concept columns
-        E.g.: "condition_source_value"
+        E.g.: "condition"
     vocabulary_id_column : str
         Column that holds the vocabulary_id of the source values.
         By default, "vocabulary_id
@@ -439,9 +439,7 @@ def fallback_mapping(
 def report_unmapped(
     df: pd.DataFrame,
     unmapped: list,
-    source_value_column: str,
-    source_concept_id_column: str,
-    concept_id_column: str,
+    col_prefix: str,
     extra_cols: tuple | list = ("vocabulary_id", "type_concept"),
 ) -> pd.DataFrame:
     """
@@ -449,8 +447,9 @@ def report_unmapped(
     ----------
     df : pandas.DataFrame
         Input DataFrame containing source values and concept IDs
-    unmapped: list
-        List of unmapped source values. See find_unmapped_values().
+    col_prefix : str
+        Prefix of the concept column to deduce the relevant concept columns
+        E.g.: "condition"
     source_value_column : str
         Name of column containing original source values/codes
     source_concept_id_column : str
@@ -476,25 +475,36 @@ def report_unmapped(
     instances where the mapping was succesful.
     - This way we can investigate why.
     """
-    cols = [
-        source_value_column,
-        source_concept_id_column,
-        concept_id_column,
-    ] + list(extra_cols)
+    # Find the unmapped values
+    unmapped_mask = get_unmapped_mask(df, "measurement_concept_id")
 
-    report_df = (
-        df.loc[df[source_value_column].isin(unmapped), cols]
-        .drop_duplicates()
-        .sort_values(source_value_column)
-    )
+    if unmapped_mask.any():
+        # Retrieve the unmapped values names
+        unmapped_values = df.loc[unmapped_mask, f"{col_prefix}_source_value"].to_list()
 
-    print(
-        f" {len(unmapped)} unmapped values found. Examples:\n",
-        report_df.head(6),
-        flush=True,
-    )
+        # Get cols to report
+        cols = [
+            f"{col_prefix}_source_value",
+            f"{col_prefix}_source_concept_id",
+            f"{col_prefix}_concept_id",
+        ] + list(extra_cols)
 
-    return report_df
+        # Retrieve subset dataframe
+        report_df = (
+            df.loc[df[f"{col_prefix}_source_value"].isin(unmapped_values), cols]
+            .drop_duplicates()
+            .sort_values(f"{col_prefix}_source_value")
+        )
+
+        # Print only some of them
+        print(
+            f" {len(unmapped)} unmapped values found. Examples:\n",
+            report_df.head(6),
+            flush=True,
+        )
+        return report_df
+    else:
+        return None
 
 
 def update_concept_mappings(
