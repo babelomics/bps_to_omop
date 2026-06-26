@@ -13,7 +13,7 @@ pythonpath = ["."]
 [tool.setuptools]
 packages = { find = { where = ["."] } }
 
-[tool.pixi.project]
+[tool.pixi.workspace]
 channels = ["conda-forge", "default"]
 platforms = ["linux-64"]
 
