@@ -359,10 +359,8 @@ def fallback_mapping(
     df: pd.DataFrame,
     concept_df: pd.DataFrame,
     concept_rel_df: pd.DataFrame,
-    fallback_vocabs: dict,
-    source_value_column: str,
-    source_concept_id_column: str,
-    concept_id_column: str,
+    params_data: dict,
+    col_prefix: str,
     vocabulary_id_column: str = "vocabulary_id",
 ) -> tuple:
     """
@@ -379,18 +377,11 @@ def fallback_mapping(
         Reference DataFrame with CONCEPT table
     concept_rel_df : pd.DataFrame
         DataFrame with CONCEPT_RELATIONSHIP for mapping
-    fallback_vocabs : dict
-        Dictionary mapping vocabulary names to target values.
-        Example {"ICD10CM":"concept_code"}, maps ICD10CM via their concept_codes
-    source_value_column : str
-        Column name containing source values to map
+    params_data : dict
+        Dictionary with the table specific params.
+    col_prefix : str
+        Prefix of the concept column to deduce the relevant concept columns
         E.g.: "condition_source_value"
-    source_concept_id_column : str
-        Column name for source values concept IDs
-        E.g.: "condition_source_concept_id"
-    concept_id_column : str
-        Column name for standard concept IDs
-        E.g.: "condition_concept_id"
     vocabulary_id_column : str
         Column that holds the vocabulary_id of the source values.
         By default, "vocabulary_id
@@ -400,11 +391,18 @@ def fallback_mapping(
     tuple[pd.DataFrame, pd.Series]
         Modified DataFrame and boolean mask of remaining unmapped rows
     """
+    # Retrieve the fallback_vocabs, if any
+    fallback_vocabs = params_data.get("fallback_vocabs", False)
+    # Early return if nothing to do
+    if not fallback_vocabs:
+        return df
+
+    print(f"Applying {col_prefix} fallback mapping...", flush=True)
     # Iterate over fallback_vocabs
     for vocab, target in fallback_vocabs.items():
 
         # Identify rows that need updating (null, NaN, 0 or empty values)
-        unmapped_mask = get_unmapped_mask(df, concept_id_column)
+        unmapped_mask = get_unmapped_mask(df, f"{col_prefix}_concept_id")
 
         # Early exit
         if not unmapped_mask.any():
@@ -423,27 +421,19 @@ def fallback_mapping(
             df,
             fallback_vocabs,
             concept_df,
-            source_value_column,
+            f"{col_prefix}_source_value",
             vocabulary_id_column,
-            source_concept_id_column,
+            f"{col_prefix}_concept_id",
         )
         # Try to map to standard concept ids
         df = map_source_concept_id(
             df,
             concept_rel_df,
-            source_concept_id_column,
-            concept_id_column,
+            f"{col_prefix}_source_concept_id",
+            f"{col_prefix}_concept_id",
         )
 
-    # When loop finishes, reidentify rows that need updating
-    unmapped_mask = get_unmapped_mask(df, concept_id_column)
-
-    print(
-        f" {unmapped_mask.sum()} values are still unmapped after fallback.",
-        flush=True,
-    )
-
-    return df, unmapped_mask
+    return df
 
 
 def report_unmapped(
@@ -491,11 +481,13 @@ def report_unmapped(
         source_concept_id_column,
         concept_id_column,
     ] + list(extra_cols)
+
     report_df = (
         df.loc[df[source_value_column].isin(unmapped), cols]
         .drop_duplicates()
         .sort_values(source_value_column)
     )
+
     print(
         f" {len(unmapped)} unmapped values found. Examples:\n",
         report_df.head(6),
