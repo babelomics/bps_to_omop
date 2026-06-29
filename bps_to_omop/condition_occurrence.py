@@ -248,7 +248,7 @@ def process_condition_occurrence_table(data_dir: str | Path, params_cond: dict):
         # -- Report unmapped concepts ---------------------------------
         unmapped_df = map_to_omop.report_unmapped(df, col_prefix)
 
-        if unmapped_df:
+        if unmapped_df is not None:
             # Save them for later reference
             unmapped_df.to_csv(
                 data_dir / output_dir / f"unmapped_{col_prefix}.csv",
