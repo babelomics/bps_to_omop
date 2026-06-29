@@ -150,7 +150,6 @@ def check_unmapped_values(
     pd.DataFrame
         Input dataframe with unmapped values
     """
-
     # Get a list of the standard codes
     std_codes = concept_df.loc[
         concept_df["standard_concept"] == "S", "concept_id"
@@ -302,6 +301,27 @@ def process_drug_exposure_table(data_dir: str | Path, params_drug_exposure: dict
 
     # -- Map to standard concepts -------------------------------------
     df = map_standard_concepts(df, concept_rel_df)
+
+    # -- Fallback mapping ---------------------------------------------
+    cols_prefix = ["drug"]
+    for col_prefix in cols_prefix:
+        df = map_to_omop.fallback_mapping(
+            df,
+            concept_df,
+            concept_rel_df,
+            params_drug_exposure,
+            col_prefix=col_prefix,
+        )
+
+        # -- Report unmapped concepts ---------------------------------
+        unmapped_df = map_to_omop.report_unmapped(df, col_prefix)
+
+        if unmapped_df:
+            # Save them for later reference
+            unmapped_df.to_csv(
+                data_dir / output_dir / f"unmapped_{col_prefix}.csv",
+                index=False,
+            )
 
     # -- Check for codes that were not mapped -------------------------
     test_list = ["drug"]

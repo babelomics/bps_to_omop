@@ -234,44 +234,26 @@ def process_procedure_occurrence_table(data_dir: Path, params_proc: dict):
     # -- Map to standard concepts -------------------------------------
     df = map_standard_concepts(df, concept_rel_df)
 
-    # -- fallback mapping
-    # If we find unmapped values, it is possible it's not ICD10, but ICD9, or otherwise.
-    # We will retrieve unmapped values, and try to map to both
-
-    # Define the fallback_vocabs
-    fallback_vocabs = params_proc.get(
-        "fallback_vocabs",
-        False,  # Use this by default
-    )
-
-    if fallback_vocabs:
-        df, unmapped_mask = map_to_omop.fallback_mapping(
+    # -- Fallback mapping ---------------------------------------------
+    cols_prefix = ["procedure"]
+    for col_prefix in cols_prefix:
+        df = map_to_omop.fallback_mapping(
             df,
             concept_df,
             concept_rel_df,
-            fallback_vocabs,
-            "procedure_source_value",
-            "procedure_source_concept_id",
-            "procedure_concept_id",
+            params_proc,
+            col_prefix=col_prefix,
         )
-    else:
-        unmapped_mask = map_to_omop.get_unmapped_mask(df, "procedure_concept_id")
 
-    # If we still have unmapped, report them
-    if unmapped_mask.any():
-        # Retrieve the unmapped values
-        report_unmapped = map_to_omop.report_unmapped(
-            df,
-            df.loc[unmapped_mask, "procedure_source_value"].to_list(),
-            "procedure_source_value",
-            "procedure_source_concept_id",
-            "procedure_concept_id",
-        )
-        # Save them for later reference
-        report_unmapped.to_csv(
-            data_dir / output_dir / "unmapped_procedures.csv",
-            index=False,
-        )
+        # -- Report unmapped concepts ---------------------------------
+        unmapped_df = map_to_omop.report_unmapped(df, col_prefix)
+
+        if unmapped_df:
+            # Save them for later reference
+            unmapped_df.to_csv(
+                data_dir / output_dir / f"unmapped_{col_prefix}.csv",
+                index=False,
+            )
 
     # -- Retrieve visit_occurrence_id ---------------------------------
     df = retrieve_visit_occurrence_id(df, data_dir / visit_dir)

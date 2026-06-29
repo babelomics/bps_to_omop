@@ -451,6 +451,27 @@ def process_measurement_table(data_dir: str | Path, params_measurement: dict):
     # -- Map to standard concepts -------------------------------------
     df = map_standard_concepts(df, concept_rel_df)
 
+    # -- Fallback mapping ---------------------------------------------
+    cols_prefix = ["measurement","unit"]
+    for col_prefix in cols_prefix:
+        df = map_to_omop.fallback_mapping(
+            df,
+            concept_df,
+            concept_rel_df,
+            params_measurement,
+            col_prefix=col_prefix,
+        )
+
+        # -- Report unmapped concepts ---------------------------------
+        unmapped_df = map_to_omop.report_unmapped(df, col_prefix)
+
+        if unmapped_df:
+            # Save them for later reference
+            unmapped_df.to_csv(
+                data_dir / output_dir / f"unmapped_{col_prefix}.csv",
+                index=False,
+            )
+
     # -- Check for codes that were not mapped -------------------------
     test_list = ["measurement", "unit"]
     df = check_unmapped_values(df, params_measurement, test_list, concept_df)
