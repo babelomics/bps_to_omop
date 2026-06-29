@@ -31,17 +31,28 @@ def sample_dataframes():
     return concept_df, concept_rel_df
 
 
-def test_maps_unmapped_values_with_fallback(sample_dataframes):
+@pytest.fixture
+def sample_params():
+    """Create a sample parameters file."""
+    sample_params = {
+        "input_dir": "input",
+        "output_dir": "output",
+        "fallback_vocabs": {"ICD10CM": "concept_code", "ICD9CM": "concept_code"},
+    }
+
+    return sample_params
+
+
+def test_maps_unmapped_values_with_fallback(sample_dataframes, sample_params):
     """Test that unmapped values get processed with fallback vocabularies."""
     concept_df, concept_rel_df = sample_dataframes
-    fallback_vocabs = {"ICD10CM": "concept_code", "ICD9CM": "concept_code"}
 
     # Define input
     columns = [
-        "source_value",
+        "test_source_value",
         "vocabulary_id",
-        "source_concept_id",
-        "concept_id",
+        "test_source_concept_id",
+        "test_concept_id",
     ]
     rows = [
         ("I10", "ICD10CM", 44821949, 320128),  # This is fine, does it change?
@@ -58,22 +69,20 @@ def test_maps_unmapped_values_with_fallback(sample_dataframes):
     ]
     expected_output = pd.DataFrame.from_records(rows, columns=columns)
     expected_output
-    expected_output["source_concept_id"] = expected_output["source_concept_id"].astype(
-        pd.Int64Dtype()
-    )
-    expected_output["concept_id"] = expected_output["concept_id"].astype(
+    expected_output["test_source_concept_id"] = expected_output[
+        "test_source_concept_id"
+    ].astype(pd.Int64Dtype())
+    expected_output["test_concept_id"] = expected_output["test_concept_id"].astype(
         pd.Int64Dtype()
     )
 
     # Apply the function
-    df_output, unmapped_mask = map_to_omop.fallback_mapping(
+    df_output = map_to_omop.fallback_mapping(
         df_input,
         concept_df,
         concept_rel_df,
-        fallback_vocabs,
-        "source_value",
-        "source_concept_id",
-        "concept_id",
+        sample_params,
+        col_prefix="test",
     )
 
     # Check
@@ -83,7 +92,7 @@ def test_maps_unmapped_values_with_fallback(sample_dataframes):
     )
 
 
-def test_no_mapping_without_vocab(sample_dataframes):
+def test_no_mapping_without_vocab(sample_dataframes, sample_params):
     """
     Test that if a source code has no mapping it will change the vocabulary_id column.
 
@@ -91,14 +100,13 @@ def test_no_mapping_without_vocab(sample_dataframes):
     This is ok as vocabulary_id column is not carried to the final OMOP tables.
     """
     concept_df, concept_rel_df = sample_dataframes
-    fallback_vocabs = {"ICD10CM": "concept_code", "ICD9CM": "concept_code"}
 
     # Define input
     columns = [
-        "source_value",
+        "test_source_value",
         "vocabulary_id",
-        "source_concept_id",
-        "concept_id",
+        "test_source_concept_id",
+        "test_concept_id",
     ]
     rows = [
         ("155296003", "Nebraska Lexicon", np.nan, 0),  # Wrong vocab, does it update?
@@ -116,22 +124,20 @@ def test_no_mapping_without_vocab(sample_dataframes):
     ]
     expected_output = pd.DataFrame.from_records(rows, columns=columns)
     expected_output
-    expected_output["source_concept_id"] = expected_output["source_concept_id"].astype(
-        pd.Int64Dtype()
-    )
-    expected_output["concept_id"] = expected_output["concept_id"].astype(
+    expected_output["test_source_concept_id"] = expected_output[
+        "test_source_concept_id"
+    ].astype(pd.Int64Dtype())
+    expected_output["test_concept_id"] = expected_output["test_concept_id"].astype(
         pd.Int64Dtype()
     )
 
     # Apply the function
-    df_output, unmapped_mask = map_to_omop.fallback_mapping(
+    df_output = map_to_omop.fallback_mapping(
         df_input,
         concept_df,
         concept_rel_df,
-        fallback_vocabs,
-        "source_value",
-        "source_concept_id",
-        "concept_id",
+        sample_params,
+        col_prefix="test",
     )
 
     # Check
@@ -141,17 +147,16 @@ def test_no_mapping_without_vocab(sample_dataframes):
     )
 
 
-def test_handles_different_unmapped_value_types(sample_dataframes):
+def test_handles_different_unmapped_value_types(sample_dataframes, sample_params):
     """Test that function correctly identifies different types of unmapped values."""
     concept_df, concept_rel_df = sample_dataframes
-    fallback_vocabs = {"ICD10CM": "concept_code", "ICD9CM": "concept_code"}
 
     # Define input
     columns = [
-        "source_value",
+        "test_source_value",
         "vocabulary_id",
-        "source_concept_id",
-        "concept_id",
+        "test_source_concept_id",
+        "test_concept_id",
     ]
     rows = [
         ("I10", "ICD10CM", 0, 0),
@@ -170,15 +175,14 @@ def test_handles_different_unmapped_value_types(sample_dataframes):
     ]
 
     # Apply the function
-    df_output, unmapped_mask = map_to_omop.fallback_mapping(
+    df_output = map_to_omop.fallback_mapping(
         df_input,
         concept_df,
         concept_rel_df,
-        fallback_vocabs,
-        "source_value",
-        "source_concept_id",
-        "concept_id",
+        sample_params,
+        col_prefix="test",
     )
+
     expected_output = pd.DataFrame.from_records(rows, columns=columns)
     expected_output
 
