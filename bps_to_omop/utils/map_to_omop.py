@@ -423,7 +423,7 @@ def fallback_mapping(
             concept_df,
             f"{col_prefix}_source_value",
             vocabulary_id_column,
-            f"{col_prefix}_concept_id",
+            f"{col_prefix}_source_concept_id",
         )
         # Try to map to standard concept ids
         df = map_source_concept_id(
@@ -438,7 +438,6 @@ def fallback_mapping(
 
 def report_unmapped(
     df: pd.DataFrame,
-    unmapped: list,
     col_prefix: str,
     extra_cols: tuple | list = ("vocabulary_id", "type_concept"),
 ) -> pd.DataFrame:
@@ -450,12 +449,6 @@ def report_unmapped(
     col_prefix : str
         Prefix of the concept column to deduce the relevant concept columns
         E.g.: "condition"
-    source_value_column : str
-        Name of column containing original source values/codes
-    source_concept_id_column : str
-        Name of column containing existing concept ID mappings
-    concept_id_column : str
-        Name of column containing standard concept_ids.
     extra_cols : tuple | list
         Name of other columns to show. By default:
         ["vocabulary_id", "type_concept"]
@@ -467,8 +460,8 @@ def report_unmapped(
 
     Notes
     -------
-    - For the mapping to work needs the correct code and the correct
-    vocabulary.
+    - For the mapping to work the correct code and the correct
+    vocabulary are needed.
     - Since we are mixing files, some of them might have the correct
     combination while others do not.
     - We retrieve the problematic unmapped codes to see if there are
@@ -498,7 +491,7 @@ def report_unmapped(
 
         # Print only some of them
         print(
-            f" {len(unmapped)} unmapped values found. Examples:\n",
+            f" {len(unmapped_values)} unmapped values found. Examples:\n",
             report_df.head(6),
             flush=True,
         )
