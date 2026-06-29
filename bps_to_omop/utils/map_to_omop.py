@@ -2,6 +2,7 @@
 Functions to help mapping concepts to and from an OMOP-CDM instance
 """
 
+from pathlib import Path
 import numpy as np
 import pandas as pd
 import pyarrow as pa
@@ -437,10 +438,11 @@ def fallback_mapping(
 
 
 def report_unmapped(
+    save_dir: Path,
     df: pd.DataFrame,
     col_prefix: str,
     extra_cols: tuple | list = ("vocabulary_id", "type_concept"),
-) -> pd.DataFrame:
+) -> pd.DataFrame | None:
     """
     Parameters
     ----------
@@ -455,8 +457,8 @@ def report_unmapped(
 
     Returns
     -------
-    pd.DataFrame
-        Dataframe with the unmapped source_values
+    pd.DataFrame | None
+        Dataframe with the unmapped source_values or None if no unmapped source_values
 
     Notes
     -------
@@ -469,7 +471,7 @@ def report_unmapped(
     - This way we can investigate why.
     """
     # Find the unmapped values
-    unmapped_mask = get_unmapped_mask(df, "measurement_concept_id")
+    unmapped_mask = get_unmapped_mask(df, f"{col_prefix}_concept_id")
 
     if unmapped_mask.any():
         # Retrieve the unmapped values names
@@ -483,11 +485,9 @@ def report_unmapped(
         ] + list(extra_cols)
 
         # Retrieve subset dataframe
-        report_df = (
-            df.loc[df[f"{col_prefix}_source_value"].isin(unmapped_values), cols]
-            .drop_duplicates()
-            .sort_values(f"{col_prefix}_source_value")
-        )
+        report_df = df.loc[
+            df[f"{col_prefix}_source_value"].isin(unmapped_values), cols
+        ].value_counts(dropna=False)
 
         # Print only some of them
         print(
@@ -495,9 +495,11 @@ def report_unmapped(
             report_df.head(6),
             flush=True,
         )
-        return report_df
-    else:
-        return None
+        
+        # Save them for later reference
+        report_df.to_csv(
+            save_dir / f"unmapped_{col_prefix}.csv",
+        )
 
 
 def update_concept_mappings(

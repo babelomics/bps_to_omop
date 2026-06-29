@@ -310,18 +310,11 @@ def process_drug_exposure_table(data_dir: str | Path, params_drug_exposure: dict
             concept_df,
             concept_rel_df,
             params_drug_exposure,
-            col_prefix=col_prefix,
+            col_prefix,
         )
 
         # -- Report unmapped concepts ---------------------------------
-        unmapped_df = map_to_omop.report_unmapped(df, col_prefix)
-
-        if unmapped_df is not None:
-            # Save them for later reference
-            unmapped_df.to_csv(
-                data_dir / output_dir / f"unmapped_{col_prefix}.csv",
-                index=False,
-            )
+        map_to_omop.report_unmapped(data_dir / output_dir, df, col_prefix)
 
     # -- Check for codes that were not mapped -------------------------
     test_list = ["drug"]

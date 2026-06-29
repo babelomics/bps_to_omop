@@ -242,18 +242,11 @@ def process_procedure_occurrence_table(data_dir: Path, params_proc: dict):
             concept_df,
             concept_rel_df,
             params_proc,
-            col_prefix=col_prefix,
+            col_prefix,
         )
 
         # -- Report unmapped concepts ---------------------------------
-        unmapped_df = map_to_omop.report_unmapped(df, col_prefix)
-
-        if unmapped_df is not None:
-            # Save them for later reference
-            unmapped_df.to_csv(
-                data_dir / output_dir / f"unmapped_{col_prefix}.csv",
-                index=False,
-            )
+        map_to_omop.report_unmapped(data_dir / output_dir, df, col_prefix)
 
     # -- Retrieve visit_occurrence_id ---------------------------------
     df = retrieve_visit_occurrence_id(df, data_dir / visit_dir)
