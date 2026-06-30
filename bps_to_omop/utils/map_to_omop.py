@@ -509,12 +509,13 @@ def update_concept_mappings(
     source_column: str,
     target_column: str,
     new_concept_mappings: dict,
+    force_update: bool = False,
 ) -> pd.DataFrame:
     """
     Update concept mappings in a DataFrame using provided new mappings.
 
     Only updates rows where the target column is null/NaN/0. Existing non-zero
-    values in the target column are preserved.
+    values in the target column are preserved unless force_update is set to True.
 
     Parameters
     ----------
@@ -526,6 +527,9 @@ def update_concept_mappings(
         Name of column where updated concept IDs will be stored
     new_concept_mappings : dict
         Dictionary of {source_value: concept_id} pairs to update existing mappings
+    force_update : bool, default False
+        Flag to force updating values already mapped. By default values that are
+        mapped already will be left as they are.
 
     Returns
     -------
@@ -570,9 +574,12 @@ def update_concept_mappings(
     # Identify rows that need updating (null, NaN, or 0 values)
     unmapped_mask = get_unmapped_mask(df, target_column)
 
-    # Update only the unmapped rows
+    # Update
     for source_value, concept_id in new_concept_mappings.items():
-        mask = (result_df[source_column] == source_value) & unmapped_mask
+        if force_update:
+            mask = result_df[source_column] == source_value
+        else:
+            mask = (result_df[source_column] == source_value) & unmapped_mask
         result_df.loc[mask, target_column] = concept_id
 
     return result_df
