@@ -490,12 +490,14 @@ def report_unmapped(
         ].value_counts(dropna=False)
 
         # Print only some of them
+        n_unmapped = len(unmapped_values)
+        p_unmapped = (n_unmapped / df.shape[0]) * 100
         print(
-            f" {len(unmapped_values)} unmapped values found. Examples:\n",
+            f" {n_unmapped} ({p_unmapped:.2f}%) unmapped values found. Examples:\n",
             report_df.head(6),
             flush=True,
         )
-        
+
         # Save them for later reference
         report_df.to_csv(
             save_dir / f"unmapped_{col_prefix}.csv",
