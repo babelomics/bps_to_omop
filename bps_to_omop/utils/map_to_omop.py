@@ -493,8 +493,8 @@ def report_unmapped(
         n_unmapped = len(unmapped_values)
         p_unmapped = (n_unmapped / df.shape[0]) * 100
         print(
-            f" {n_unmapped} ({p_unmapped:.2f}%) unmapped values found. Examples:\n",
-            report_df.head(6),
+            f" Found {n_unmapped} ({p_unmapped:.2f}%) values with no mapping. Top 5:\n",
+            report_df.head(5),
             flush=True,
         )
 
