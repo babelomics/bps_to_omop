@@ -204,21 +204,24 @@ def process_provider_table(data_dir: str | Path, provider_params: dict) -> None:
     data_dir = Path(data_dir)
 
     # Create output directory
-    output_path = data_dir / provider_params["output_dir"]
-    makedirs(output_path, exist_ok=True)
+    output_dir = data_dir / provider_params["output_dir"]
+    makedirs(output_dir, exist_ok=True)
 
     # Load and preprocess input files
     provider = preprocess_files(data_dir, provider_params)
 
     # Check for unmapped specialty codes
-    unmapped_fields = ["specialty"]
-    provider = check_unmapped_values(provider, provider_params, unmapped_fields)
+    cols_prefix = ["specialty"]
+    for col_prefix in cols_prefix:
+        map_to_omop.report_unmapped(
+            data_dir / output_dir, provider, col_prefix, extra_cols=["type_concept"]
+        )
 
     # Create standardized OMOP provider table
     provider = format_to_omop.format_table(provider, omop_schemas["PROVIDER"])
 
     # Save to parquet file
-    output_file = output_path / "PROVIDER.parquet"
+    output_file = output_dir / "PROVIDER.parquet"
     print(f"Saving to {output_file}...")
     provider.write_parquet(output_file)
     print("Done.")
