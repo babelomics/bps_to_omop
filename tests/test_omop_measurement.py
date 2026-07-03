@@ -47,8 +47,11 @@ def sample_params(test_data_dir):
             "measurement_values.parquet": "numeric",
             "measurement_categorical.parquet": "concept",
         },  # TODO Maybe rename concept to categorical for consistency
-        "unmapped_measurement": {},
-        "unmapped_unit": {"x 10^3/µL": 8848},
+        "custom_mapping": {
+            "measurement_values.parquet": {
+                "unit_source_value": {"x 10^3/µL": 8848}
+            }
+        },
     }
 
     params_file = test_data_dir / "test_params.yaml"
@@ -221,6 +224,7 @@ def sample_concept_relationship_table(test_data_dir):
                 9189,
                 9191,
                 8713,
+                8848
             ],
             "concept_id_2": [
                 3000963,
@@ -231,8 +235,10 @@ def sample_concept_relationship_table(test_data_dir):
                 9189,
                 9191,
                 8713,
+                8848
             ],
             "relationship_id": [
+                "Maps to",
                 "Maps to",
                 "Maps to",
                 "Maps to",
@@ -294,6 +300,7 @@ def test_full_processing(
     measurement_concept_id = pd.Series([3000963, 3024929, 4092846, 3024561, 4092846])
     value_as_number = pd.Series([11.0, 22.0, np.nan, 33.0, np.nan])
     value_as_concept_id = pd.Series([np.nan, np.nan, 9189, np.nan, 9191])
+    unit_source_concept_id = pd.Series([8713, 8848, np.nan, 8713, np.nan])
     unit_concept_id = pd.Series([8713, 8848, np.nan, 8713, np.nan])
 
     out = pd.DataFrame(
@@ -302,6 +309,7 @@ def test_full_processing(
             "measurement_concept_id": measurement_concept_id,
             "value_as_number": value_as_number,
             "value_as_concept_id": value_as_concept_id,
+            "unit_source_concept_id": unit_source_concept_id,
             "unit_concept_id": unit_concept_id,
         }
     )
@@ -331,6 +339,10 @@ def test_full_processing(
         out["value_as_concept_id"],
         equal_nan=True,
     )
+    assert np.allclose(
+        measurement_table["unit_source_concept_id"], out["unit_source_concept_id"], equal_nan=True
+    )
+
     assert np.allclose(
         measurement_table["unit_concept_id"], out["unit_concept_id"], equal_nan=True
     )

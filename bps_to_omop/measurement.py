@@ -22,7 +22,7 @@ from bps_to_omop.utils import common, format_to_omop, map_to_omop
 
 
 def preprocess_files(
-    params_data: dict, concept_df: pd.DataFrame, data_dir: Path
+    params_data: dict, concept_df: pd.DataFrame, clc_df: pd.DataFrame, data_dir: Path
 ) -> pd.DataFrame:
     """Preprocess all files to create an unique dataframe
 
@@ -32,6 +32,8 @@ def preprocess_files(
         dictionary with the parameters for the preprocessing
     concept_df : pd.DataFrame
         OMOP CONCEPT table
+    clc_df : pd.DataFrame
+        CLC measurements table from the MPA BPS module
     data_dir : Path
         Path to the upstream location of the data files
 
@@ -47,19 +49,23 @@ def preprocess_files(
     column_map = params_data["column_map"]
     vocabulary_config = params_data["vocabulary_config"]
     value_map = params_data["value_map"]
+    custom_mapping = params_data.get("custom_mapping", {}) or {}
 
     df_complete = []
     for f in input_files:
         print(f" Processing {f}: ")
         tmp_df = pd.read_parquet(data_dir / input_dir / f)
+
         # assign new vocabulary column if needed
         if params_data.get("append_vocabulary", False):
             if params_data["append_vocabulary"].get(f, False):
                 tmp_df["vocabulary_id"] = params_data["append_vocabulary"][f]
+
         # Apply renaming
         if column_map.get(f, False):
             tmp_df = tmp_df.rename(column_map[f], axis=1)
-        # Perform the mapping
+
+        # Perform the measurement mapping
         tmp_df = map_to_omop.map_source_value(
             tmp_df,
             vocabulary_config[f],
@@ -68,6 +74,10 @@ def preprocess_files(
             "vocabulary_id",
             "measurement_source_concept_id",
         )
+
+        # Perform the units mapping
+        tmp_df = map_units(tmp_df, clc_df, concept_df)
+
         if value_map[f] == "numeric":
             try:
                 tmp_df["value_as_number"] = pd.to_numeric(tmp_df["value_source_value"])
@@ -88,6 +98,28 @@ def preprocess_files(
             )
             # Assign numeric columns as nan
             tmp_df["value_as_number"] = np.nan
+
+        # Apply custom_mapping
+        if custom_mapping.get(f, False):
+            # Print that we are applying custom concepts and which ones
+            print("  Applying custom concepts:", flush=True)
+            for col_name, col_dict in custom_mapping[f].items():
+                target_col = col_name.replace("source_value", "source_concept_id")
+                print(f"   {col_name} custom mappings to {target_col}:", flush=True)
+
+                # Ensure keys are strings
+                col_dict = {str(k):v for k,v in col_dict.items()}
+                for k, v in col_dict.items():
+                    print(f"   - {k}: {v}")
+
+                # Apply the update mappings to get the source_concept_id
+                tmp_df = map_to_omop.update_concept_mappings(
+                    tmp_df, col_name, target_col, col_dict, force_update=True
+                )
+
+        # Append a file column to identify the source
+        tmp_df["source_file"] = f
+
         # Add to final dataframe
         df_complete.append(tmp_df)
 
@@ -443,16 +475,13 @@ def process_measurement_table(data_dir: str | Path, params_measurement: dict):
     clc_df = pd.read_parquet(data_dir / vocab_dir / "CLC.parquet")
 
     # -- Load each file and prepare it --------------------------------
-    df = preprocess_files(params_measurement, concept_df, data_dir)
-
-    # -- Map units ----------------------------------------------------
-    df = map_units(df, clc_df, concept_df)
+    df = preprocess_files(params_measurement, concept_df, clc_df, data_dir)
 
     # -- Map to standard concepts -------------------------------------
     df = map_standard_concepts(df, concept_rel_df)
 
     # -- Fallback mapping ---------------------------------------------
-    cols_prefix = ["measurement","unit"]
+    cols_prefix = ["measurement", "unit"]
     for col_prefix in cols_prefix:
         df = map_to_omop.fallback_mapping(
             df,
@@ -464,10 +493,6 @@ def process_measurement_table(data_dir: str | Path, params_measurement: dict):
 
         # -- Report unmapped concepts ---------------------------------
         map_to_omop.report_unmapped(data_dir / output_dir, df, col_prefix)
-
-    # -- Check for codes that were not mapped -------------------------
-    test_list = ["measurement", "unit"]
-    df = check_unmapped_values(df, params_measurement, test_list, concept_df)
 
     # -- Retrieve visit_occurrence_id ---------------------------------
     df = retrieve_visit_occurrence_id(df, data_dir / visit_dir)

@@ -474,8 +474,6 @@ def report_unmapped(
     unmapped_mask = get_unmapped_mask(df, f"{col_prefix}_concept_id")
 
     if unmapped_mask.any():
-        # Retrieve the unmapped values names
-        unmapped_values = df.loc[unmapped_mask, f"{col_prefix}_source_value"].to_list()
 
         # Get cols to report
         cols = [
@@ -485,15 +483,18 @@ def report_unmapped(
         ] + list(extra_cols)
 
         # Retrieve subset dataframe
-        report_df = df.loc[
-            df[f"{col_prefix}_source_value"].isin(unmapped_values), cols
-        ].value_counts(dropna=False)
+        subset = df.loc[unmapped_mask, cols]
+        total_records = len(df)
+
+        counts = subset.value_counts(dropna=False)
+
+        report_df = counts.to_frame(name='count')
+        report_df['percentage'] = (report_df['count'] / total_records * 100).round(2)
+        report_df['cumulative_percentage'] = report_df['percentage'].cumsum()
 
         # Print only some of them
-        n_unmapped = len(unmapped_values)
-        p_unmapped = (n_unmapped / df.shape[0]) * 100
         print(
-            f" Found {n_unmapped} ({p_unmapped:.2f}%) values with no mapping. Top 5:\n",
+            f" Found {len(subset)} records ({len(subset) / total_records * 100:.2f}%) with no mapping. Top 5:\n",
             report_df.head(5),
             flush=True,
         )

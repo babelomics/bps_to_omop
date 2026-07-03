@@ -46,6 +46,7 @@ def preprocess_files(
     input_files = params_data["input_files"]
     column_map = params_data["column_map"]
     vocabulary_config = params_data["vocabulary_config"]
+    custom_mapping = params_data.get("custom_mapping", {}) or {}
 
     df_complete = []
     for f in input_files:
@@ -59,6 +60,7 @@ def preprocess_files(
         # Apply renaming
         if column_map.get(f, False):
             tmp_df = tmp_df.rename(column_map[f], axis=1)
+
         # Perform the mapping from source to omop codes
         tmp_df = map_to_omop.map_source_value(
             tmp_df,
@@ -68,6 +70,28 @@ def preprocess_files(
             "vocabulary_id",
             "condition_source_concept_id",
         )
+
+        # Apply custom_mapping
+        if custom_mapping.get(f, False):
+            # Print that we are applying custom concepts and which ones
+            print("  Applying custom concepts:", flush=True)
+            for col_name, col_dict in custom_mapping[f].items():
+                target_col = col_name.replace("source_value", "source_concept_id")
+                print(f"   {col_name} custom mappings to {target_col}:", flush=True)
+
+                # Ensure keys are strings
+                col_dict = {str(k):v for k,v in col_dict.items()}
+                for k, v in col_dict.items():
+                    print(f"   - {k}: {v}")
+
+                # Apply the update mappings to get the source_concept_id
+                tmp_df = map_to_omop.update_concept_mappings(
+                    tmp_df, col_name, target_col, col_dict, force_update=True
+                )
+
+        # Append a file column to identify the source
+        tmp_df["source_file"] = f
+
         # Add to final dataframe
         df_complete.append(tmp_df)
 

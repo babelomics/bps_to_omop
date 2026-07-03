@@ -214,7 +214,7 @@ def process_provider_table(data_dir: str | Path, provider_params: dict) -> None:
     cols_prefix = ["specialty"]
     for col_prefix in cols_prefix:
         map_to_omop.report_unmapped(
-            data_dir / output_dir, provider, col_prefix, extra_cols=["type_concept"]
+            output_dir, provider.to_pandas(), col_prefix, extra_cols=[]
         )
 
     # Create standardized OMOP provider table
